@@ -189,7 +189,6 @@ define(function (require, exports, module) {
 		// Button Actions
 		$('.btn-boards', $panel).click(_displayBoards);
 		$('.btn-lists', $panel).click(_displayLists);
-		$('.btn-cards', $panel).click(_displayCards);
 		$('.btn-tasks', $panel).click(_displayTasks);
 		
 		// Trello Content Listeners
@@ -202,7 +201,7 @@ define(function (require, exports, module) {
 		// List Name
 		$panel.on('click', '.list-item', function() {
 			_savePrefs('selected-list', $(this).attr('id'));
-			_displayCards();
+			_displayCards(this);
 		});
 		
 		// Card Name
@@ -239,11 +238,10 @@ define(function (require, exports, module) {
 		.fail(_displayError);
 	}
 	
-	function _displayCards() {
+	function _displayCards(elem) {
 		Trello._getListCards().done(function(data) {
 			_savePrefs('selected-list-name', data.listName);
-			_setButtonActive($panel.find('.btn-cards'));
-			$('.tab-cards', $panel).empty().show().append(Mustache.render(cardsTemplate, data));
+			_toggleCardsInline(elem, Mustache.render(cardsTemplate, data));
 		})
 		.fail(_displayError);
 	}
@@ -262,6 +260,13 @@ define(function (require, exports, module) {
 	function _displayError(error) {
 		_setButtonActive(null);
 		$('.tab-error', $panel).empty().show().append(Mustache.render(errorTemplate, { error: error }));
+	}
+	
+	function _toggleCardsInline(elem, data) {
+		$('.card-space', $panel).each(function() {
+			$(this).hide();
+		});
+		$(elem).find('.card-space').empty().show().append(data);
 	}
 	
 	function _displaySpinner(visible) {
