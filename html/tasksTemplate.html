@@ -1,0 +1,11 @@
+<h4>{{boardName}} / {{listName}}</h4>
+<h5>{{cardName}}</h5>
+<p>{{desc}}</p>
+<div class="tasks">
+	{{#tasks}}
+	<div class="task-item">
+		<input type="checkbox" id="{{id}}">
+		<label for="{{id}}">{{name}}</label>
+	</div>
+	{{/tasks}}
+</div>

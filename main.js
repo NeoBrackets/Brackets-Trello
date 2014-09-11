@@ -1,5 +1,5 @@
 /*jslint vars: true, plusplus: true, eqeq: true, devel: true, nomen: true,  regexp: true, indent: 4 */
-/*global define, brackets, $, Mustache, document */
+/*global define, brackets, $, Mustache, document, window */
 
 define(function (require, exports, module) {
 	"use strict";
@@ -17,12 +17,16 @@ define(function (require, exports, module) {
 		prefDialogHTML		= require('text!html/prefsDialog.html'),
 		newBoardHTML		= require('text!html/newBoard.html'),
 		newListHTML			= require('text!html/newList.html'),
-		templates			= require('templates');
+		boardsTemplate		= require('text!html/boardsTemplate.html'),
+		listsTemplate		= require('text!html/listsTemplate.html'),
+		cardsTemplate		= require('text!html/cardsTemplate.html'),
+		tasksTemplate		= require('text!html/tasksTemplate.html'),
+		errorTemplate		= require('text!html/errorTemplate.html');
 
 	// Extension Info.
 	var _ExtensionID		= 'brackets-trello',
 		_ExtensionLabel		= 'Brackets Trello',
-		_ExtensionShortcut	= 'Ctrl-Alt-Q';
+		_ExtensionShortcut	= 'Alt-B';
 
 	// Define preferences.
 	var _prefs = PreferencesManager.getExtensionPrefs('brackets-trello');
@@ -37,7 +41,7 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-card', 'string', '');
 	
 	// Prefs that will be saved in .brackets.json
-	var _projectPrefs = ['selected-board', 'selected-list', 'selected-card'];
+	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-card'];
 
 	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
 	
@@ -83,7 +87,6 @@ define(function (require, exports, module) {
 				for (var i in tempPrefs) {
 					_savePrefs(i, tempPrefs[i]);
 				}
-				
 				// Reset AutoSync
 				_initAutoSync(false);
 				_initAutoSync(true);
@@ -96,7 +99,7 @@ define(function (require, exports, module) {
 	
 	function _initAutoSync(init) {
 		if (init && _prefs.get('autosynctime') >= 1) {
-			autoSyncIntervalId = window.setInterval(_initSync, _prefs.get('autosynctime'));
+			autoSyncIntervalId = window.setInterval(_initSync, _prefs.get('autosynctime') * 1000);
 			return;
 		}
 		window.clearInterval(autoSyncIntervalId);
@@ -192,7 +195,7 @@ define(function (require, exports, module) {
 		// Trello Content Listeners
 		// Board Name
 		$panel.on('click', '.board-item', function () {
-			_savePrefs('selected-board', $(this).attr('id'));		
+			_savePrefs('selected-board', $(this).attr('id'));	
 			_displayLists();
 		});
 		
@@ -222,7 +225,7 @@ define(function (require, exports, module) {
 	function _displayBoards() {
 		Trello._getUserBoards().done(function(data) {
 			_setButtonActive($panel.find('.btn-boards'));
-			$('.tab-boards', $panel).empty().show().append(Mustache.render(templates.board, data));
+			$('.tab-boards', $panel).empty().show().append(Mustache.render(boardsTemplate, data));
 		})
 		.fail(_displayError);
 	}
@@ -230,7 +233,7 @@ define(function (require, exports, module) {
 	function _displayLists() {
 		Trello._getBoardLists().done(function(data) {
 			_setButtonActive($panel.find('.btn-lists'));
-			$('.tab-lists', $panel).empty().show().append(Mustache.render(templates.list, data));
+			$('.tab-lists', $panel).empty().show().append(Mustache.render(listsTemplate, data));
 		})
 		.fail(_displayError);
 	}
@@ -238,7 +241,7 @@ define(function (require, exports, module) {
 	function _displayCards() {
 		Trello._getListCards().done(function(data) {
 			_setButtonActive($panel.find('.btn-cards'));
-			$('.tab-cards', $panel).empty().show().append(Mustache.render(templates.card, data));
+			$('.tab-cards', $panel).empty().show().append(Mustache.render(cardsTemplate, data));
 		})
 		.fail(_displayError);
 	}
@@ -246,7 +249,7 @@ define(function (require, exports, module) {
 	function _displayTasks() {
 		Trello._getCardTasks().done(function(data) {
 			_setButtonActive($panel.find('.btn-tasks'));
-			$('.tab-tasks', $panel).empty().show().append(Mustache.render(templates.task, data));
+			$('.tab-tasks', $panel).empty().show().append(Mustache.render(tasksTemplate, data));
 			data.tasks.forEach(function(task) {
 				$('#' + task.id).attr('checked', task.checked);
 			});
@@ -256,7 +259,7 @@ define(function (require, exports, module) {
 	
 	function _displayError(error) {
 		_setButtonActive(null);
-		$('.tab-error', $panel).empty().show().append(Mustache.render(templates.error, { error: error }));
+		$('.tab-error', $panel).empty().show().append(Mustache.render(errorTemplate, { error: error }));
 	}
 	
 	function _displaySpinner(visible) {
@@ -271,8 +274,14 @@ define(function (require, exports, module) {
 			_panelEventController($panel);
 			$('#editor-holder').append($panel);
 			CommandManager.get(_ExtensionID).setChecked(true);
-			$icon.addClass('active');			
-			_prefs.get('selected-board') ? _displayLists() : _displayBoards();
+			$icon.addClass('active');
+
+			if (_prefs.get('selected-board')) {
+				_displayLists();
+			} else {
+				_displayBoards();
+			}
+			
 			_initAutoSync(true);
 		} else if (!isVisible && realVisibility) {
 			CommandManager.get(_ExtensionID).setChecked(true);
@@ -298,7 +307,7 @@ define(function (require, exports, module) {
 	
 	AppInit.appReady(function () {
 		ExtensionUtils.loadStyleSheet(module, 'styles/styles.css');
-		var navigateMenu = Menus.getMenu(Menus.AppMenuBar.NAVIGATE_MENU);
+		var navigateMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
 		CommandManager.register(_ExtensionLabel, _ExtensionID, _Main);
 		navigateMenu.addMenuItem(_ExtensionID, _ExtensionShortcut);
 	});
@@ -306,6 +315,6 @@ define(function (require, exports, module) {
 	$icon = $('<a>').attr({
 		id: 'brackets-trello-icon',
 		href: '#',
-		title: 'Brackets Task Sync'
+		title: 'Brackets Trello'
 	}).click(_Main).appendTo($('#main-toolbar .buttons'));
 });
