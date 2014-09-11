@@ -314,7 +314,7 @@ define(function (require, exports, module) {
 	
 	AppInit.appReady(function () {
 		ExtensionUtils.loadStyleSheet(module, 'styles/styles.css');
-		var navigateMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
+		var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
 		CommandManager.register(_ExtensionLabel, _ExtensionID, _Main);
 		navigateMenu.addMenuItem(_ExtensionID, _ExtensionShortcut);
 	});
