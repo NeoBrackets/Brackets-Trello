@@ -222,7 +222,9 @@ define(function (require, exports, module) {
 	}
 	
 	function _displayBoards() {
+		_displaySpinner(true);
 		Trello._getUserBoards().done(function(data) {
+			_displaySpinner(false);
 			_setButtonActive($panel.find('.btn-boards'));
 			$('.tab-boards', $panel).empty().show().append(Mustache.render(boardsTemplate, data));
 		})
@@ -230,7 +232,9 @@ define(function (require, exports, module) {
 	}
 	
 	function _displayLists() {
+		_displaySpinner(true);
 		Trello._getBoardLists().done(function(data) {
+			_displaySpinner(false);
 			_savePrefs('selected-board-name', data.name);
 			_setButtonActive($panel.find('.btn-lists'));
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(listsTemplate, data));
@@ -239,7 +243,9 @@ define(function (require, exports, module) {
 	}
 	
 	function _displayCards(elem) {
+		_displaySpinner(true);
 		Trello._getListCards().done(function(data) {
+			_displaySpinner(false);
 			_savePrefs('selected-list-name', data.listName);
 			_toggleCardsInline(elem, Mustache.render(cardsTemplate, data));
 		})
@@ -247,7 +253,9 @@ define(function (require, exports, module) {
 	}
 	
 	function _displayTasks() {
+		_displaySpinner(true);
 		Trello._getCardTasks().done(function(data) {
+			_displaySpinner(false);
 			_setButtonActive($panel.find('.btn-tasks'));
 			$('.tab-tasks', $panel).empty().show().append(Mustache.render(tasksTemplate, data));
 			data.tasks.forEach(function(task) {
@@ -270,7 +278,11 @@ define(function (require, exports, module) {
 	}
 	
 	function _displaySpinner(visible) {
-		if (visible) {}
+		if (visible) {
+			$('.spinner', $panel).show();
+		} else {
+			$('.spinner', $panel).hide();
+		}
 	}
 	
 	// Toggle Panel Visibility
