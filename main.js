@@ -232,6 +232,7 @@ define(function (require, exports, module) {
 	
 	function _displayLists() {
 		Trello._getBoardLists().done(function(data) {
+			_savePrefs('selected-board-name', data.name);
 			_setButtonActive($panel.find('.btn-lists'));
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(listsTemplate, data));
 		})
@@ -240,6 +241,7 @@ define(function (require, exports, module) {
 	
 	function _displayCards() {
 		Trello._getListCards().done(function(data) {
+			_savePrefs('selected-list-name', data.listName);
 			_setButtonActive($panel.find('.btn-cards'));
 			$('.tab-cards', $panel).empty().show().append(Mustache.render(cardsTemplate, data));
 		})
