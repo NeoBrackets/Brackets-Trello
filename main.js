@@ -31,13 +31,15 @@ define(function (require, exports, module) {
 	_prefs.definePreference('autosynctime', 'integer', 0);
 	_prefs.definePreference('storagepref', 'boolean', false);
 	_prefs.definePreference('selected-board', 'string', '');
+	_prefs.definePreference('selected-board-name', 'string', '');
 	_prefs.definePreference('selected-list', 'string', '');
+	_prefs.definePreference('selected-list-name', 'string', '');
 	_prefs.definePreference('selected-card', 'string', '');
 	
 	// Prefs that will be saved in .brackets.json
 	var _projectPrefs = ['selected-board', 'selected-list', 'selected-card'];
 
-	var realVisibility, isVisible, isMenuVisible, $icon, $panel;
+	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
 	
 	function _toggleAddMenu() {
 		var $menu = $('.add-menu', $panel);
@@ -81,6 +83,10 @@ define(function (require, exports, module) {
 				for (var i in tempPrefs) {
 					_savePrefs(i, tempPrefs[i]);
 				}
+				
+				// Reset AutoSync
+				_initAutoSync(false);
+				_initAutoSync(true);
 			}
 			if (!isVisible && _prefs.get('apitoken')) {
 				_toggleVisibility();
@@ -88,8 +94,16 @@ define(function (require, exports, module) {
 		});
 	}
 	
-	function _syncTasks() {
-		
+	function _initAutoSync(init) {
+		if (init && _prefs.get('autosynctime') >= 1) {
+			autoSyncIntervalId = window.setInterval(_initSync, _prefs.get('autosynctime'));
+			return;
+		}
+		window.clearInterval(autoSyncIntervalId);
+	}
+	
+	function _initSync() {
+		console.log('Syncing....', Math.ceil(Math.random() * 10));
 	}
 	
 	function _openNewBoardDialog() {
@@ -161,7 +175,7 @@ define(function (require, exports, module) {
 			_toggleAddMenu();
 		});
 		$('.btn-prefs', $panel).click(_openPreferencesDialog);
-		$('.btn-sync', $panel).click(_syncTasks);
+		$('.btn-sync', $panel).click(_initSync);
 
 		// Add Menu Item
 		$('.cmd-new-board', $panel).click(_openNewBoardDialog);
@@ -259,14 +273,17 @@ define(function (require, exports, module) {
 			CommandManager.get(_ExtensionID).setChecked(true);
 			$icon.addClass('active');			
 			_prefs.get('selected-board') ? _displayLists() : _displayBoards();
+			_initAutoSync(true);
 		} else if (!isVisible && realVisibility) {
 			CommandManager.get(_ExtensionID).setChecked(true);
 			$panel.show();
 			$icon.addClass('active');
+			_initAutoSync(true);
 		} else {
 			CommandManager.get(_ExtensionID).setChecked(false);
 			$panel.hide();
 			$icon.removeClass('active');
+			_initAutoSync(false);
 		}
 		isVisible = !isVisible;
 	}
