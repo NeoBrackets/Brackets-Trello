@@ -28,7 +28,7 @@ define(function (require, exports, module) {
 	var _prefs = PreferencesManager.getExtensionPrefs('brackets-trello');
 	_prefs.definePreference('width', 'integer', 260);
 	_prefs.definePreference('apitoken', 'string', '');
-	_prefs.definePreference('autosynctime', 'integer', 30000);
+	_prefs.definePreference('autosynctime', 'integer', 0);
 	_prefs.definePreference('storagepref', 'boolean', false);
 	_prefs.definePreference('selected-board', 'string', '');
 	_prefs.definePreference('selected-list', 'string', '');
@@ -66,13 +66,13 @@ define(function (require, exports, module) {
 			$dialog	= dialog.getElement(),
 			tempPrefs = {};
 
-		$dialog.find('.trello-api-token').on('change', function (e) {
+		$dialog.find('.trello-api-token').val(_prefs.get('apitoken')).on('change', function (e) {
 			tempPrefs.apitoken = $(this).val();
 		});
-		$dialog.find('.autosync-time').on('change', function (e) {
+		$dialog.find('.autosync-time').val(_prefs.get('autosynctime')).on('change', function (e) {
 			tempPrefs.autosynctime = $(this).val();
 		});
-		$dialog.find('.storage-pref').on('change', function(e) {
+		$dialog.find('.storage-pref').attr('checked', _prefs.get('storagepref')).on('change', function(e) {
 			tempPrefs.storagepref = e.target.checked;
 		});
 
