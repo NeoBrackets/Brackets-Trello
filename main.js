@@ -328,7 +328,7 @@ define(function (require, exports, module) {
 		ExtensionUtils.loadStyleSheet(module, 'styles/styles.css');
 		var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
 		CommandManager.register(_ExtensionLabel, _ExtensionID, _Main);
-		navigateMenu.addMenuItem(_ExtensionID, _ExtensionShortcut);
+		viewMenu.addMenuItem(_ExtensionID, _ExtensionShortcut);
 	});
 
 	$icon = $('<a>').attr({
