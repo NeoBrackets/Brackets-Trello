@@ -4,7 +4,7 @@ define(function(require, exports, module) {
 	exports.board = 
 		'<div class="boards">' +
 			'{{#boards}}' +
-			'<div class="board-item" id="{{id}}">' +
+			'<div class="board-item" data-name="{{name}}" id="{{id}}">' +
 				'<h4><a href="#">{{name}}</a></h4>' +
 			'</div>' +
 			'{{/boards}}' +
@@ -17,7 +17,14 @@ define(function(require, exports, module) {
 			'{{#lists}}' +
 			'<div class="list-item" id="{{id}}">' +
 				'<h5><a href="#">{{name}}</a><span>{{totalCards}}</span></h5>' +
-				'<div class="card-space"></div>' +
+				'<div class="inline-cards">' +
+					'{{#cards}}' +
+						'<div class="card-item" id="{{id}}">' +
+							'<a href="#">{{name}}</a>' +
+							//'<span>{{completedTasks}}/{{totalTasks}}</span>' +
+						'</div>' +
+					'{{/cards}}' +
+				'</div>' +
 			'</div>' +
 			'{{/lists}}' +
 		'</div>';

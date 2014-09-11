@@ -133,3 +133,6 @@
 	color: #adb9bd;
 	margin-left: 10px;
 }
+#brackets-trello .inline-cards {
+	display: none;
+}

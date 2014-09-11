@@ -34,6 +34,10 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-list', 'string', '');
 	_prefs.definePreference('selected-card', 'string', '');
 	
+	// our Trello key for this extension
+	var appKey = "bd125fe95d77b8dadf45bd6103cf5c44";
+	var trello;
+
 	// Prefs that will be saved in .brackets.json
 	var _projectPrefs = ['selected-board', 'selected-list', 'selected-card'];
 
@@ -98,7 +102,7 @@ define(function (require, exports, module) {
 		
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewBoard($dialog.find('.board-name').val());
+				Trello._create('Board',{},{name:$dialog.find('.board-name').val()});
 			}
 		});
 	}
@@ -109,7 +113,7 @@ define(function (require, exports, module) {
 		
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewList($dialog.find('.list-name').val());
+				Trello._create('List',{board:boardId},$dialog.find('.list-name').val());
 			}
 		});
 	}
@@ -179,13 +183,13 @@ define(function (require, exports, module) {
 		// Board Name
 		$panel.on('click', '.board-item', function () {
 			_savePrefs('selected-board', $(this).attr('id'));		
-			_displayLists();
+			_displayLists($(this).data("name"),$(this).attr('id'));
 		});
 		
 		// List Name
 		$panel.on('click', '.list-item', function() {
 			_savePrefs('selected-list', $(this).attr('id'));
-			_displayCards();
+			_toggleCardsInline($(this).attr('id'));
 		});
 		
 		// Card Name
@@ -206,31 +210,44 @@ define(function (require, exports, module) {
 	}
 	
 	function _displayBoards() {
-		Trello._getUserBoards().done(function(data) {
+		Trello._get('boards',{},{fields:["id","name"]}).done(function(data) {
 			_setButtonActive($panel.find('.btn-boards'));
 			$('.tab-boards', $panel).empty().show().append(Mustache.render(templates.board, data));
 		})
 		.fail(_displayError);
 	}
 	
-	function _displayLists() {
-		Trello._getBoardLists().done(function(data) {
+	function _displayLists(boardName,boardId) {
+		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","checkItemStates"]}).done(function(data) {
 			_setButtonActive($panel.find('.btn-lists'));
+			data.name = boardName;
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(templates.list, data));
 		})
 		.fail(_displayError);
 	}
 	
-	function _displayCards() {
-		Trello._getListCards().done(function(data) {
+	function _toggleCardsInline(listId) {
+		var visible = $("#"+listId).children(".inline-cards").css("display");
+		switch (visible) {
+			case "none":
+				$("#"+listId).children(".inline-cards").css("display","inline");
+				break;
+			case "inline":
+				$("#"+listId).children(".inline-cards").css("display","none");
+				break;
+		}
+	}
+
+	function _displayCards(boardName,listName,listId) {
+		Trello._get('cards',{list:listId}).done(function(data) {
 			_setButtonActive($panel.find('.btn-cards'));
 			$('.tab-cards', $panel).empty().show().append(Mustache.render(templates.card, data));
 		})
 		.fail(_displayError);
 	}
 	
-	function _displayTasks() {
-		Trello._getCardTasks().done(function(data) {
+	function _displayTasks(cardId) {
+		Trello._get('Tasks',{card:cardId}).done(function(data) {
 			_setButtonActive($panel.find('.btn-tasks'));
 			$('.tab-tasks', $panel).empty().show().append(Mustache.render(templates.task, data));
 			data.tasks.forEach(function(task) {
