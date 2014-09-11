@@ -1,0 +1,135 @@
+#brackets-trello-icon {
+	background-image: url(img/trello.svg);
+}
+#brackets-trello-icon.active {
+	background-position: 0 -24px !important;
+}
+#brackets-trello {
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: 1000;
+	box-sizing: border-box;
+	overflow: hidden;
+	word-wrap: break-word;
+	min-width: 260px;
+	height: 100%;
+	background: #3c3f41;
+	color: #adb9bd;
+}
+#brackets-trello .task-controls {
+	position: relative;
+	overflow: hidden;
+	height: 19px;
+	text-shadow: none;
+	padding: 10px 0 9px 12px;
+}
+#brackets-trello .btn-control {
+	position: absolute;
+	top: 7px;
+	padding: 4px 6px;
+	width: 13px;
+	height: 13px;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background-position: center;
+	background-repeat: no-repeat;
+	content: "";
+}
+#brackets-trello .btn-control:hover {
+	border: 1px solid rgba(0, 0, 0, 0.24);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+#brackets-trello .btn-control:active {
+	border: 1px solid rgba(0, 0, 0, 0.24);
+	box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+#brackets-trello .btn {
+	background-color: #3f3f3f;
+	color: #cccccc;
+	border-color: #202020;
+	box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
+}
+#brackets-trello .btn.active, #brackets-trello .btn:active {
+	background-color: #005ecc;
+	border-color: #202020;
+	color: #ffffff;
+}
+#brackets-trello h4:hover,
+#brackets-trello a:hover {
+	color: #FFF;
+}
+#brackets-trello .btn-add {
+	right: 60px;
+	background-image: url(img/add.svg);
+}
+#brackets-trello .btn-prefs {
+	right: 33px;
+	background-image: url(img/prefs.svg);
+}
+#brackets-trello .btn-sync {
+	right: 4px;
+	background-image: url(img/sync.svg);
+}
+#brackets-trello .add-menu {
+	top: 30px;
+	left: auto;
+	right: 60px;
+	width: 160px;
+}
+.dark #brackets-trello .add-menu {
+	background: #fff;
+}
+#brackets-trello .active-menu {
+	display: block;
+}
+#brackets-trello .trello-content {
+	padding: 10px 12px 9px 12px;
+}
+#brackets-trello .trello-content h2,
+#brackets-trello .trello-content h3,
+#brackets-trello .trello-content h4,
+#brackets-trello .trello-content h5,
+#brackets-trello .trello-content a {
+	color: #cccccc;
+}
+#brackets-trello .trello-content .tab {
+	display: none;
+}
+#brackets-trello .tab-error h4 {
+	color: #f00;
+}
+#brackets-trello .navigation {
+	padding: 10px 0 9px 12px;
+}
+#brackets-trello .navigation ul {
+	display: block;
+	list-style-type: none;
+	margin: 0;
+}
+#brackets-trello .navigation li {
+	display: inline-block;
+	margin: 0 2px;
+}
+#brackets-trello .navigation a {
+	padding: 4px 8px;
+	text-shadow: 0 1px 1px #000;
+}
+#brackets-trello .navigation a {
+	padding: 4px 8px;
+	text-shadow: 0 1px 1px #000;
+}
+#brackets-trello .trello-content .error h4 {
+	color: #F00;
+	display: block;
+}
+#brackets-trello .task-item label {
+	display: inline;
+	margin-left: 10px;
+	vertical-align: middle;
+}
+#brackets-trello .list-item span,
+#brackets-trello .card-item span {
+	color: #adb9bd;
+	margin-left: 10px;
+}
