@@ -34,6 +34,9 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-list', 'string', '');
 	_prefs.definePreference('selected-card', 'string', '');
 	
+	// Prefs that will be saved in .brackets.json
+	var _projectPrefs = ['selected-board', 'selected-list', 'selected-card'];
+
 	var realVisibility, isVisible, isMenuVisible, $icon, $panel;
 	
 	function _toggleAddMenu() {
@@ -48,17 +51,12 @@ define(function (require, exports, module) {
 	}
 	
 	function _savePrefs(name, value) {
-		if (_prefs.get('storagepref')) {
-			switch (name) {
-				case 'selected-board':
-				case 'selected-list':
-				case 'selected-card':
-					return _prefs.set(name, value, {
-						location: {
-							scope: "project"
-						}
-					});
-			}
+		if (_prefs.get('storagepref') && _projectPrefs.indexOf(name) >= 0) {
+			return _prefs.set(name, value, {
+				location: {
+					scope: 'project'
+				}
+			});
 		}
 		return _prefs.set(name, value);
 	}
