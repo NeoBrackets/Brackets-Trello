@@ -50,7 +50,8 @@
 	border-color: #202020;
 	box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
 }
-#brackets-trello .btn.active, #brackets-trello .btn:active {
+#brackets-trello .btn.active,
+#brackets-trello .btn:active {
 	background-color: #005ecc;
 	border-color: #202020;
 	color: #ffffff;
@@ -59,10 +60,6 @@
 #brackets-trello a:hover {
 	color: #FFF;
 }
-#brackets-trello .btn-add {
-	right: 60px;
-	background-image: url(img/add.svg);
-}
 #brackets-trello .btn-prefs {
 	right: 33px;
 	background-image: url(img/prefs.svg);
@@ -70,18 +67,6 @@
 #brackets-trello .btn-sync {
 	right: 4px;
 	background-image: url(img/sync.svg);
-}
-#brackets-trello .add-menu {
-	top: 30px;
-	left: auto;
-	right: 60px;
-	width: 160px;
-}
-.dark #brackets-trello .add-menu {
-	background: #fff;
-}
-#brackets-trello .active-menu {
-	display: block;
 }
 #brackets-trello .trello-content {
 	padding: 10px 12px 9px 12px;
@@ -99,7 +84,7 @@
 #brackets-trello .tab-error h4 {
 	color: #f00;
 }
-#brackets-trello .navigation {
+#brackets-trello .navigation, #brackets-trello .new-items {
 	padding: 10px 0 9px 12px;
 }
 #brackets-trello .navigation ul {
@@ -133,8 +118,9 @@
 	color: #adb9bd;
 	margin-left: 10px;
 }
-#brackets-trello .card-space {
+#brackets-trello .cards {
 	margin-left: 10px;
+	display: none;
 }
 #brackets-trello .spinner {
 	display: none;
@@ -146,15 +132,48 @@
 #brackets-trello .tasks {
 	margin-bottom: 10px;
 }
-
 #brackets-trello .member-item {
 	display: inline-block;
 	margin: 0 2px 4px 0;
 }
-
 #brackets-trello .member-item img {
 	width: 30px;
 	height: 30px;
 	border: 1px solid #202020;
 	border-radius: 3px;
+}
+#brackets-trello .notification {
+	width: 200px;
+	position: absolute;
+	bottom: 10px;
+	margin: 0 20px;
+	border: 1px solid #0089BE;
+	padding: 5px 10px;
+	color: #00B8FF;
+	display: none;
+}
+#brackets-trello-new-card .card-name,
+#brackets-trello-new-card .card-desc,
+#brackets-trello-new-tasks .task-name {
+	width: 300px;
+}
+
+#brackets-trello .new-items .cmd {
+	color: #ccc;
+	padding: 4px 6px 4px 26px;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background-image: url(img/add.svg);
+	background-position: 6px center;
+	background-repeat: no-repeat;
+	width: 150px;
+}
+#brackets-trello .new-items .cmd:hover {
+	cursor: pointer;
+	border: 1px solid rgba(0, 0, 0, 0.24);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+#brackets-trello .new-items .cmd:active {
+	border: 1px solid rgba(0, 0, 0, 0.24);
+	box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.06);
 }

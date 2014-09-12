@@ -15,24 +15,32 @@ define(function (require, exports, module) {
 
 	var mainPanel			= require('text!html/mainPanel.html'),
 		prefDialogHTML		= require('text!html/prefsDialog.html'),
-		newBoardHTML		= require('text!html/newBoard.html'),
-		newListHTML			= require('text!html/newList.html'),
-		boardsTemplate		= require('text!html/boardsTemplate.html'),
-		listsTemplate		= require('text!html/listsTemplate.html'),
-		cardsTemplate		= require('text!html/cardsTemplate.html'),
-		tasksTemplate		= require('text!html/tasksTemplate.html'),
-		errorTemplate		= require('text!html/errorTemplate.html');
+		newBoardHTML		= require('text!html/templates/newBoard.html'),
+		newListHTML			= require('text!html/templates/newList.html'),
+		newCardHTML			= require('text!html/templates/newCard.html'),
+		newTasksHTML		= require('text!html/templates/newTasks.html'),
+		newTaskTemplate		= require('text!html/templates/newTaskTemplate.html'),
+		boardsTemplate		= require('text!html/templates/boardsTemplate.html'),
+		listsTemplate		= require('text!html/templates/listsTemplate.html'),
+		tasksTemplate		= require('text!html/templates/tasksTemplate.html'),
+		errorTemplate		= require('text!html/templates/errorTemplate.html');
 
 	// Extension Info.
 	var _ExtensionID		= 'brackets-trello',
 		_ExtensionLabel		= 'Brackets Trello',
 		_ExtensionShortcut	= 'Alt-B';
+	
+	// Item Type Enums
+	var ITEM_TYPE = {
+		BOARDS: 1, LISTS: 2, CARDS: 3, TASKS: 4
+	};
 
 	// Define preferences.
 	var _prefs = PreferencesManager.getExtensionPrefs('brackets-trello');
 	_prefs.definePreference('width', 'integer', 260);
 	_prefs.definePreference('apitoken', 'string', '');
-	_prefs.definePreference('autosynctime', 'integer', 0);
+	_prefs.definePreference('autosynctime', 'integer', 30);
+	_prefs.definePreference('useautosync', 'boolean', false);
 	_prefs.definePreference('storagepref', 'boolean', false);
 	_prefs.definePreference('selected-board', 'string', '');
 	_prefs.definePreference('selected-board-name', 'string', '');
@@ -45,17 +53,14 @@ define(function (require, exports, module) {
 
 	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
 	
-	function _toggleAddMenu() {
-		var $menu = $('.add-menu', $panel);
-		if (!isMenuVisible) {
-			$menu.show();
-			isMenuVisible = true;
-			return;
-		}
-		$menu.hide();
-		isMenuVisible = false;
-	}
+	var _taskChanges = {};
 	
+	/**
+	 * Save Preferences either in project or global
+	 *
+	 * @param {String} name
+	 * @param {Number} value
+	 */
 	function _savePrefs(name, value) {
 		if (_prefs.get('storagepref') && _projectPrefs.indexOf(name) >= 0) {
 			return _prefs.set(name, value, {
@@ -67,6 +72,9 @@ define(function (require, exports, module) {
 		return _prefs.set(name, value);
 	}
 	
+	/**
+	 * Open Preferences dialog and change preferences
+	 */
 	function _openPreferencesDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(prefDialogHTML, strings)),
 			$dialog	= dialog.getElement(),
@@ -76,7 +84,10 @@ define(function (require, exports, module) {
 			tempPrefs.apitoken = $(this).val();
 		});
 		$dialog.find('.autosync-time').val(_prefs.get('autosynctime')).on('change', function (e) {
-			tempPrefs.autosynctime = $(this).val();
+			tempPrefs.autosynctime = ($(this).val() < 2) ? 2 : $(this).val();
+		});
+		$dialog.find('.use-autosync').attr('checked', _prefs.get('useautosync')).on('change', function(e) {
+			tempPrefs.useautosync = e.target.checked;
 		});
 		$dialog.find('.storage-pref').attr('checked', _prefs.get('storagepref')).on('change', function(e) {
 			tempPrefs.storagepref = e.target.checked;
@@ -97,50 +108,130 @@ define(function (require, exports, module) {
 		});
 	}
 	
+	/**
+	 * Start or stop autosync
+	 *
+	 * @param {Boolean} init
+	 */
 	function _initAutoSync(init) {
-		if (init && _prefs.get('autosynctime') >= 1) {
+		if (init && _prefs.get('useautosync') && _prefs.get('autosynctime') >= 2) {
 			autoSyncIntervalId = window.setInterval(_initSync, _prefs.get('autosynctime') * 1000);
 			return;
 		}
 		window.clearInterval(autoSyncIntervalId);
 	}
 	
+	/**
+	 * Perform Sync
+	 */
 	function _initSync() {
-		console.log('Syncing....', Math.ceil(Math.random() * 10));
+		Trello._performSync(_taskChanges)
+			.done(_displayNotification)
+			.fail(_displayError);
 	}
 	
+	/**
+	 * Open New Board Dialog
+	 */
 	function _openNewBoardDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newBoardHTML, strings)),
 			$dialog = dialog.getElement();
 		
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewBoard($dialog.find('.board-name').val());
+				Trello._createNewBoard($dialog.find('.board-name').val())
+				.done(_displayNotification)
+				.fail(_displayError);
 			}
 		});
 	}
 	
+	/**
+	 * Open New List Dialog
+	 */
 	function _openNewListDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newListHTML, strings)),
 			$dialog = dialog.getElement();
 		
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewList($dialog.find('.list-name').val());
+				Trello._createNewList($dialog.find('.list-name').val())
+				.done(_displayNotification)
+				.fail(_displayError);
 			}
 		});
 	}
 	
+	/**
+	 * Open New Card Dialog
+	 */
 	function _openNewCardDialog() {
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newCardHTML, strings)),
+			$dialog = dialog.getElement();
 		
+		$dialog.keypress(function(e) {
+			e.stopPropagation();
+		});
+		
+		dialog.done(function(id) {
+			if (id === 'save') {
+				Trello._createNewCard(
+					$dialog.find('.card-name').val(),
+					$dialog.find('.card-desc').val()
+				)
+				.done(_displayNotification)
+				.fail(_displayError);
+			}
+		});
 	}
 	
+	/**
+	 * Open New Tasks Dialog
+	 */
 	function _openNewTasksDialog() {
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newTasksHTML, strings)),
+			$dialog = dialog.getElement(),
+			tasks = [];
 		
+		$dialog.find('.btn-add-task').click(function() {
+			$dialog.find('.form-horizontal').append($(Mustache.render(newTaskTemplate, strings)));
+		});
+		
+		dialog.done(function(id) {
+			if (id === 'save') {
+				
+				$dialog.find('.task-name').each(function() {
+					if ($(this).val().length >= 1) {
+						tasks.push($(this).val());
+					}
+				});
+				Trello._createNewTasks(tasks)
+				.done(_displayNotification)
+				.fail(_displayError);
+			}
+		});
+	}
+	
+	/**
+	 * Display Notification
+	 */
+	function _displayNotification(text) {
+		if (!text) return;
+		
+		var $notification = $('.notification', $panel);
+		
+		$notification.empty().html(text).animate({
+			opacity: 'show'
+		}, 'fast');
+		window.setTimeout(function() {
+			$notification.animate({
+				opacity: 'hide'
+			}, 'fast');
+		}, 2000);
 	}
 
 	/**
-	 * Event Controldd
+	 * Event Controller
 	 * 
 	 * @param {Object} $panel
 	 */
@@ -157,34 +248,18 @@ define(function (require, exports, module) {
 				$(document).off('mousemove').off('mouseup');
 				_savePrefs('width', $panel.width());
 			});
-		}).dblclick(function() {
-			_toggleVisibility();
-		});
+		}).dblclick(_toggleVisibility);
 		
 		// Hide on escape
 		$(document).keydown(function(e) {
-			if (e.which === 27 && isVisible)
+			if (e.which === 27 && isVisible) {
 				_toggleVisibility();
+			}
 		});
 		
 		// Hide on click
-		$(document).click(function() {
-			if (isMenuVisible) _toggleAddMenu();
-		});
-		
-		// Show/Hide Add Dropdown Menu
-		$('.btn-add', $panel).click(function(e) {
-			e.stopPropagation();
-			_toggleAddMenu();
-		});
 		$('.btn-prefs', $panel).click(_openPreferencesDialog);
 		$('.btn-sync', $panel).click(_initSync);
-
-		// Add Menu Item
-		$('.cmd-new-board', $panel).click(_openNewBoardDialog);
-		$('.cmd-new-list', $panel).click(_openNewListDialog);
-		$('.cmd-new-card', $panel).click(_openNewCardDialog);
-		$('.cmd-new-tasks', $panel).click(_openNewTasksDialog);
 		
 		// Button Actions
 		$('.btn-boards', $panel).click(_displayBoards);
@@ -194,23 +269,45 @@ define(function (require, exports, module) {
 		// Trello Content Listeners
 		// Board Name
 		$panel.on('click', '.board-item', function () {
-			_savePrefs('selected-board', $(this).attr('id'));	
+			_savePrefs('selected-board', $(this).attr('id'));
+			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_displayLists();
 		});
 		
 		// List Name
 		$panel.on('click', '.list-item', function() {
+			var thiz = this;
 			_savePrefs('selected-list', $(this).attr('id'));
-			_displayCards(this);
+			_savePrefs('selected-list-name', $('h5 a', this).text());
+			_setNewButtonActive(ITEM_TYPE.CARDS);
+			$(this).find('.cards').show();
+			
 		});
 		
 		// Card Name
 		$panel.on('click', '.card-item', function() {
 			_savePrefs('selected-card', $(this).attr('id'));
+			_setNewButtonActive(ITEM_TYPE.TASKS);
 			_displayTasks();
 		});
+		
+		// Task Name
+		$panel.on('change', '.task-item input', function(e) {
+			_taskChanges[$(this).attr('id')] = e.target.checked;
+		});
+		
+		// New Item Handlers
+		$panel.on('click', '.cmd-new-board', _openNewBoardDialog);
+		$panel.on('click', '.cmd-new-list', _openNewListDialog);
+		$panel.on('click', '.cmd-new-card', _openNewCardDialog);
+		$panel.on('click', '.cmd-new-tasks', _openNewTasksDialog);
 	}
-
+	
+	/**
+	 * Set A Button Active
+	 *
+	 * @param {Object} button
+	 */
 	function _setButtonActive(button) {
 		$('.btn', $panel).each(function() {
 			$(this).removeClass('active');
@@ -221,20 +318,52 @@ define(function (require, exports, module) {
 		$(button).addClass('active');
 	}
 	
+	function _setNewButtonActive(button) {
+		$('.new-items .cmd', $panel).each(function() {
+			$(this).hide();
+		});
+
+		switch (button) {
+			case ITEM_TYPE.BOARDS:
+				$('.new-items .cmd-new-board', $panel).show();
+				break;
+
+			case ITEM_TYPE.LISTS:
+				$('.new-items .cmd-new-list', $panel).show();
+				break;
+
+			case ITEM_TYPE.CARDS:
+				$('.new-items .cmd-new-card', $panel).show();
+				break;
+
+			case ITEM_TYPE.TASKS:
+				$('.new-items .cmd-new-tasks', $panel).show();
+				break;
+		}
+	}
+	
+	/**
+	 * Display Users' Boards
+	 */
 	function _displayBoards() {
 		_displaySpinner(true);
 		Trello._getUserBoards().done(function(data) {
 			_displaySpinner(false);
+			_setNewButtonActive(ITEM_TYPE.BOARDS);
 			_setButtonActive($panel.find('.btn-boards'));
 			$('.tab-boards', $panel).empty().show().append(Mustache.render(boardsTemplate, data));
 		})
 		.fail(_displayError);
 	}
 	
+	/**
+	 * Display Users' Lists
+	 */
 	function _displayLists() {
 		_displaySpinner(true);
 		Trello._getBoardLists().done(function(data) {
 			_displaySpinner(false);
+			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_savePrefs('selected-board-name', data.name);
 			_setButtonActive($panel.find('.btn-lists'));
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(listsTemplate, data));
@@ -242,20 +371,14 @@ define(function (require, exports, module) {
 		.fail(_displayError);
 	}
 	
-	function _displayCards(elem) {
-		_displaySpinner(true);
-		Trello._getListCards().done(function(data) {
-			_displaySpinner(false);
-			_savePrefs('selected-list-name', data.listName);
-			_toggleCardsInline(elem, Mustache.render(cardsTemplate, data));
-		})
-		.fail(_displayError);
-	}
-	
+	/**
+	 * Display Tasks
+	 */
 	function _displayTasks() {
 		_displaySpinner(true);
 		Trello._getCardTasks().done(function(data) {
 			_displaySpinner(false);
+			_setNewButtonActive(ITEM_TYPE.TASKS);
 			_setButtonActive($panel.find('.btn-tasks'));
 			$('.tab-tasks', $panel).empty().show().append(Mustache.render(tasksTemplate, data));
 			data.tasks.forEach(function(task) {
@@ -268,18 +391,20 @@ define(function (require, exports, module) {
 		.fail(_displayError);
 	}
 	
+	/**
+	 * Display an error
+	 */
 	function _displayError(error) {
 		_setButtonActive(null);
+		_displaySpinner(false);
 		$('.tab-error', $panel).empty().show().append(Mustache.render(errorTemplate, { error: error }));
 	}
 	
-	function _toggleCardsInline(elem, data) {
-		$('.card-space', $panel).each(function() {
-			$(this).hide();
-		});
-		$(elem).find('.card-space').empty().show().append(data);
-	}
-	
+	/**
+	 * Display Spinner
+	 *
+	 * @param {Boolean} visible
+	 */
 	function _displaySpinner(visible) {
 		if (visible) {
 			$('.spinner', $panel).show();

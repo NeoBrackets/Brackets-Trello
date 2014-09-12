@@ -31,12 +31,52 @@ define(function (require, exports, module) {
 				{
 					name: 'Release',
 					id: 'aa',
-					totalCards: 9
+					totalCards: 3,
+					cards: [
+						{
+							name: 'Create a github Repo',
+							id: 'aaa',
+							totalTasks: 10,
+							completedTasks: 4
+						},
+						{
+							name: 'Create a release branch',
+							id: 'aab',
+							totalTasks: 5,
+							completedTasks: 3
+						},
+						{
+							name: 'Create documentation',
+							id: 'aac',
+							totalTasks: 13,
+							completedTasks: 11
+						}
+					]
 				},
 				{
 					name: 'Todo',
 					id: 'ab',
-					totalCards: 3
+					totalCards: 3,
+					cards: [
+						{
+							name: 'Create a github Repo',
+							id: 'aaa',
+							totalTasks: 10,
+							completedTasks: 4
+						},
+						{
+							name: 'Create a release branch',
+							id: 'aab',
+							totalTasks: 5,
+							completedTasks: 3
+						},
+						{
+							name: 'Create documentation',
+							id: 'aac',
+							totalTasks: 13,
+							completedTasks: 11
+						}
+					]
 				},
 				{
 					name: 'Doing',
@@ -46,38 +86,27 @@ define(function (require, exports, module) {
 				{
 					name: 'Done',
 					id: 'ad',
-					totalCards: 3
-				}
-			]
-		};
-		result.resolve(data);
-		return result.promise();
-	}
-
-	function _getListCards() {
-		var result = $.Deferred();
-
-		var data = {
-			boardName: 'Brackets QuickDocsJS',
-			listName: 'Release',
-			cards: [
-				{
-					name: 'Create a github Repo',
-					id: 'aaa',
-					totalTasks: 10,
-					completedTasks: 4
-				},
-				{
-					name: 'Create a release branch',
-					id: 'aab',
-					totalTasks: 5,
-					completedTasks: 3
-				},
-				{
-					name: 'Create documentation',
-					id: 'aac',
-					totalTasks: 13,
-					completedTasks: 11
+					totalCards: 3,
+					cards: [
+						{
+							name: 'Create a github Repo',
+							id: 'aaa',
+							totalTasks: 0,
+							completedTasks: 0
+						},
+						{
+							name: 'Create a release branch',
+							id: 'aab',
+							totalTasks: 5,
+							completedTasks: 3
+						},
+						{
+							name: 'Create documentation',
+							id: 'aac',
+							totalTasks: 13,
+							completedTasks: 11
+						}
+					]
 				}
 			]
 		};
@@ -125,22 +154,41 @@ define(function (require, exports, module) {
 	}
 
 	function _createNewBoard(name) {
-		alert('Created ' + name + ' card!');
+		var result = $.Deferred();
+		result.resolve('Created new Board');
+		return result.promise();
 	}
-
+	
 	function _createNewList(name) {
-		alert('Created' + name + ' list');
+		var result = $.Deferred();
+		result.resolve('Created new list');
+		return result.promise();
 	}
 
-	function _createNewTasks(names) {
+	function _createNewCard(name, desc) {
+		var result = $.Deferred();
+		result.resolve('Created new card');
+		return result.promise();
+	}
 
+	function _createNewTasks(tasks) {
+		var result = $.Deferred();
+		result.resolve('Created new tasks');
+		return result.promise();
+	}
+	
+	function _performSync(tasks) {
+		var result = $.Deferred();
+		result.resolve('Sync was performed');
+		return result.promise();
 	}
 	
 	exports._getUserBoards = _getUserBoards;
 	exports._getBoardLists = _getBoardLists;
-	exports._getListCards = _getListCards;
 	exports._getCardTasks = _getCardTasks;
 	exports._createNewBoard = _createNewBoard;
 	exports._createNewList = _createNewList;
+	exports._createNewCard = _createNewCard;
 	exports._createNewTasks = _createNewTasks;
+	exports._performSync = _performSync;
 });
