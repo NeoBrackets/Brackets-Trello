@@ -1,0 +1,25 @@
+<h4>{{boardName}} / {{listName}}</h4>
+<h5>{{name}}</h5>
+<p>{{desc}}</p>
+<div class="checklists">
+	{{#checklists}}
+	<h6>{{name}}</h6>
+	<div data-checklistid="{{id}}" class="tasks">
+		{{#checkItems}}
+		<div class="task-item">
+			<input type="checkbox" class="task-state" id="{{id}}">
+			<label for="{{id}}">{{name}}</label>
+		</div>
+		{{/checkItems}}
+	</div>
+	{{/checklists}}
+</div>
+
+<div class="members">
+<h5>Members:</h5>
+{{#members}}
+	<div class="member-item">
+		<img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})">
+	</div>
+{{/members}}
+</div>

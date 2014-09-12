@@ -17,20 +17,22 @@ define(function (require, exports, module) {
 	 * @returns {Deferred}     every activity
 	 */
 	function _get(type,ids,get) {
+		var defaultGet;
 		switch (type) {
 			case "activity":
-				if (typeof get === "undefined") get =  {since:3600};
+				defaultGet =  {since:3600};
 				break;
 			case "lists":
-				if (typeof get === "undefined") get =  {cards:["none"],card_fields:["all"],fields:["open"]};
+				defaultGet =  {cards:["none"],card_fields:["all"],fields:["open"]};
 				break;
 			case "boards":
-				if (typeof get === "undefined") get =  {};
+				defaultGet =  {};
 				break;
 			case "tasks":
-				if (typeof get === "undefined") get =  {checklists:["all"]};
+				defaultGet =  {checklists:["all"]};
 				break;
 		}
+		get = $.extend({}, defaultGet, get);
 		var optionStr = "?";
 		for (var key in get) {
 			if (key == "since" && get[key]) {
@@ -76,7 +78,13 @@ define(function (require, exports, module) {
 						break;
 				}
 				var returnObject = {};
-				returnObject[type] = data;
+				switch(type) {
+					case "tasks":
+						returnObject = data;
+						break;
+					default:
+						returnObject[type] = data;
+				}
 				result.resolve(returnObject);
 			} else {
 				result.reject();
@@ -160,8 +168,42 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 
+	function _createNewBoard(name) {
+		var result = $.Deferred();
+		result.resolve('Created new Board');
+		return result.promise();
+	}
+
+	function _createNewList(name) {
+		var result = $.Deferred();
+		result.resolve('Created new list');
+		return result.promise();
+	}
+
+	function _createNewCard(name, desc) {
+		var result = $.Deferred();
+		result.resolve('Created new card');
+		return result.promise();
+	}
+
+	function _createNewTasks(tasks) {
+		var result = $.Deferred();
+		result.resolve('Created new tasks');
+		return result.promise();
+	}
+
+	function _performSync(tasks) {
+		var result = $.Deferred();
+		result.resolve('Sync was performed');
+		return result.promise();
+	}
 
 	exports._get = _get;
 	exports._create = _create;
 	exports._change = _change;
+	exports._createNewBoard = _createNewBoard;
+	exports._createNewList = _createNewList;
+	exports._createNewCard = _createNewCard;
+	exports._createNewTasks = _createNewTasks;
+	exports._performSync = _performSync;
 });

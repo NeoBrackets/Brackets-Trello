@@ -1,34 +1,36 @@
 <div id="brackets-trello-prefs" class="template modal">
-    <div class="modal-header">
-        <h1 class="dialog-title">Brackets Trello Preferences</h1>
-    </div>
-    <div class="modal-body">
-        <div class="form-horizontal">
-        	<div class="control-group">
-        		<div class="control-label">Trello API Token</div>
-        		<div class="controls">
-        			<input type="text" class="trello-api-token" placeholder="Trello API Token">
-        		</div>
-        		Get your token <a href="https://trello.com/1/authorize?key=bd125fe95d77b8dadf45bd6103cf5c44&name=Brackets: Trello&expiration=never&response_type=token&scope=read,write">here</a>
-        	</div>
-        </div>
-        <div class="form-horizontal">
-        	<div class="control-group">
-        		<div class="control-label">AutoSync Time</div>
-        		<div class="controls">
-        			<input type="text" class="autosync-time" placeholder="AutoSync Time" pattern="^[1-9][0-9]*$">
-        		</div>
-        	</div>
-        </div>
-        <div class="form-horizontal">
-        	<div class="control-group">
-        		<div class="control-label">Save Prefs in Project</div>
-        		<div class="controls">
-        			<input type="checkbox" class="storage-pref">
-        		</div>
-        	</div>
-        </div>
-    </div>
+	<div class="modal-header">
+		<h1 class="dialog-title">{{LBL_PREFERENCES_TITLE}}</h1>
+	</div>
+	<div class="modal-body">
+		<div class="form-horizontal">
+			<div class="control-group">
+				<div class="control-label">{{LBL_TRELLO_API_TOKEN}}</div>
+				<div class="controls">
+					<input type="text" class="trello-api-token" placeholder="{{LBL_TRELLO_API_TOKEN}}">
+					<h5>Get Your Token <a href="https://trello.com/1/authorize?key=bd125fe95d77b8dadf45bd6103cf5c44&name=Brackets: Trello&expiration=never&response_type=token&scope=read,write">Here</a></h5>
+				</div>
+			</div>
+		</div>
+		<div class="form-horizontal">
+			<div class="control-group">
+				<div class="control-label">{{LBL_AUTOSYNC_TIME}}</div>
+				<div class="controls">
+					<input type="text" class="autosync-time" placeholder="{{LBL_AUTOSYNC_TIME}}">
+					<h5>{{MSG_AUTOSYNC_TIME}}</h5>
+					<label><input type="checkbox" class="use-autosync"> Use AutoSync</label>
+				</div>
+			</div>
+		</div>
+		<div class="form-horizontal">
+			<div class="control-group">
+				<div class="control-label"><label for="brackets-trello-prefs-storage-pref">{{LBL_SAVE_PROJECT_PREFS}}</label></div>
+				<div class="controls">
+					<input type="checkbox" class="storage-pref" id="brackets-trello-prefs-storage-pref">
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="modal-footer">
 		<button class="dialog-button btn primary" data-button-id="save">{{BTN_SAVE}}</button>
 		<button class="dialog-button btn" data-button-id="cancel">{{BTN_CANCEL}}</button>
