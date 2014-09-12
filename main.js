@@ -263,7 +263,9 @@ define(function (require, exports, module) {
 		
 		// Button Actions
 		$('.btn-boards', $panel).click(_displayBoards);
-		$('.btn-lists', $panel).click(_displayLists);
+		$('.btn-lists', $panel).click(function() {
+			_displayLists(true);
+		});
 		$('.btn-tasks', $panel).click(_displayTasks);
 		
 		// Trello Content Listeners
@@ -285,9 +287,9 @@ define(function (require, exports, module) {
 		});
 		
 		// Card Name
-		$panel.on('click', '.card-item', function() {
+		$panel.on('click', '.card-item', function(e) {
+			e.stopPropagation();
 			_savePrefs('selected-card', $(this).attr('id'));
-			_setNewButtonActive(ITEM_TYPE.TASKS);
 			_displayTasks();
 		});
 		
@@ -333,6 +335,7 @@ define(function (require, exports, module) {
 				break;
 
 			case ITEM_TYPE.CARDS:
+				$('.new-items .cmd-new-list', $panel).show();
 				$('.new-items .cmd-new-card', $panel).show();
 				break;
 
@@ -359,7 +362,13 @@ define(function (require, exports, module) {
 	/**
 	 * Display Users' Lists
 	 */
-	function _displayLists() {
+	function _displayLists(visible) {
+		if (visible) {
+			_setButtonActive($('.btn-lists', $panel));
+			$('.tab-lists').show();
+			return;
+		}
+
 		_displaySpinner(true);
 		Trello._getBoardLists().done(function(data) {
 			_displaySpinner(false);

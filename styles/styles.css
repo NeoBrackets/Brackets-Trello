@@ -51,8 +51,8 @@
 	box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
 }
 #brackets-trello .btn.active,
-#brackets-trello .btn:active {
-	background-color: #005ecc;
+#brackets-trello .btn.active:active {
+	background-color: #005ecc !important;
 	border-color: #202020;
 	color: #ffffff;
 }
@@ -159,14 +159,14 @@
 }
 
 #brackets-trello .new-items .cmd {
-	color: #ccc;
+	color: #78b2f2;
 	padding: 4px 6px 4px 26px;
 	border: 1px solid transparent;
 	border-radius: 3px;
 	background-image: url(img/add.svg);
 	background-position: 6px center;
 	background-repeat: no-repeat;
-	width: 150px;
+	width: 200px;
 }
 #brackets-trello .new-items .cmd:hover {
 	cursor: pointer;
