@@ -109,6 +109,14 @@ define(function (require, exports, module) {
 					id: 'aec',
 					checked: false
 				}
+			],
+			members: [
+				{
+					name: 'Member 1', path: '/1.png'
+				},
+				{
+					name: 'Member 2', path: '/2.png'
+				}
 			]
 		};
 

@@ -261,6 +261,9 @@ define(function (require, exports, module) {
 			data.tasks.forEach(function(task) {
 				$('#' + task.id).attr('checked', task.checked);
 			});
+			if (data.members && data.members.length >= 1) {
+				$('.tab-tasks .members', $panel).show();
+			}
 		})
 		.fail(_displayError);
 	}

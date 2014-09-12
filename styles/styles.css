@@ -139,3 +139,22 @@
 #brackets-trello .spinner {
 	display: none;
 }
+#brackets-trello .members {
+	display: none;
+}
+#brackets-trello .members,
+#brackets-trello .tasks {
+	margin-bottom: 10px;
+}
+
+#brackets-trello .member-item {
+	display: inline-block;
+	margin: 0 2px 4px 0;
+}
+
+#brackets-trello .member-item img {
+	width: 30px;
+	height: 30px;
+	border: 1px solid #202020;
+	border-radius: 3px;
+}
