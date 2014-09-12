@@ -22,14 +22,13 @@ define(function (require, exports, module) {
 		newTaskTemplate		= require('text!html/templates/newTaskTemplate.html'),
 		boardsTemplate		= require('text!html/templates/boardsTemplate.html'),
 		listsTemplate		= require('text!html/templates/listsTemplate.html'),
-		tasksTemplate		= require('text!html/templates/tasksTemplate.html'),
-		errorTemplate		= require('text!html/templates/errorTemplate.html');
+		tasksTemplate		= require('text!html/templates/tasksTemplate.html');
 
 	// Extension Info.
 	var _ExtensionID		= 'brackets-trello',
 		_ExtensionLabel		= 'Brackets Trello',
 		_ExtensionShortcut	= 'Alt-B';
-	
+
 	// Item Type Enums
 	var ITEM_TYPE = {
 		BOARDS: 1, LISTS: 2, CARDS: 3, TASKS: 4
@@ -47,14 +46,14 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-list', 'string', '');
 	_prefs.definePreference('selected-list-name', 'string', '');
 	_prefs.definePreference('selected-card', 'string', '');
-	
+
 	// Prefs that will be saved in .brackets.json
 	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-card'];
 
 	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
-	
+
 	var _taskChanges = {};
-	
+
 	/**
 	 * Save Preferences either in project or global
 	 *
@@ -71,7 +70,7 @@ define(function (require, exports, module) {
 		}
 		return _prefs.set(name, value);
 	}
-	
+
 	/**
 	 * Open Preferences dialog and change preferences
 	 */
@@ -107,7 +106,7 @@ define(function (require, exports, module) {
 			}
 		});
 	}
-	
+
 	/**
 	 * Start or stop autosync
 	 *
@@ -120,7 +119,7 @@ define(function (require, exports, module) {
 		}
 		window.clearInterval(autoSyncIntervalId);
 	}
-	
+
 	/**
 	 * Perform Sync
 	 */
@@ -129,14 +128,14 @@ define(function (require, exports, module) {
 			.done(_displayNotification)
 			.fail(_displayError);
 	}
-	
+
 	/**
 	 * Open New Board Dialog
 	 */
 	function _openNewBoardDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newBoardHTML, strings)),
 			$dialog = dialog.getElement();
-		
+
 		dialog.done(function(id) {
 			if (id === 'save') {
 				Trello._createNewBoard($dialog.find('.board-name').val())
@@ -145,14 +144,14 @@ define(function (require, exports, module) {
 			}
 		});
 	}
-	
+
 	/**
 	 * Open New List Dialog
 	 */
 	function _openNewListDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newListHTML, strings)),
 			$dialog = dialog.getElement();
-		
+
 		dialog.done(function(id) {
 			if (id === 'save') {
 				Trello._createNewList($dialog.find('.list-name').val())
@@ -161,18 +160,18 @@ define(function (require, exports, module) {
 			}
 		});
 	}
-	
+
 	/**
 	 * Open New Card Dialog
 	 */
 	function _openNewCardDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newCardHTML, strings)),
 			$dialog = dialog.getElement();
-		
+
 		$dialog.keypress(function(e) {
 			e.stopPropagation();
 		});
-		
+
 		dialog.done(function(id) {
 			if (id === 'save') {
 				Trello._createNewCard(
@@ -184,7 +183,7 @@ define(function (require, exports, module) {
 			}
 		});
 	}
-	
+
 	/**
 	 * Open New Tasks Dialog
 	 */
@@ -192,34 +191,34 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newTasksHTML, strings)),
 			$dialog = dialog.getElement(),
 			tasks = [];
-		
+
 		$dialog.find('.btn-add-task').click(function() {
 			$dialog.find('.form-horizontal').append($(Mustache.render(newTaskTemplate, strings)));
 		});
-		
+
 		dialog.done(function(id) {
 			if (id === 'save') {
-				
+
 				$dialog.find('.task-name').each(function() {
 					if ($(this).val().length >= 1) {
 						tasks.push($(this).val());
 					}
 				});
 				Trello._createNewTasks(tasks)
-				.done(_displayNotification)
-				.fail(_displayError);
+					.done(_displayNotification)
+					.fail(_displayError);
 			}
 		});
 	}
-	
+
 	/**
 	 * Display Notification
 	 */
 	function _displayNotification(text) {
 		if (!text) return;
-		
+
 		var $notification = $('.notification', $panel);
-		
+
 		$notification.empty().html(text).animate({
 			opacity: 'show'
 		}, 'fast');
@@ -227,7 +226,7 @@ define(function (require, exports, module) {
 			$notification.animate({
 				opacity: 'hide'
 			}, 'fast');
-		}, 2000);
+		}, 1000);
 	}
 
 	/**
@@ -241,7 +240,7 @@ define(function (require, exports, module) {
 		$('.horz-resizer', $panel).mousedown(function(e) {
 			pageX = e.pageX;
 			width = $panel.width();
-	
+
 			$(document).mousemove(function(e) {
 				$panel.width(width - (e.pageX - pageX));
 			}).mouseup(function() {
@@ -249,25 +248,25 @@ define(function (require, exports, module) {
 				_savePrefs('width', $panel.width());
 			});
 		}).dblclick(_toggleVisibility);
-		
+
 		// Hide on escape
 		$(document).keydown(function(e) {
 			if (e.which === 27 && isVisible) {
 				_toggleVisibility();
 			}
 		});
-		
+
 		// Hide on click
 		$('.btn-prefs', $panel).click(_openPreferencesDialog);
 		$('.btn-sync', $panel).click(_initSync);
-		
+
 		// Button Actions
 		$('.btn-boards', $panel).click(_displayBoards);
 		$('.btn-lists', $panel).click(function() {
 			_displayLists(true);
 		});
 		$('.btn-tasks', $panel).click(_displayTasks);
-		
+
 		// Trello Content Listeners
 		// Board Name
 		$panel.on('click', '.board-item', function () {
@@ -275,7 +274,7 @@ define(function (require, exports, module) {
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_displayLists();
 		});
-		
+
 		// List Name
 		$panel.on('click', '.list-item', function() {
 			var thiz = this;
@@ -283,28 +282,28 @@ define(function (require, exports, module) {
 			_savePrefs('selected-list-name', $('h5 a', this).text());
 			_setNewButtonActive(ITEM_TYPE.CARDS);
 			$(this).find('.cards').show();
-			
+
 		});
-		
+
 		// Card Name
 		$panel.on('click', '.card-item', function(e) {
 			e.stopPropagation();
 			_savePrefs('selected-card', $(this).attr('id'));
 			_displayTasks();
 		});
-		
+
 		// Task Name
 		$panel.on('change', '.task-item input', function(e) {
 			_taskChanges[$(this).attr('id')] = e.target.checked;
 		});
-		
+
 		// New Item Handlers
 		$panel.on('click', '.cmd-new-board', _openNewBoardDialog);
 		$panel.on('click', '.cmd-new-list', _openNewListDialog);
 		$panel.on('click', '.cmd-new-card', _openNewCardDialog);
 		$panel.on('click', '.cmd-new-tasks', _openNewTasksDialog);
 	}
-	
+
 	/**
 	 * Set A Button Active
 	 *
@@ -319,7 +318,7 @@ define(function (require, exports, module) {
 		});
 		$(button).addClass('active');
 	}
-	
+
 	function _setNewButtonActive(button) {
 		$('.new-items .cmd', $panel).each(function() {
 			$(this).hide();
@@ -344,7 +343,7 @@ define(function (require, exports, module) {
 				break;
 		}
 	}
-	
+
 	/**
 	 * Display Users' Boards
 	 */
@@ -358,7 +357,7 @@ define(function (require, exports, module) {
 		})
 		.fail(_displayError);
 	}
-	
+
 	/**
 	 * Display Users' Lists
 	 */
@@ -379,7 +378,7 @@ define(function (require, exports, module) {
 		})
 		.fail(_displayError);
 	}
-	
+
 	/**
 	 * Display Tasks
 	 */
@@ -399,16 +398,26 @@ define(function (require, exports, module) {
 		})
 		.fail(_displayError);
 	}
-	
+
 	/**
 	 * Display an error
 	 */
-	function _displayError(error) {
-		_setButtonActive(null);
+	function _displayError(text) {
+		if (!text) return;
+
+		var $errormsg = $('.errormsg', $panel);
+
+		$errormsg.empty().html(text).animate({
+			opacity: 'show'
+		}, 'fast');
+		window.setTimeout(function() {
+			$errormsg.animate({
+				opacity: 'hide'
+			}, 'fast');
+		}, 2000);
 		_displaySpinner(false);
-		$('.tab-error', $panel).empty().show().append(Mustache.render(errorTemplate, { error: error }));
 	}
-	
+
 	/**
 	 * Display Spinner
 	 *
@@ -421,7 +430,7 @@ define(function (require, exports, module) {
 			$('.spinner', $panel).hide();
 		}
 	}
-	
+
 	// Toggle Panel Visibility
 	function _toggleVisibility() {
 		if (!isVisible && !realVisibility) {
@@ -437,7 +446,6 @@ define(function (require, exports, module) {
 			} else {
 				_displayBoards();
 			}
-			
 			_initAutoSync(true);
 		} else if (!isVisible && realVisibility) {
 			CommandManager.get(_ExtensionID).setChecked(true);
@@ -452,7 +460,7 @@ define(function (require, exports, module) {
 		}
 		isVisible = !isVisible;
 	}
-	
+
 	function _Main() {
 		if (!_prefs.get('apitoken') && !isVisible) {
 			_openPreferencesDialog();
@@ -460,7 +468,7 @@ define(function (require, exports, module) {
 		}
 		_toggleVisibility();
 	}
-	
+
 	AppInit.appReady(function () {
 		ExtensionUtils.loadStyleSheet(module, 'styles/styles.css');
 		var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
