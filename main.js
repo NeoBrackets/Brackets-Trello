@@ -33,10 +33,7 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-board', 'string', '');
 	_prefs.definePreference('selected-list', 'string', '');
 	_prefs.definePreference('selected-card', 'string', '');
-	
-	// our Trello key for this extension
-	var appKey = "bd125fe95d77b8dadf45bd6103cf5c44";
-	var trello;
+
 
 	// Prefs that will be saved in .brackets.json
 	var _projectPrefs = ['selected-board', 'selected-list', 'selected-card'];
@@ -183,7 +180,7 @@ define(function (require, exports, module) {
 		// Board Name
 		$panel.on('click', '.board-item', function () {
 			_savePrefs('selected-board', $(this).attr('id'));		
-			_displayLists($(this).data("name"),$(this).attr('id'));
+			_displayLists();
 		});
 		
 		// List Name
@@ -197,6 +194,14 @@ define(function (require, exports, module) {
 			_savePrefs('selected-card', $(this).attr('id'));
 			_displayTasks();
 		});
+
+		// Change task state
+		$panel.on('change', '.task-state', function() {
+			var checkListId = $(this).parent().parent('.tasks').data("checklistid");
+			var checkItemId = $(this).attr("id");
+			_changeTaskState(checkListId,checkItemId);
+		});
+
 	}
 
 	function _setButtonActive(button) {
@@ -217,8 +222,10 @@ define(function (require, exports, module) {
 		.fail(_displayError);
 	}
 	
-	function _displayLists(boardName,boardId) {
-		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","checkItemStates"]}).done(function(data) {
+	function _displayLists() {
+		var boardName = _prefs.get("selected-board-name");
+		var boardId   = _prefs.get("selected-board");
+		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","badges"]}).done(function(data) {
 			_setButtonActive($panel.find('.btn-lists'));
 			data.name = boardName;
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(templates.list, data));
@@ -226,7 +233,8 @@ define(function (require, exports, module) {
 		.fail(_displayError);
 	}
 	
-	function _toggleCardsInline(listId) {
+	function _toggleCardsInline() {
+		var listId = _prefs.get("selected-list");
 		var visible = $("#"+listId).children(".inline-cards").css("display");
 		switch (visible) {
 			case "none":
@@ -246,17 +254,36 @@ define(function (require, exports, module) {
 		.fail(_displayError);
 	}
 	
-	function _displayTasks(cardId) {
-		Trello._get('Tasks',{card:cardId}).done(function(data) {
+	function _displayTasks() {
+		var boardName = _prefs.get("selected-board-name");
+		var listName  = _prefs.get("selected-list-name");
+		var cardId = _prefs.get("selected-card");
+		Trello._get('tasks',{card:cardId}).done(function(data) {
 			_setButtonActive($panel.find('.btn-tasks'));
+
+			data.boardName = boardName;
+			data.listName  = listName;
 			$('.tab-tasks', $panel).empty().show().append(Mustache.render(templates.task, data));
-			data.tasks.forEach(function(task) {
-				$('#' + task.id).attr('checked', task.checked);
+
+			// set checkmarks
+			$.each(data.tasks.checklists,function(checklistIndex,checklist) {
+				$.each(checklist.checkItems,function(checkItemIndex,checkItem) {
+					$('#' + checkItem.id).prop('checked',(checkItem.state === "complete") ? true : false);
+				});
 			});
 		})
 		.fail(_displayError);
 	}
 	
+	/////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////// CHANGE ///////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////
+
+	function _changeTaskState(checkListId,checkItemId) {
+	 	Trello._change('taskstate',{card:_prefs.get('selected-card'),checklist:checkListId,checkitem:checkItemId},
+						{value:[$("#"+checkItemId).is(':checked') ? true: false]});
+	}
+
 	function _displayError(error) {
 		_setButtonActive(null);
 		$('.tab-error', $panel).empty().show().append(Mustache.render(templates.error, { error: error }));
@@ -266,6 +293,7 @@ define(function (require, exports, module) {
 		if (visible) {}
 	}
 	
+
 	// Toggle Panel Visibility
 	function _toggleVisibility() {
 		if (!isVisible && !realVisibility) {

@@ -8,7 +8,7 @@ define(function (require, exports, module) {
 
 	/**
 	 * get an activity stream for a special board
-	 * @param   {String}       type type of the get query (activity,lists,boards)
+	 * @param   {String}       type type of the get query (activity,lists,boards,tasks)
 	 * @param   {Object}       ids  (.board,.list,.card) or some other ids for the special query
 	 * @param   {Object|Array} get  defaults:
 	 *                            	Activity: {since:(time-1hour)}
@@ -26,6 +26,9 @@ define(function (require, exports, module) {
 				break;
 			case "boards":
 				if (typeof get === "undefined") get =  {};
+				break;
+			case "tasks":
+				if (typeof get === "undefined") get =  {checklists:["all"]};
 				break;
 		}
 		var optionStr = "?";
@@ -46,6 +49,9 @@ define(function (require, exports, module) {
 			case "boards":
 				url = 'https://api.trello.com/1/members/me/boards'+optionStr;
 				break;
+			case "tasks":
+				url = 'https://api.trello.com/1/cards/'+ids.card+optionStr;
+				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
 		var result = $.Deferred();
@@ -55,9 +61,18 @@ define(function (require, exports, module) {
 				// add some extras for templates
 				switch (type) {
 					case "lists":
-						$.each(data,function(index) {
-							data[index].totalCards = data[index].cards.length;
+						$.each(data,function(listIndex) {
+							if ("cards" in data[listIndex]) {
+								data[listIndex].totalCards = data[listIndex].cards.length;
+								if (get.card_fields.indexOf("badges") >= 0) {
+									$.each(data[listIndex].cards,function(cardIndex) {
+										data[listIndex].cards[cardIndex].completedTasks = data[listIndex].cards[cardIndex].badges.checkItemsChecked;
+										data[listIndex].cards[cardIndex].totalTasks 	= data[listIndex].cards[cardIndex].badges.checkItems;
+									});
+								}
+							}
 						});
+
 						break;
 				}
 				var returnObject = {};
@@ -72,7 +87,7 @@ define(function (require, exports, module) {
 
 	/**
 	 * Create a board,list or card
-	 * @param   {String}   type 'Board','List','Card'
+	 * @param   {String}   type 'board','list','card'
 	 * @param   {Object}   ids  {.board,.list,.card}
 	 * @param   {Object}   set  create a board,list,card with this properties
 	 * @returns {Deferred} Deferred response or fail
@@ -87,7 +102,13 @@ define(function (require, exports, module) {
 		for (var key in set) {
 			setStr += key+'='+set[key]+'&';
 		}
-		var url = 'https://api.trello.com/1/card/?'+setStr+'key='+appKey+'&token='+_prefs.get('apitoken');
+		var url;
+		switch (type) {
+			case "card":
+				url = 'https://api.trello.com/1/card/?'+setStr;
+				break;
+		}
+		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
 		$.post(url,
 		function(data) {
 			if(data) {
@@ -99,6 +120,48 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 	
+	/**
+	 * Change a board,list,card,task
+	 * @param {String} type 'board','list','card','taskstate'
+	 * @param {Object} ids  {.board,.list,.card,.checklist,.checkitem}
+	 * @param {Object} set  set these properties
+	 */
+	function _change(type,ids,set) {
+		var result = $.Deferred();
+		var setStr = '?';
+		for (var key in set) {
+			setStr += key+'='+set[key]+'&';
+		}
+		var sendType;
+		switch (type) {
+			case "taskstate":
+				sendType = "PUT";
+				break;
+			default:
+				sendType = "GET";
+		}
+		var url;
+		switch (type) {
+			case "taskstate":
+				url = 'https://api.trello.com/1/cards/'+ids.card+'/checklist/'+ids.checklist+'/checkItem/'+ids.checkitem+'/state'+setStr;
+				break;
+		}
+		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
+		$.ajax({
+			url:url,
+			type: sendType
+		}).done(function(data) {
+			if(data) {
+				result.resolve(data);
+			} else {
+				result.reject();
+			}
+		});
+		return result.promise();
+	}
+
+
 	exports._get = _get;
 	exports._create = _create;
+	exports._change = _change;
 });
