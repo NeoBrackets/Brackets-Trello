@@ -46,9 +46,10 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-list', 'string', '');
 	_prefs.definePreference('selected-list-name', 'string', '');
 	_prefs.definePreference('selected-card', 'string', '');
+	_prefs.definePreference('selected-checklist', 'string', '');
 
 	// Prefs that will be saved in .brackets.json
-	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-card'];
+	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-card', 'selected-checklist'];
 
 	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
 
@@ -273,6 +274,7 @@ define(function (require, exports, module) {
 		// Board Name
 		$panel.on('click', '.board-item', function () {
 			_savePrefs('selected-board', $(this).attr('id'));
+			_savePrefs('selected-board-name', $(this).children('h4').text());
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_displayLists();
 		});
@@ -300,10 +302,21 @@ define(function (require, exports, module) {
 		});
 
 		// New Item Handlers
-		$panel.on('click', '.cmd-new-board', _openNewBoardDialog);
-		$panel.on('click', '.cmd-new-list', _openNewListDialog);
-		$panel.on('click', '.cmd-new-card', _openNewCardDialog);
-		$panel.on('click', '.cmd-new-tasks', _openNewTasksDialog);
+		$panel.on('click', '.cmd-new-board', function() {
+			_openNewBoardDialog();
+		});
+		$panel.on('click', '.cmd-new-list', function() {
+			_savePrefs('selected-board', $(this).data('board-id'));
+			_openNewListDialog();
+		});
+		$panel.on('click', '.cmd-new-card', function() {
+			_savePrefs('selected-list', $(this).data('list-id'));
+			_openNewCardDialog();
+		});
+		$panel.on('click', '.cmd-new-tasks', function() {
+			_savePrefs('selected-checklist', $(this).data('checklist-id'));
+			_openNewTasksDialog();
+		});
 	}
 
 	/**
@@ -379,7 +392,6 @@ define(function (require, exports, module) {
 		Trello._getBoardLists().done(function(data) {
 			_displaySpinner(false);
 			_setNewButtonActive(ITEM_TYPE.LISTS);
-			_savePrefs('selected-board-name', data.name);
 			_setButtonActive($panel.find('.btn-lists'));
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(listsTemplate, data));
 		})
@@ -403,8 +415,10 @@ define(function (require, exports, module) {
 			_setNewButtonActive(ITEM_TYPE.TASKS);
 			_setButtonActive($panel.find('.btn-tasks'));
 			$('.tab-tasks', $panel).empty().show().append(Mustache.render(tasksTemplate, data));
-			data.tasks.forEach(function(task) {
-				$('#' + task.id).attr('checked', task.checked);
+			data.checklists.forEach(function(checklist) {
+				checklist.checkItems.forEach(function(item) {
+					$('#' + item.id).attr('checked', item.checked);
+				});
 			});
 			if (data.members && data.members.length >= 1) {
 				$('.tab-tasks .members', $panel).show();

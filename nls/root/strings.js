@@ -33,5 +33,5 @@ define({
 	MSG_NEW_LIST:			'New list has been created.',
 	MSG_NEW_CARD:			'New card has been created.',
 	MSG_NEW_TASKS:			'New tasks have been added to the card.',
-	MSG_AUTOSYNC_TIME:		'AutoSync time must be more that 2 seconds.'
+	MSG_AUTOSYNC_TIME:		'AutoSync time must be more than 2 seconds.'
 });

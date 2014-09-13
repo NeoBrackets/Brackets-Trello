@@ -7,10 +7,12 @@
 			{{#cards}}
 			<div class="card-item" id="{{id}}">
 				<a href="#">{{name}}</a>
-				<span>{{completedTasks}}/{{totalTasks}}</span>
+				<span>{{taskCount}}</span>
 			</div>
 			{{/cards}}
+			<h5 class="cmd cmd-new-card" data-list-id="{{id}}">Add New Card</h5>
 		</div>
 	</div>
 	{{/lists}}
+	<h5 class="cmd cmd-new-list" data-board-id="{{id}}">Add New List</h5>
 </div>

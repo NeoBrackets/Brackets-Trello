@@ -1,22 +1,28 @@
 <h4>{{boardName}} / {{listName}}</h4>
-<h5>{{cardName}}</h5>
+<h5>{{name}}</h5>
 <p>{{desc}}</p>
-
-<div class="tasks">
-<h5>Checklist:</h5>
-	{{#tasks}}
-	<div class="task-item">
-		<input type="checkbox" id="{{id}}">
-		<label for="{{id}}">{{name}}</label>
+<div class="checklists">
+	{{#checklists}}
+	<div class="checklist-item" id="{{id}}">
+		<h5>{{name}}</h5>
+		<div class="tasks">
+			{{#checkItems}}
+			<div class="task-item checkbox">
+				<input type="checkbox" class="task-state" id="{{id}}">
+				<label for="{{id}}">{{name}}</label>
+			</div>
+			{{/checkItems}}
+		</div>
+		<div class="cmd cmd-new-tasks" data-checklist-id="{{id}}">Add New Tasks</div>
 	</div>
-	{{/tasks}}
+	{{/checklists}}
 </div>
 
 <div class="members">
 <h5>Members:</h5>
 {{#members}}
 	<div class="member-item">
-		<img src="{{path}}" title="{{name}}">
+		<a href="https://trello.com/{{username}}"><img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})"></a>
 	</div>
 {{/members}}
 </div>
