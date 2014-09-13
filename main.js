@@ -453,7 +453,7 @@ define(function (require, exports, module) {
 	 */
 	function _displaySpinner(visible) {
 		if (visible) {
-			$('.spinner', $panel).show();
+			$('.spinner', $panel).css('display', 'inline-block')
 		} else {
 			$('.spinner', $panel).hide();
 		}
