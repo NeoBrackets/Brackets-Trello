@@ -10,7 +10,7 @@
 	right: 0;
 	z-index: 1000;
 	box-sizing: border-box;
-	overflow: hidden;
+	overflow: auto;
 	word-wrap: break-word;
 	min-width: 260px;
 	height: 100%;
@@ -51,8 +51,8 @@
 	box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
 }
 #brackets-trello .btn.active,
-#brackets-trello .btn:active {
-	background-color: #005ecc;
+#brackets-trello .btn.active:active {
+	background-color: #005ecc !important;
 	border-color: #202020;
 	color: #ffffff;
 }
@@ -75,7 +75,6 @@
 #brackets-trello .trello-content h3,
 #brackets-trello .trello-content h4,
 #brackets-trello .trello-content h5,
-#brackets-trello .trello-content h6,
 #brackets-trello .trello-content a {
 	color: #cccccc;
 }
@@ -85,7 +84,8 @@
 #brackets-trello .tab-error h4 {
 	color: #f00;
 }
-#brackets-trello .navigation, #brackets-trello .new-items {
+#brackets-trello .navigation,
+#brackets-trello .new-items {
 	padding: 10px 0 9px 12px;
 }
 #brackets-trello .navigation ul {
@@ -109,9 +109,11 @@
 	color: #F00;
 	display: block;
 }
+#brackets-trello .task-item input[type=checkbox] {
+	margin-top: 4px;
+}
 #brackets-trello .task-item label {
 	display: inline;
-	margin-left: 10px;
 	vertical-align: middle;
 }
 #brackets-trello .list-item span,
@@ -122,6 +124,9 @@
 #brackets-trello .cards {
 	margin-left: 10px;
 	display: none;
+}
+#brackets-trello .task-controls span {
+	vertical-align: top;
 }
 #brackets-trello .spinner {
 	display: none;
@@ -153,27 +158,28 @@
 	color: #00B8FF;
 	display: none;
 }
+#brackets-trello-new-board .board-name,
+#brackets-trello-new-list .list-name,
 #brackets-trello-new-card .card-name,
 #brackets-trello-new-card .card-desc,
 #brackets-trello-new-tasks .task-name {
 	width: 300px;
 }
-
-#brackets-trello .new-items .cmd {
-	padding: 4px 6px 4px 26px;
-	border: 1px solid transparent;
-	border-radius: 3px;
-	background-image: url(img/add.svg);
-	background-position: 6px center;
-	background-repeat: no-repeat;
-	width: 150px;
-}
-#brackets-trello .new-items .cmd:hover {
+#brackets-trello .cmd {
+	color: #78b2f2 !important;
 	cursor: pointer;
-	border: 1px solid rgba(0, 0, 0, 0.24);
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
-#brackets-trello .new-items .cmd:active {
-	border: 1px solid rgba(0, 0, 0, 0.24);
-	box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.06);
+#brackets-trello .cmd:hover {
+	color: #a2ceff !important;
+}
+#brackets-trello .errormsg {
+	width: 200px;
+	position: absolute;
+	bottom: 10px;
+	margin: 0 20px;
+	border: 1px solid #F00;
+	padding: 5px 10px;
+	background: #FFC5C5;
+	color: #F00;
+	display: none;
 }

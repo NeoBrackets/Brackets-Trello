@@ -1,9 +1,11 @@
 {
-	"name": "io.brackets-task-sync",
-	"title": "Task Sync",
-	"version": "0.1.0",
+	"name": "neobrackets.trello",
+	"title": "Brackets Trello",
 	"description": "Sync tasks with Trello",
-	"author": "Brackets Community",
+	"homepage": "",
+	"version": "0.1.0",
+	"author": "NeoBrackets Working Group",
+	"licence": "MIT",
 	"engines": {
 		"brackets": ">=0.42.0"
 	}

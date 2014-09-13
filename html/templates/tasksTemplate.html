@@ -3,14 +3,17 @@
 <p>{{desc}}</p>
 <div class="checklists">
 	{{#checklists}}
-	<h6>{{name}}</h6>
-	<div data-checklistid="{{id}}" class="tasks">
-		{{#checkItems}}
-		<div class="task-item">
-			<input type="checkbox" class="task-state" id="{{id}}">
-			<label for="{{id}}">{{name}}</label>
+	<div class="checklist-item" id="{{id}}">
+		<h5>{{name}}</h5>
+		<div class="tasks">
+			{{#checkItems}}
+			<div class="task-item checkbox">
+				<input type="checkbox" class="task-state" id="{{id}}">
+				<label for="{{id}}">{{name}}</label>
+			</div>
+			{{/checkItems}}
 		</div>
-		{{/checkItems}}
+		<div class="cmd cmd-new-tasks" data-checklist-id="{{id}}">Add New Tasks</div>
 	</div>
 	{{/checklists}}
 </div>
@@ -19,7 +22,7 @@
 <h5>Members:</h5>
 {{#members}}
 	<div class="member-item">
-		<img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})">
+		<a href="https://trello.com/{{username}}"><img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})"></a>
 	</div>
 {{/members}}
 </div>

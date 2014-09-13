@@ -22,8 +22,7 @@ define(function (require, exports, module) {
 		newTaskTemplate		= require('text!html/templates/newTaskTemplate.html'),
 		boardsTemplate		= require('text!html/templates/boardsTemplate.html'),
 		listsTemplate		= require('text!html/templates/listsTemplate.html'),
-		tasksTemplate		= require('text!html/templates/tasksTemplate.html'),
-		errorTemplate		= require('text!html/templates/errorTemplate.html');
+		tasksTemplate		= require('text!html/templates/tasksTemplate.html');
 
 	// Extension Info.
 	var _ExtensionID		= 'brackets-trello',
@@ -47,14 +46,15 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-list', 'string', '');
 	_prefs.definePreference('selected-list-name', 'string', '');
 	_prefs.definePreference('selected-card', 'string', '');
+	_prefs.definePreference('selected-checklist', 'string', '');
 
 	// Prefs that will be saved in .brackets.json
-	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-card'];
+	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-card', 'selected-checklist'];
 
 	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
-	
+
 	var _taskChanges = {};
-	
+
 	/**
 	 * Save Preferences either in project or global
 	 *
@@ -71,7 +71,7 @@ define(function (require, exports, module) {
 		}
 		return _prefs.set(name, value);
 	}
-	
+
 	/**
 	 * Open Preferences dialog and change preferences
 	 */
@@ -107,7 +107,7 @@ define(function (require, exports, module) {
 			}
 		});
 	}
-	
+
 	/**
 	 * Start or stop autosync
 	 *
@@ -129,39 +129,80 @@ define(function (require, exports, module) {
 			.done(_displayNotification)
 			.fail(_displayError);
 	}
-	
+
 	/**
 	 * Open New Board Dialog
 	 */
 	function _openNewBoardDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newBoardHTML, strings)),
 			$dialog = dialog.getElement();
-		
+
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewBoard($dialog.find('.board-name').val())
-				.done(_displayNotification)
+				Trello._create('board',{},{name:$dialog.find('.board-name').val()})
+				.done(
+					function(data) {
+						_displayNotification;
+						// add the new board to the panel
+						// get the correct children because boards are ordered by name asc
+						var index = 0;
+						var found = false;
+						$.each($('.tab-boards', $panel).children('.boards').children('.board-item'), function(nthChild,item) {
+							console.log($(item).children('h4').text().toLowerCase() + ' vs. ' + data.name.toLowerCase());
+							if  ($(item).children('h4').text().toLowerCase() > data.name.toLowerCase()) {
+								found = true;
+								return false;
+							}
+							index++;
+						});
+
+						// if found == false => add it directly before add new board
+						if (found) {
+							var lastChildren = '.board-item:eq('+index+')';
+						} else {
+							var lastChildren = '.cmd-new-board';
+						}
+
+						$('.tab-boards', $panel).children('.boards').children(lastChildren).before(
+							'<div class="board-item" id="'+data.id+'">'+
+								'<h4><a href="#">'+data.name+'</a></h4>'+
+							'</div>'
+						);
+
+					})
 				.fail(_displayError);
 			}
 		});
 	}
-	
+
 	/**
 	 * Open New List Dialog
 	 */
 	function _openNewListDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newListHTML, strings)),
 			$dialog = dialog.getElement();
-		
+
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewList($dialog.find('.list-name').val())
-				.done(_displayNotification)
+				Trello._create('list',{board:_prefs.get('selected-board')},{name:$dialog.find('.list-name').val(),pos:"bottom"})
+				.done(
+					function(data) {
+						_displayNotification;
+						// add the new list
+						$('.tab-lists', $panel).children('.lists').children('.cmd-new-list').before(
+							'<div class="list-item" id="'+data.id+'">'+
+								'<h5><a href="#">'+data.name+'</a><span>0</span></h5>'+
+								'<div class="cards">'+
+									'<h5 class="cmd cmd-new-card" data-list-id="'+data.id+'">Add New Card</h5>'+
+								'</div>'+
+							'</div>'
+						);
+					})
 				.fail(_displayError);
 			}
 		});
 	}
-	
+
 	/**
 	 * Open New Card Dialog
 	 */
@@ -172,19 +213,29 @@ define(function (require, exports, module) {
 		$dialog.keypress(function(e) {
 			e.stopPropagation();
 		});
-		
+
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewCard(
-					$dialog.find('.card-name').val(),
-					$dialog.find('.card-desc').val()
-				)
-				.done(_displayNotification)
+				Trello._create('card',
+							   {list:_prefs.get('selected-list')},
+							   {name:$dialog.find('.card-name').val(),desc:$dialog.find('.card-desc').val()}
+							  )
+				.done(
+					function(data) {
+						_displayNotification;
+						// add the new card to the end of the new list (before Add New Card)
+						$('#'+data.idList, $panel).children('.cards').children('.cmd-new-card').before(
+							'<div class="card-item" id="'+data.id+'">'+
+								'<a href="#">'+data.name+'</a>'+
+								'<span></span>' + // there is no task count
+							'</div>'
+						);
+					})
 				.fail(_displayError);
 			}
 		});
 	}
-	
+
 	/**
 	 * Open New Tasks Dialog
 	 */
@@ -196,18 +247,26 @@ define(function (require, exports, module) {
 		$dialog.find('.btn-add-task').click(function() {
 			$dialog.find('.form-horizontal').append($(Mustache.render(newTaskTemplate, strings)));
 		});
-		
+
 		dialog.done(function(id) {
 			if (id === 'save') {
 
 				$dialog.find('.task-name').each(function() {
 					if ($(this).val().length >= 1) {
-						tasks.push($(this).val());
+						Trello._create('task',{checklist:_prefs.get('selected-checklist')},{name:$(this).val()})
+						.done(function(data) {
+							_displayNotification();
+							// add the new task
+							$('#'+_prefs.get('selected-checklist'), $panel).children('.tasks').append(
+								'<div class="task-item checkbox">'+
+									'<input type="checkbox" class="task-state" id="'+data.id+'">'+
+									'<label for="'+data.id+'">'+data.name+'</label>'+
+								'</div>'
+							);
+						})
+						.fail(_displayError);
 					}
 				});
-				Trello._createNewTasks(tasks)
-				.done(_displayNotification)
-				.fail(_displayError);
 			}
 		});
 	}
@@ -227,7 +286,7 @@ define(function (require, exports, module) {
 			$notification.animate({
 				opacity: 'hide'
 			}, 'fast');
-		}, 2000);
+		}, 1000);
 	}
 
 	/**
@@ -241,7 +300,7 @@ define(function (require, exports, module) {
 		$('.horz-resizer', $panel).mousedown(function(e) {
 			pageX = e.pageX;
 			width = $panel.width();
-	
+
 			$(document).mousemove(function(e) {
 				$panel.width(width - (e.pageX - pageX));
 			}).mouseup(function() {
@@ -249,23 +308,27 @@ define(function (require, exports, module) {
 				_savePrefs('width', $panel.width());
 			});
 		}).dblclick(_toggleVisibility);
-		
+
 		// Hide on escape
 		$(document).keydown(function(e) {
 			if (e.which === 27 && isVisible) {
 				_toggleVisibility();
 			}
 		});
-		
+
 		// Hide on click
 		$('.btn-prefs', $panel).click(_openPreferencesDialog);
 		$('.btn-sync', $panel).click(_initSync);
-		
+
 		// Button Actions
 		$('.btn-boards', $panel).click(_displayBoards);
-		$('.btn-lists', $panel).click(_displayLists);
-		$('.btn-tasks', $panel).click(_displayTasks);
-		
+		$('.btn-lists', $panel).click(function() {
+			_displayLists(true);
+		});
+		$('.btn-tasks', $panel).click(function() {
+			_displayTasks(true);
+		});
+
 		// Trello Content Listeners
 		// Board Name
 		$panel.on('click', '.board-item', function () {
@@ -274,7 +337,7 @@ define(function (require, exports, module) {
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_displayLists();
 		});
-		
+
 		// List Name
 		$panel.on('click', '.list-item', function() {
 			var thiz = this;
@@ -284,29 +347,38 @@ define(function (require, exports, module) {
 			$(this).find('.cards').show();
 
 		});
-		
+
 		// Card Name
-		$panel.on('click', '.card-item', function() {
+		$panel.on('click', '.card-item', function(e) {
+			e.stopPropagation();
 			_savePrefs('selected-card', $(this).attr('id'));
-			_setNewButtonActive(ITEM_TYPE.TASKS);
 			_displayTasks();
 		});
 
 		// Task Name
 		$panel.on('change', '.task-item input', function(e) {
 			_taskChanges[$(this).attr('id')] = e.target.checked;
-			var checkListId = $(this).parent().parent('.tasks').data("checklistid");
+			var checkListId = $(this).parent().parent('.tasks').parent('.checklist-item').attr("id");
 			var checkItemId = $(this).attr("id");
 			_changeTaskState(checkListId,checkItemId);
 		});
 
-
-
 		// New Item Handlers
-		$panel.on('click', '.cmd-new-board', _openNewBoardDialog);
-		$panel.on('click', '.cmd-new-list', _openNewListDialog);
-		$panel.on('click', '.cmd-new-card', _openNewCardDialog);
-		$panel.on('click', '.cmd-new-tasks', _openNewTasksDialog);
+		$panel.on('click', '.cmd-new-board', function() {
+			_openNewBoardDialog();
+		});
+		$panel.on('click', '.cmd-new-list', function() {
+			_savePrefs('selected-board', $(this).data('boardId'));
+			_openNewListDialog();
+		});
+		$panel.on('click', '.cmd-new-card', function() {
+			_savePrefs('selected-list', $(this).data('listId'));
+			_openNewCardDialog();
+		});
+		$panel.on('click', '.cmd-new-tasks', function() {
+			_savePrefs('selected-checklist', $(this).data('checklistId'));
+			_openNewTasksDialog();
+		});
 	}
 
 	/**
@@ -323,7 +395,7 @@ define(function (require, exports, module) {
 		});
 		$(button).addClass('active');
 	}
-	
+
 	function _setNewButtonActive(button) {
 		$('.new-items .cmd', $panel).each(function() {
 			$(this).hide();
@@ -335,15 +407,20 @@ define(function (require, exports, module) {
 				break;
 
 			case ITEM_TYPE.LISTS:
-				$('.new-items .cmd-new-list', $panel).show();
+				if (_prefs.get('selected-board')) {
+					$('.new-items .cmd-new-list', $panel).show();
+				}
 				break;
 
 			case ITEM_TYPE.CARDS:
+				$('.new-items .cmd-new-list', $panel).show();
 				$('.new-items .cmd-new-card', $panel).show();
 				break;
 
 			case ITEM_TYPE.TASKS:
-				$('.new-items .cmd-new-tasks', $panel).show();
+				if (_prefs.get('selected-card')) {
+					$('.new-items .cmd-new-tasks', $panel).show();
+				}
 				break;
 		}
 	}
@@ -365,15 +442,24 @@ define(function (require, exports, module) {
 	/**
 	 * Display Users' Lists
 	 */
-	function _displayLists() {
+	function _displayLists(visible) {
 		var boardName = _prefs.get("selected-board-name");
 		var boardId   = _prefs.get("selected-board");
+
+		if (visible) {
+			_setButtonActive($('.btn-lists', $panel));
+			_setNewButtonActive(ITEM_TYPE.LISTS);
+			$('.tab-lists', $panel).show();
+			return;
+		}
+
 		_displaySpinner(true);
 		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","badges"]}).done(function(data) {
 			_displaySpinner(false);
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_setButtonActive($panel.find('.btn-lists'));
 			data.name = boardName;
+			data.id   = boardId;
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(listsTemplate, data));
 		})
 		.fail(_displayError);
@@ -410,14 +496,24 @@ define(function (require, exports, module) {
 		})
 		.fail(_displayError);
 	}
-	
+
 	/**
 	 * Display an error
 	 */
-	function _displayError(error) {
-		_setButtonActive(null);
+	function _displayError(text) {
+		if (!text) return;
+
+		var $errormsg = $('.errormsg', $panel);
+
+		$errormsg.empty().html(text).animate({
+			opacity: 'show'
+		}, 'fast');
+		window.setTimeout(function() {
+			$errormsg.animate({
+				opacity: 'hide'
+			}, 'fast');
+		}, 2000);
 		_displaySpinner(false);
-		$('.tab-error', $panel).empty().show().append(Mustache.render(errorTemplate, { error: error }));
 	}
 
 	/**
@@ -427,7 +523,7 @@ define(function (require, exports, module) {
 	 */
 	function _displaySpinner(visible) {
 		if (visible) {
-			$('.spinner', $panel).show();
+			$('.spinner', $panel).css('display', 'inline-block')
 		} else {
 			$('.spinner', $panel).hide();
 		}
@@ -442,7 +538,6 @@ define(function (require, exports, module) {
 						{value:[$("#"+checkItemId).is(':checked') ? true: false]});
 	}
 
-	
 
 	// Toggle Panel Visibility
 	function _toggleVisibility() {
@@ -459,7 +554,6 @@ define(function (require, exports, module) {
 			} else {
 				_displayBoards();
 			}
-
 			_initAutoSync(true);
 		} else if (!isVisible && realVisibility) {
 			CommandManager.get(_ExtensionID).setChecked(true);
@@ -474,7 +568,7 @@ define(function (require, exports, module) {
 		}
 		isVisible = !isVisible;
 	}
-	
+
 	function _Main() {
 		if (!_prefs.get('apitoken') && !isVisible) {
 			_openPreferencesDialog();
@@ -482,7 +576,7 @@ define(function (require, exports, module) {
 		}
 		_toggleVisibility();
 	}
-	
+
 	AppInit.appReady(function () {
 		ExtensionUtils.loadStyleSheet(module, 'styles/styles.css');
 		var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);

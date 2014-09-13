@@ -26,7 +26,7 @@ define(function (require, exports, module) {
 				defaultGet =  {cards:["none"],card_fields:["all"],fields:["open"]};
 				break;
 			case "boards":
-				defaultGet =  {};
+				defaultGet =  {filter:["open"]};
 				break;
 			case "tasks":
 				defaultGet =  {checklists:["all"]};
@@ -68,8 +68,12 @@ define(function (require, exports, module) {
 								data[listIndex].totalCards = data[listIndex].cards.length;
 								if (get.card_fields.indexOf("badges") >= 0) {
 									$.each(data[listIndex].cards,function(cardIndex) {
-										data[listIndex].cards[cardIndex].completedTasks = data[listIndex].cards[cardIndex].badges.checkItemsChecked;
-										data[listIndex].cards[cardIndex].totalTasks 	= data[listIndex].cards[cardIndex].badges.checkItems;
+										if (data[listIndex].cards[cardIndex].badges.checkItems > 0) {
+											data[listIndex].cards[cardIndex].taskCount = data[listIndex].cards[cardIndex].badges.checkItemsChecked;
+											data[listIndex].cards[cardIndex].taskCount += '/'+data[listIndex].cards[cardIndex].badges.checkItems;
+										} else {
+											data[listIndex].cards[cardIndex].taskCount = '';
+										}
 									});
 								}
 							}
@@ -102,9 +106,13 @@ define(function (require, exports, module) {
 	 */
 	function _create(type,ids,set) {
 		var result = $.Deferred();
+		var setStr = '';
 		switch (type) {
+			case "list":
+				setStr = 'idBoard='+ids.board+'&';
+				break;
 			case "card":
-				var setStr = 'idList='+ids.list+'&';
+				setStr = 'idList='+ids.list+'&';
 				break;
 		}
 		for (var key in set) {
@@ -112,11 +120,22 @@ define(function (require, exports, module) {
 		}
 		var url;
 		switch (type) {
+			case "board":
+				url = 'https://api.trello.com/1/boards/?'+setStr;
+				break;
+			case "list":
+				url = 'https://api.trello.com/1/lists/?'+setStr;
+				break;
 			case "card":
 				url = 'https://api.trello.com/1/card/?'+setStr;
 				break;
+			case "task":
+				url = 'https://api.trello.com/1/checklists/'+ids.checklist+'/checkItems?'+setStr;
+				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
+		console.log('create '+type);
+		console.log(url);
 		$.post(url,
 		function(data) {
 			if(data) {
@@ -168,30 +187,6 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 
-	function _createNewBoard(name) {
-		var result = $.Deferred();
-		result.resolve('Created new Board');
-		return result.promise();
-	}
-
-	function _createNewList(name) {
-		var result = $.Deferred();
-		result.resolve('Created new list');
-		return result.promise();
-	}
-
-	function _createNewCard(name, desc) {
-		var result = $.Deferred();
-		result.resolve('Created new card');
-		return result.promise();
-	}
-
-	function _createNewTasks(tasks) {
-		var result = $.Deferred();
-		result.resolve('Created new tasks');
-		return result.promise();
-	}
-
 	function _performSync(tasks) {
 		var result = $.Deferred();
 		result.resolve('Sync was performed');
@@ -201,9 +196,5 @@ define(function (require, exports, module) {
 	exports._get = _get;
 	exports._create = _create;
 	exports._change = _change;
-	exports._createNewBoard = _createNewBoard;
-	exports._createNewList = _createNewList;
-	exports._createNewCard = _createNewCard;
-	exports._createNewTasks = _createNewTasks;
 	exports._performSync = _performSync;
 });

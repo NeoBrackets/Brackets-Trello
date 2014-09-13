@@ -10,10 +10,10 @@ define({
 	BTN_SAVE:				'Save',
 	BTN_CANCEL:				'Cancel',
 	BTN_DONE:				'Done',
-	CMD_NEW_BOARD:			'New Board',
-	CMD_NEW_LIST:			'New List',
-	CMD_NEW_CARD:			'New Card',
-	CMD_NEW_TASKS:			'New Tasks',
+	ADD_NEW_BOARD:			'Add New Board',
+	ADD_NEW_LIST:			'Add New List',
+	ADD_NEW_CARD:			'Add New Card',
+	ADD_NEW_TASKS:			'Add New Tasks',
 	ERR_CONNECTION:			'Cannot connect to internet',
 	LBL_CREATE_NEW_BOARD:	'Create New Board',
 	LBL_BOARD_NAME:			'Board Name',
@@ -33,5 +33,5 @@ define({
 	MSG_NEW_LIST:			'New list has been created.',
 	MSG_NEW_CARD:			'New card has been created.',
 	MSG_NEW_TASKS:			'New tasks have been added to the card.',
-	MSG_AUTOSYNC_TIME:		'AutoSync time must be more that 2 seconds.'
+	MSG_AUTOSYNC_TIME:		'AutoSync time must be more than 2 seconds.'
 });
