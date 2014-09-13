@@ -84,7 +84,8 @@
 #brackets-trello .tab-error h4 {
 	color: #f00;
 }
-#brackets-trello .navigation, #brackets-trello .new-items {
+#brackets-trello .navigation,
+#brackets-trello .new-items {
 	padding: 10px 0 9px 12px;
 }
 #brackets-trello .navigation ul {
@@ -124,6 +125,9 @@
 	margin-left: 10px;
 	display: none;
 }
+#brackets-trello .task-controls span {
+	vertical-align: top;
+}
 #brackets-trello .spinner {
 	display: none;
 }
@@ -154,7 +158,6 @@
 	color: #00B8FF;
 	display: none;
 }
-
 #brackets-trello-new-board .board-name,
 #brackets-trello-new-list .list-name,
 #brackets-trello-new-card .card-name,
@@ -167,7 +170,7 @@
 	cursor: pointer;
 }
 #brackets-trello .cmd:hover {
-	color: #d3e8ff;
+	color: #a2ceff !important;
 }
 #brackets-trello .errormsg {
 	width: 200px;

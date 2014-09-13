@@ -139,8 +139,37 @@ define(function (require, exports, module) {
 
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewBoard($dialog.find('.board-name').val())
-				.done(_displayNotification)
+				Trello._create('board',{},{name:$dialog.find('.board-name').val()})
+				.done(
+					function(data) {
+						_displayNotification;
+						// add the new board to the panel
+						// get the correct children because boards are ordered by name asc
+						var index = 0;
+						var found = false;
+						$.each($('.tab-boards', $panel).children('.boards').children('.board-item'), function(nthChild,item) {
+							console.log($(item).children('h4').text().toLowerCase() + ' vs. ' + data.name.toLowerCase());
+							if  ($(item).children('h4').text().toLowerCase() > data.name.toLowerCase()) {
+								found = true;
+								return false;
+							}
+							index++;
+						});
+						
+						// if found == false => add it directly before add new board
+						if (found) {
+							var lastChildren = '.board-item:eq('+index+')';	
+						} else {
+							var lastChildren = '.cmd-new-board';			
+						}
+						
+						$('.tab-boards', $panel).children('.boards').children(lastChildren).before(
+							'<div class="board-item" id="'+data.id+'">'+
+								'<h4><a href="#">'+data.name+'</a></h4>'+
+							'</div>'
+						);
+						
+					})
 				.fail(_displayError);
 			}
 		});
@@ -155,8 +184,20 @@ define(function (require, exports, module) {
 
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewList($dialog.find('.list-name').val())
-				.done(_displayNotification)
+				Trello._create('list',{board:_prefs.get('selected-board')},{name:$dialog.find('.list-name').val(),pos:"bottom"})
+				.done(
+					function(data) {
+						_displayNotification;
+						// add the new list
+						$('.tab-lists', $panel).children('.lists').children('.cmd-new-list').before(
+							'<div class="list-item" id="'+data.id+'">'+
+								'<h5><a href="#">'+data.name+'</a><span>0</span></h5>'+
+								'<div class="cards">'+
+									'<h5 class="cmd cmd-new-card" data-list-id="'+data.id+'">Add New Card</h5>'+
+								'</div>'+
+							'</div>'
+						);
+					})
 				.fail(_displayError);
 			}
 		});
@@ -175,11 +216,21 @@ define(function (require, exports, module) {
 
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._createNewCard(
-					$dialog.find('.card-name').val(),
-					$dialog.find('.card-desc').val()
-				)
-				.done(_displayNotification)
+				Trello._create('card',
+							   {list:_prefs.get('selected-list')},
+							   {name:$dialog.find('.card-name').val(),desc:$dialog.find('.card-desc').val()}
+							  )
+				.done(
+					function(data) {
+						_displayNotification;
+						// add the new card to the end of the new list (before Add New Card)
+						$('#'+data.idList, $panel).children('.cards').children('.cmd-new-card').before(
+							'<div class="card-item" id="'+data.id+'">'+
+								'<a href="#">'+data.name+'</a>'+
+								'<span></span>' + // there is no task count
+							'</div>'
+						);
+					})						
 				.fail(_displayError);
 			}
 		});
@@ -202,12 +253,20 @@ define(function (require, exports, module) {
 
 				$dialog.find('.task-name').each(function() {
 					if ($(this).val().length >= 1) {
-						tasks.push($(this).val());
+						Trello._create('task',{checklist:_prefs.get('selected-checklist')},{name:$(this).val()})
+						.done(function(data) {
+							_displayNotification();
+							// add the new task 
+							$('#'+_prefs.get('selected-checklist'), $panel).children('.tasks').append(
+								'<div class="task-item checkbox">'+
+									'<input type="checkbox" class="task-state" id="'+data.id+'">'+
+									'<label for="'+data.id+'">'+data.name+'</label>'+
+								'</div>'
+							);
+						})
+						.fail(_displayError);
 					}
 				});
-				Trello._createNewTasks(tasks)
-					.done(_displayNotification)
-					.fail(_displayError);
 			}
 		});
 	}
@@ -299,6 +358,9 @@ define(function (require, exports, module) {
 		// Task Name
 		$panel.on('change', '.task-item input', function(e) {
 			_taskChanges[$(this).attr('id')] = e.target.checked;
+			var checkListId = $(this).parent().parent('.tasks').parent('.checklist-item').attr("id");
+			var checkItemId = $(this).attr("id");
+			_changeTaskState(checkListId,checkItemId);
 		});
 
 		// New Item Handlers
@@ -306,15 +368,15 @@ define(function (require, exports, module) {
 			_openNewBoardDialog();
 		});
 		$panel.on('click', '.cmd-new-list', function() {
-			_savePrefs('selected-board', $(this).data('board-id'));
+			_savePrefs('selected-board', $(this).data('boardId'));
 			_openNewListDialog();
 		});
 		$panel.on('click', '.cmd-new-card', function() {
-			_savePrefs('selected-list', $(this).data('list-id'));
+			_savePrefs('selected-list', $(this).data('listId'));
 			_openNewCardDialog();
 		});
 		$panel.on('click', '.cmd-new-tasks', function() {
-			_savePrefs('selected-checklist', $(this).data('checklist-id'));
+			_savePrefs('selected-checklist', $(this).data('checklistId'));
 			_openNewTasksDialog();
 		});
 	}
@@ -368,7 +430,7 @@ define(function (require, exports, module) {
 	 */
 	function _displayBoards() {
 		_displaySpinner(true);
-		Trello._getUserBoards().done(function(data) {
+		Trello._get('boards',{},{fields:["id","name"]}).done(function(data) {
 			_displaySpinner(false);
 			_setNewButtonActive(ITEM_TYPE.BOARDS);
 			_setButtonActive($panel.find('.btn-boards'));
@@ -376,48 +438,56 @@ define(function (require, exports, module) {
 		})
 		.fail(_displayError);
 	}
-
+	
 	/**
 	 * Display Users' Lists
 	 */
 	function _displayLists(visible) {
+		var boardName = _prefs.get("selected-board-name");
+		var boardId   = _prefs.get("selected-board");
+		
 		if (visible) {
 			_setButtonActive($('.btn-lists', $panel));
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			$('.tab-lists', $panel).show();
 			return;
 		}
-
+			
 		_displaySpinner(true);
-		Trello._getBoardLists().done(function(data) {
+		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","badges"]}).done(function(data) {
 			_displaySpinner(false);
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_setButtonActive($panel.find('.btn-lists'));
+			data.name = boardName;
+			data.id   = boardId;
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(listsTemplate, data));
 		})
 		.fail(_displayError);
 	}
-
+	
 	/**
 	 * Display Tasks
 	 */
-	function _displayTasks(visible) {
-		if (visible) {
-			_setButtonActive($('.btn-tasks', $panel));
-			_setNewButtonActive(ITEM_TYPE.TASKS);
-			$('.tab-tasks', $panel).show();
-			return;
-		}
-		
+	function _displayTasks() {
+		var boardName = _prefs.get("selected-board-name");
+		var listName = _prefs.get("selected-list-name");
+		var cardId = _prefs.get("selected-card");
 		_displaySpinner(true);
-		Trello._getCardTasks().done(function(data) {
+		Trello._get('tasks',{card:cardId},{members:[true],member_fields:["avatarHash","username","fullName"]}).done(function(data) {
 			_displaySpinner(false);
 			_setNewButtonActive(ITEM_TYPE.TASKS);
 			_setButtonActive($panel.find('.btn-tasks'));
+
+			data.boardName = boardName;
+			data.listName = listName;
+			console.log('tasks for: '+cardId);
+			console.log(data);
 			$('.tab-tasks', $panel).empty().show().append(Mustache.render(tasksTemplate, data));
-			data.checklists.forEach(function(checklist) {
-				checklist.checkItems.forEach(function(item) {
-					$('#' + item.id).attr('checked', item.checked);
+
+			// set checkmarks
+			$.each(data.checklists,function(checklistIndex,checklist) {
+				$.each(checklist.checkItems,function(checkItemIndex,checkItem) {
+					$('#' + checkItem.id).prop('checked',(checkItem.state === "complete") ? true : false);
 				});
 			});
 			if (data.members && data.members.length >= 1) {
@@ -453,12 +523,22 @@ define(function (require, exports, module) {
 	 */
 	function _displaySpinner(visible) {
 		if (visible) {
-			$('.spinner', $panel).show();
+			$('.spinner', $panel).css('display', 'inline-block')
 		} else {
 			$('.spinner', $panel).hide();
 		}
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////// CHANGE ///////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////
+
+	function _changeTaskState(checkListId,checkItemId) {
+	 	Trello._change('taskstate',{card:_prefs.get('selected-card'),checklist:checkListId,checkitem:checkItemId},
+						{value:[$("#"+checkItemId).is(':checked') ? true: false]});
+	}
+
+	
 	// Toggle Panel Visibility
 	function _toggleVisibility() {
 		if (!isVisible && !realVisibility) {
