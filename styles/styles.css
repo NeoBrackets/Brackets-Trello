@@ -167,7 +167,7 @@
 	cursor: pointer;
 }
 #brackets-trello .cmd:hover {
-	color: #d3e8ff;
+	color: #a2ceff !important;
 }
 #brackets-trello .errormsg {
 	width: 200px;
