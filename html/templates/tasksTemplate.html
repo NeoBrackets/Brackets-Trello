@@ -8,20 +8,6 @@
 	{{desc}}
 	<i class="btn-cmd btn-edit cmd-edit-card-desc" />
 </p>
-<div class="comments">
-	<h5 class="cmd-hide-comments">Comments <i class="btn-cmd btn-add cmd-add-comment"/></h5>
-	{{#comments}}
-		<div class="comment-item" id="{{id}}">
-			<a href="https://trello.com/{{username}}"><img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})"></a>
-			<div class="comment-body">
-				<h5>
-					<a href="https://trello.com/{{username}}">{{fullName}} @{{username}}</a>
-				</h5>
-				<p class="comment">{{comment}}</p>
-			</div>
-		</div>
-	{{/comments}}
-</div>
 <div class="checklists">
 	{{#checklists}}
 	<div class="checklist-item" id="{{id}}">
@@ -46,7 +32,20 @@
 	{{/checklists}}
 	<div class="cmd cmd-new-checklist">Add New Checklist</div>
 </div>
-
+<div class="comments">
+	<h5 class="cmd-hide-comments">Comments <i class="btn-cmd btn-add cmd-add-comment"/></h5>
+	{{#comments}}
+		<div class="comment-item" id="{{id}}">
+			<a href="https://trello.com/{{username}}"><img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})"></a>
+			<div class="comment-body">
+				<h5>
+					<a href="https://trello.com/{{username}}">{{fullName}} @{{username}}</a>
+				</h5>
+				<p class="comment">{{comment}}</p>
+			</div>
+		</div>
+	{{/comments}}
+</div>
 <div class="members">
 <h5>Members:</h5>
 {{#members}}
