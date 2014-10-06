@@ -109,6 +109,27 @@
 	color: #F00;
 	display: block;
 }
+#brackets-trello .card-item.moving {
+	position: absolute;
+	background: #454545;
+	z-index: 1000;
+	width: 90%;
+	cursor: move;
+}
+#brackets-trello .list-item .cmd {
+	margin-left: 10px;
+}
+#brackets-trello .checklist-item .cmd {
+	margin-left: 20px;
+}
+#brackets-trello .list-item.dropzone {
+	background: #474747;
+	outline: 1px dashed #099;
+}
+#brackets-trello .task-item {
+	position: relative;
+	padding-right: 60px;
+}
 #brackets-trello .task-item input[type=checkbox] {
 	margin-top: 4px;
 }
@@ -125,6 +146,10 @@
 	margin-left: 10px;
 	display: none;
 }
+#brackets-trello .list-item .cmd {
+	display: none;
+}
+
 #brackets-trello .task-controls span {
 	vertical-align: top;
 }
@@ -141,16 +166,26 @@
 #brackets-trello .member-item {
 	display: inline-block;
 	margin: 0 2px 4px 0;
+	position: relative;
 }
+#brackets-trello .member-item .btn-delete {
+	right: 3px;
+	top: 3px;
+}
+#brackets-trello-new-members img,
 #brackets-trello .member-item img {
 	width: 30px;
 	height: 30px;
 	border: 1px solid #202020;
 	border-radius: 3px;
 }
+#brackets-trello-new-members .span3 {
+	margin-left: 0;
+}
 #brackets-trello .notification {
 	width: 200px;
 	position: absolute;
+	background: #3c3f41;
 	bottom: 10px;
 	margin: 0 20px;
 	border: 1px solid #0089BE;
@@ -158,12 +193,30 @@
 	color: #00B8FF;
 	display: none;
 }
+#brackets-trello-new-card .card-desc {
+	resize: vertical;
+}
 #brackets-trello-new-board .board-name,
 #brackets-trello-new-list .list-name,
 #brackets-trello-new-card .card-name,
 #brackets-trello-new-card .card-desc,
-#brackets-trello-new-tasks .task-name {
+#brackets-trello-new-checklist .checklist-name,
+#brackets-trello-edit-card-name .card-name {
 	width: 300px;
+}
+#brackets-trello-edit-task-name .task-name,
+#brackets-trello-new-tasks .task-name {
+	width: 555px;
+}
+#brackets-trello-new-checklist .task-name {
+	width: 470px;
+}
+#brackets-trello-edit-comment .comment-text,
+#brackets-trello-new-comment .comment-text,
+#brackets-trello-edit-card-desc .card-desc {
+	resize: vertical;
+	width: 555px;
+	height: 150px;
 }
 #brackets-trello .cmd {
 	color: #78b2f2 !important;
@@ -182,4 +235,81 @@
 	background: #FFC5C5;
 	color: #F00;
 	display: none;
+}
+#brackets-trello .card-desc {
+	padding-right: 30px;
+}
+#brackets-trello .board-name,
+#brackets-trello .list-name,
+#brackets-trello .checklist-name,
+#brackets-trello .card-name,
+#brackets-trello .card-desc,
+#brackets-trello .comments h5,
+#brackets-trello .comment-item {
+	position: relative;
+}
+#brackets-trello .board-name:hover .btn-cmd,
+#brackets-trello .list-name:hover .btn-cmd,
+#brackets-trello .checklist-name:hover .btn-cmd,
+#brackets-trello .card-name:hover .btn-cmd,
+#brackets-trello .card-desc:hover .btn-cmd,
+#brackets-trello .task-item:hover .btn-cmd,
+#brackets-trello .comments h5:hover .btn-cmd,
+#brackets-trello .comment-item:hover .btn-cmd,
+#brackets-trello .member-item:hover .btn-cmd{
+	display: block;
+}
+#brackets-trello .btn-cmd {
+	cursor: pointer;
+	width: 13px;
+	height: 13px;
+	position: absolute;
+	display: none;
+	top: 2px;
+}
+#brackets-trello .btn-delete {
+	background-image: url(img/delete.svg);
+}
+#brackets-trello .btn-hide {
+	background-image: url(img/hide.svg);
+}
+#brackets-trello .btn-edit {
+	background-image: url(img/edit.svg);
+}
+#brackets-trello .btn-add {
+	background-image: url(img/add.svg);
+}
+#brackets-trello .comments .btn-add,
+#brackets-trello .card-desc .btn-edit,
+#brackets-trello .comment-item .btn-delete,
+#brackets-trello .card-name .btn-delete,
+#brackets-trello .board-name .btn-delete,
+#brackets-trello .list-name .btn-delete,
+#brackets-trello .checklist-name .btn-delete,
+#brackets-trello .task-item .btn-delete {
+	right: 5px;
+}
+#brackets-trello .comment-item .btn-edit,
+#brackets-trello .card-name .btn-edit,
+#brackets-trello .task-item .btn-edit,
+#brackets-trello .board-name .btn-edit,
+#brackets-trello .list-name .btn-edit,
+#brackets-trello .checklist-name .btn-hide {
+	right: 30px;
+}
+#brackets-trello .checklist-name .btn-edit {
+	right: 55px;
+}
+#brackets-trello .comment-item img {
+	float: left;
+	height: 30px;
+	width: 30px;
+	border: 1px solid #202020;
+	border-radius: 3px;
+}
+#brackets-trello .comment-item .comment-body {
+	padding-left: 40px;
+}
+#brackets-trello .comment-item h5 {
+	margin-bottom: 0;
 }

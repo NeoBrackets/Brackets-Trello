@@ -119,6 +119,8 @@ define(function (require, exports, module) {
 			listName: 'Doing',
 			name: 'Create a github Repo',
 			desc: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Porro harum ipsa natus dolore provident consequatur magnam, consectetur voluptatem repellat expedita officia officiis cum eaque vitae, architecto et, quas cumque accusantium',
+			activeUsername: 'member1',
+			activeUserRole: 'user',
 			checklists: [
 				{
 					id: "aaaa",
@@ -170,6 +172,29 @@ define(function (require, exports, module) {
 				{
 					avatarHash: "dfadsfas", fullName: 'Member 2', username: 'member2'
 				}
+			],
+			comments: [
+				{
+					id: "aaaaa",
+					avatarHash: "fdfadfas",
+					fullName: "Member 1",
+					username: "member1",
+					comment: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Et accusantium ab, eligendi neque, voluptatum, magni possimus laudantium sit nam dolorem veniam eum labore, soluta impedit? Sunt dignissimos temporibus, obcaecati recusandae."
+				},
+				{
+					id: "bbbbb",
+					avatarHash: "dfadsfas",
+					fullName: "Member 2",
+					username: "member2",
+					comment: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Et accusantium ab, eligendi neque, voluptatum, magni possimus laudantium sit nam dolorem veniam eum labore."
+				},
+				{
+					id: "ccccc",
+					avatarHash: "dfadsfas",
+					fullName: "Member 3",
+					username: "member1",
+					comment: "Lorem ipsum dolor sit amet, consectetur adipisicing elit."
+				}
 			]
 		};
 
@@ -177,6 +202,23 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 
+	function _getBoardMembers() {
+		var result = $.Deferred();
+		return result.resolve({
+			members: [
+				{
+					fullName: "Member 1", username: "member1", avatarHash: "fdfadfas"
+				},
+				{
+					fullName: "Member 2", username: "member2", avatarHash: "dfadsfas"
+				},
+				{
+					fullName: "Member 3", username: "member3", avatarHash: "dfadsfas"
+				}
+			]
+		}).promise();
+	}
+	
 	function _createNewBoard(name) {
 		var result = $.Deferred();
 		result.resolve('Created new Board');
@@ -201,18 +243,140 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 	
+	function _createNewChecklist(name, tasks) {
+		var result = $.Deferred();
+		result.resolve('Created new Checklist');
+		return result.promise();
+	}
+	
+	function _addNewMembers(members) {
+		return $.Deferred().resolve("members were added to active card").promise();
+	}
+	
 	function _performSync(tasks) {
 		var result = $.Deferred();
 		result.resolve('Sync was performed');
 		return result.promise();
 	}
 	
-	exports._getUserBoards = _getUserBoards;
-	exports._getBoardLists = _getBoardLists;
-	exports._getCardTasks = _getCardTasks;
-	exports._createNewBoard = _createNewBoard;
-	exports._createNewList = _createNewList;
-	exports._createNewCard = _createNewCard;
-	exports._createNewTasks = _createNewTasks;
-	exports._performSync = _performSync;
+	function _updateBoardName(name) {
+		var result = $.Deferred();
+		result.resolve('Board was updated');
+		return result;
+	}
+	
+	function _updateListName(id, name) {
+		var result = $.Deferred();
+		result.resolve('List was updated');
+		return result;
+	}
+	
+	function _updateCardName(name) {
+		var result = $.Deferred();
+		result.resolve('Card was Updated');
+		return result.promise();
+	}
+	
+	function _updateCardDesc(desc) {
+		var result = $.Deferred();
+		result.resolve('Card Was Updated');
+		return result.promise(); 
+	}
+	
+	function _updateChecklistName(id, name) {
+		var result = $.Deferred();
+		result.resolve('Checklist was updated');
+		return result.promise();
+	}
+	
+	function _updateTaskName(id, name) {
+		var result = $.Deferred();
+		result.resolve('Task was updated');
+		return result.promise();
+	}
+	
+	function _deleteBoard(boardId) {
+		var result = $.Deferred();
+		result.resolve("Board was deleted.");
+		return result.promise();
+	}
+	
+	function _deleteList(listId) {
+		var result = $.Deferred();
+		result.resolve("list was deleted.");
+		return result.promise();
+	}
+	
+	function _deleteCard(cardId) {
+		var result = $.Deferred();
+		result.resolve("card was deleted.");
+		return result.promise();
+	}
+	
+	function _deleteChecklist(checklistId) {
+		var result = $.Deferred();
+		result.resolve("checklist was deleted.");
+		return result.promise();
+	}
+	
+	function _deleteTask(taskId) {
+		var result = $.Deferred();
+		result.resolve('Task was deleted');
+		return result;
+	}
+	
+	function _deleteMember(username) {
+		var result = $.Deferred();
+		return result.resolve('Member ' + username + ' was removed from this card').promise();
+	}
+	
+	function _deleteComment(commentId) {
+		var result = $.Deferred();
+		result.resolve("Comment was deleted!");
+		return result;
+	}
+	
+	function _addComment(commentText) {
+		var result = $.Deferred();
+		result.resolve("Comment was added!");
+		return result;
+	}
+	
+	function _updateComment(commentId, commentText) {
+		var result = $.Deferred();
+		result.resolve("Comment was updated!");
+		return result;
+	}
+	
+	function _transferCard(fromListId, toListId, cardId) {
+		return $.Deferred().resolve("Card was moved").promise();
+	}
+	
+	exports._getUserBoards			= _getUserBoards;
+	exports._getBoardLists			= _getBoardLists;
+	exports._getCardTasks			= _getCardTasks;
+	exports._getBoardMembers		= _getBoardMembers;
+	exports._createNewBoard			= _createNewBoard;
+	exports._createNewList			= _createNewList;
+	exports._createNewCard			= _createNewCard;
+	exports._createNewTasks			= _createNewTasks;
+	exports._performSync			= _performSync;
+	exports._createNewChecklist 	= _createNewChecklist;
+	exports._addNewMembers			= _addNewMembers;
+	exports._updateBoardName		= _updateBoardName;
+	exports._updateListName			= _updateListName;
+	exports._updateCardName			= _updateCardName;
+	exports._updateCardDesc			= _updateCardDesc;
+	exports._updateChecklistName	= _updateChecklistName;
+	exports._updateTaskName			= _updateTaskName;
+	exports._deleteBoard			= _deleteBoard;
+	exports._deleteList				= _deleteList;
+	exports._deleteCard				= _deleteCard;
+	exports._deleteChecklist		= _deleteChecklist;
+	exports._deleteTask				= _deleteTask;
+	exports._deleteMember			= _deleteMember;
+	exports._deleteComment			= _deleteComment;
+	exports._addComment				= _addComment;
+	exports._updateComment			= _updateComment;
+	exports._transferCard			= _transferCard;
 });

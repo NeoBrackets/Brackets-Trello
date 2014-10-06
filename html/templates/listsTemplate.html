@@ -1,8 +1,17 @@
-<h4>{{name}}</h4>
+<h4 class="board-name">
+	{{name}}
+	<i class="btn-cmd btn-edit cmd-edit-board" />
+	<i class="btn-cmd btn-delete cmd-delete-board" />
+</h4>
 <div class="lists">
 	{{#lists}}
 	<div class="list-item" id="{{id}}">
-		<h5><a href="#">{{name}}</a><span>{{totalCards}}</span></h5>
+		<h5 class="list-name">
+			<a href="#">{{name}}</a>
+			<span>{{totalCards}}</span>
+			<i class="btn-cmd btn-edit cmd-edit-list" data-list-id="{{id}}" />
+			<i class="btn-cmd btn-delete cmd-delete-list" data-list-id="{{id}}" />
+		</h5>
 		<div class="cards">
 			{{#cards}}
 			<div class="card-item" id="{{id}}">
@@ -10,9 +19,9 @@
 				<span>{{taskCount}}</span>
 			</div>
 			{{/cards}}
-			<h5 class="cmd cmd-new-card" data-list-id="{{id}}">Add New Card</h5>
 		</div>
+		<div class="cmd cmd-new-card" data-list-id="{{id}}">Add New Card</div>
 	</div>
 	{{/lists}}
-	<h5 class="cmd cmd-new-list" data-board-id="{{id}}">Add New List</h5>
+	<div class="cmd cmd-new-list" data-board-id="{{id}}">Add New List</div>
 </div>

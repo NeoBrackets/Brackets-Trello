@@ -1,28 +1,61 @@
 <h4>{{boardName}} / {{listName}}</h4>
-<h5>{{name}}</h5>
-<p>{{desc}}</p>
+<h5 class="card-name">
+	{{name}}
+	<i class="btn-cmd btn-delete cmd-delete-card" />
+	<i class="btn-cmd btn-edit cmd-edit-card-name" />
+</h5>
+<p class="card-desc">
+	{{desc}}
+	<i class="btn-cmd btn-edit cmd-edit-card-desc" />
+</p>
+<div class="comments">
+	<h5 class="cmd-hide-comments">Comments <i class="btn-cmd btn-add cmd-add-comment"/></h5>
+	{{#comments}}
+		<div class="comment-item" id="{{id}}">
+			<a href="https://trello.com/{{username}}"><img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})"></a>
+			<div class="comment-body">
+				<h5>
+					<a href="https://trello.com/{{username}}">{{fullName}} @{{username}}</a>
+				</h5>
+				<p class="comment">{{comment}}</p>
+			</div>
+		</div>
+	{{/comments}}
+</div>
 <div class="checklists">
 	{{#checklists}}
 	<div class="checklist-item" id="{{id}}">
-		<h5>{{name}}</h5>
+		<h5 class="checklist-name">
+			{{name}}
+			<i class="btn-cmd btn-edit cmd-edit-checklist" data-checklist-id="{{id}}" />
+			<i class="btn-cmd btn-hide cmd-hide-checked"/>
+			<i class="btn-cmd btn-delete cmd-delete-checklist" data-checklist-id="{{id}}"/>
+		</h5>
 		<div class="tasks">
 			{{#checkItems}}
 			<div class="task-item checkbox">
 				<input type="checkbox" class="task-state" id="{{id}}">
 				<label for="{{id}}">{{name}}</label>
+				<i class="btn-cmd btn-edit cmd-edit-task" data-task-id="{{id}}" />
+				<i class="btn-cmd btn-delete cmd-delete-task" data-task-id="{{id}}" />
 			</div>
 			{{/checkItems}}
 		</div>
 		<div class="cmd cmd-new-tasks" data-checklist-id="{{id}}">Add New Tasks</div>
 	</div>
 	{{/checklists}}
+	<div class="cmd cmd-new-checklist">Add New Checklist</div>
 </div>
 
 <div class="members">
 <h5>Members:</h5>
 {{#members}}
 	<div class="member-item">
-		<a href="https://trello.com/{{username}}"><img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})"></a>
+		<a href="https://trello.com/{{username}}">
+			<img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})">
+		</a>
+		<i class="btn-cmd btn-delete cmd-delete-member" data-username="{{username}}"/>
 	</div>
 {{/members}}
+	<div class="cmd cmd-new-member">Add New Members</div>
 </div>
