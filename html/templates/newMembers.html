@@ -1,0 +1,17 @@
+<div id="brackets-trello-new-members" class="template modal">
+	<div class="modal-header">
+		<h1 class="dialog-title">Add New Members</h1>
+	</div>
+	<div class="modal-body">
+		{{#members.members}}
+		<div class="row">
+			<div class="span1"><label><input type="checkbox" data-username="{{username}}"> <img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}}"></label></div>
+			<div class="span3"><h5>{{fullName}} <a href="https://trello.com/{{username}}">@{{username}}</a></h5></div>
+		</div>
+		{{/members.members}}
+	</div>
+	<div class="modal-footer">
+		<button class="dialog-button btn primary" data-button-id="save">{{strings.BTN_DONE}}</button>
+		<button class="dialog-button btn" data-button-id="cancel">{{strings.BTN_CANCEL}}</button>
+	</div>
+</div>
