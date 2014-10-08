@@ -209,11 +209,11 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newTasksHTML, strings)),
 			$dialog = dialog.getElement(),
 			tasks = [];
-		$dialog.find('.task-name').focus();
+		$dialog.find('.task-name:first-child').focus();
 		$dialog.find('.btn-add-task').click(function() {
 			$dialog.find('.form-horizontal').append($(Mustache.render(newTaskTemplate, strings)));
+			$dialog.find('.task-name:last-child').focus();
 		});
-
 		dialog.done(function(id) {
 			if (id === 'save') {
 				$dialog.find('.task-name').each(function() {
