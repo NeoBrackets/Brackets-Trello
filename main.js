@@ -691,21 +691,32 @@ define(function (require, exports, module) {
 			$dialog = dialog.getElement();
 		$dialog.find('.comment-text').val($(this).parent('h5').siblings('p').html()).focus();
 		var commentId = $(this).data('comment-id');
+		var cardId = _prefs.get("selected-card");
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._updateComment(commentId, $dialog.find('.comment-text').val())
-					.done(_displayNotification)
+				var commentText = $dialog.find('.comment-text').val();
+				Trello._edit('comment',{card:cardId,comment:commentId},{text:commentText})
+					.done(function(data) {
+						_displayNotification();
+						$('.tab-tasks', $panel)
+						.children('.comments').children('#'+commentId).children('.comment-body').children('.comment').html(commentText);
+					})
 					.fail(_displayError);
 			}
 		});
 	}
 
 	function _openDeleteCommentDialog() {
+		var cardId = _prefs.get("selected-card");
 		var commentId = $(this).data('comment-id');
 		Dialogs.showModalDialogUsingTemplate($(Mustache.render(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.COMMENT))))
 			.done(function(id) {
 				if (id === 'yes') {
-					Trello._deleteComment(commentId).done(_displayNotification).fail(_displayError);
+					Trello._delete('comment',{comment:commentId,card:cardId}).done(function(data) {
+						_displayNotification();
+						$('.tab-tasks', $panel)
+						.children('.comments').children('#'+commentId).remove();
+					}).fail(_displayError);
 				}
 			});
 	}

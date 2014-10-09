@@ -337,8 +337,12 @@ define(function (require, exports, module) {
 			case "checkitem":
 				url = 'https://api.trello.com/1/cards/'+ids.card+'/checklist/'+ids.checklist+'/checkItem/'+ids.checkitem+'/name'+editStr;
 				break;
+			case "comment":
+				url = 'https://api.trello.com/1/cards/'+ids.card+'/actions/'+ids.comment+'/comments/'+editStr;
+				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
+		console.log('url: '+url);
 		$.ajax({
 			url:url,
 			type: sendType
@@ -389,6 +393,9 @@ define(function (require, exports, module) {
 				break;
 			case "cardMember":
 				url = 'https://api.trello.com/1/cards/'+ids.card+'/idMembers/'+ids.member+'?';
+				break;
+			case "comment":
+				url = 'https://api.trello.com/1/cards/'+ids.card+'/actions/'+ids.comment+'/comments?';
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
