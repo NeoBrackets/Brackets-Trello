@@ -1,28 +1,23 @@
 <h4>{{boardName}} / {{listName}}</h4>
-<h5>{{name}}</h5>
-<p>{{desc}}</p>
+<h5 class="card-name" id="{{id}}">
+	<span id="card-name">{{name}}</span>
+	<i class="btn-cmd btn-delete cmd-delete-card" data-card-id="{{id}}" />
+	<i class="btn-cmd btn-edit cmd-edit-card-name" data-card-id="{{id}}" />
+</h5>
+<p class="card-desc">
+	<span id="card-desc">{{desc}}</span>
+	<i class="btn-cmd btn-edit cmd-edit-card-desc" data-card-id="{{id}}"/>
+</p>
 <div class="checklists">
-	{{#checklists}}
-	<div class="checklist-item" id="{{id}}">
-		<h5>{{name}}</h5>
-		<div class="tasks">
-			{{#checkItems}}
-			<div class="task-item checkbox">
-				<input type="checkbox" class="task-state" id="{{id}}">
-				<label for="{{id}}">{{name}}</label>
-			</div>
-			{{/checkItems}}
-		</div>
-		<div class="cmd cmd-new-tasks" data-checklist-id="{{id}}">Add New Tasks</div>
-	</div>
-	{{/checklists}}
+	{{> checklists.html}}
+	<div class="cmd cmd-new-checklist">Add New Checklist</div>
 </div>
-
+<div class="comments">
+	<h5 class="cmd-hide-comments">Comments <i class="btn-cmd btn-add cmd-add-comment"/></h5>
+	{{> comments.html}}
+</div>
 <div class="members">
-<h5>Members:</h5>
-{{#members}}
-	<div class="member-item">
-		<a href="https://trello.com/{{username}}"><img src="https://trello-avatars.s3.amazonaws.com/{{avatarHash}}/30.png" title="{{fullName}} ({{username}})"></a>
-	</div>
-{{/members}}
+	<h5>Members:</h5>
+	{{> members.html}}
+	<div class="cmd cmd-new-member">Add New Members</div>
 </div>
