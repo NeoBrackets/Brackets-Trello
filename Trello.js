@@ -170,13 +170,13 @@ define(function (require, exports, module) {
 		var setStr = '?';
 		switch (type) {
 			case "list":
-				setStr = 'idBoard='+ids.board+'&';
+				setStr += 'idBoard='+ids.board+'&';
 				break;
 			case "card":
-				setStr = 'idList='+ids.list+'&';
+				setStr += 'idList='+ids.list+'&';
 				break;
 			case "checklist":
-				setStr = 'idBoard='+ids.board+'&idCard='+ids.card+'&';
+				setStr += 'idBoard='+ids.board+'&idCard='+ids.card+'&';
 				break;
 		}
 		for (var key in set) {
