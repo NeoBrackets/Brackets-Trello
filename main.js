@@ -207,12 +207,13 @@ define(function (require, exports, module) {
 	 * Open New List Dialog
 	 */
 	function _openNewListDialog() {
+		var boardId = _prefs.get('selected-board');
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newListHTML, strings)),
 			$dialog = dialog.getElement();
 		$dialog.find('.list-name').focus();
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._create('list',{board:_prefs.get('selected-board')},{name:$dialog.find('.list-name').val(),pos:"bottom"})
+				Trello._create('list',{board:boardId},{name:$dialog.find('.list-name').val(),pos:"bottom"})
 				.done(
 					function(data) {
 						_displayNotification;
