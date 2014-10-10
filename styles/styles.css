@@ -78,6 +78,10 @@
 #brackets-trello .trello-content a {
 	color: #cccccc;
 }
+#brackets-trello .trello-content .comment-item .comment-name,
+#brackets-trello .trello-content .comment-counter {
+    color: #69b966;
+}
 #brackets-trello .trello-content .tab {
 	display: none;
 }
@@ -138,6 +142,7 @@
 	vertical-align: middle;
 }
 #brackets-trello .list-item span,
+#brackets-trello .comment-item span,
 #brackets-trello .card-item span {
 	color: #adb9bd;
 	margin-left: 10px;

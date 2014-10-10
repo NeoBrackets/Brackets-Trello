@@ -8,8 +8,11 @@ define(function (require, exports, module) {
 		AppInit						= brackets.getModule('utils/AppInit'),
 		PreferencesManager			= brackets.getModule('preferences/PreferencesManager'),
 		CommandManager				= brackets.getModule('command/CommandManager'),
+		Commands            		= brackets.getModule( 'command/Commands' ),
+        EditorManager       		= brackets.getModule( 'editor/EditorManager' ),
 		Dialogs						= brackets.getModule('widgets/Dialogs'),
 		Menus						= brackets.getModule('command/Menus'),
+		Parser		              	= require('modules/parser'),
 		Trello						= require('Trello'),
 		strings						= require('i18n!nls/strings');
 
@@ -33,7 +36,9 @@ define(function (require, exports, module) {
 		editChecklistNameTemplate	= require('text!html/templates/editChecklistName.html'),
 		editTaskNameTemplate		= require('text!html/templates/editTaskName.html'),
 		editCommentsTemplate		= require('text!html/templates/editCommentsTemplate.html'),
-		deleteConfirmationTemplate	= require('text!html/templates/deleteConfirmationTemplate.html');
+		deleteConfirmationTemplate	= require('text!html/templates/deleteConfirmationTemplate.html'),
+		changesListTemplate = require('text!html/templates/changesListTemplate.html'),
+        commentTemplate     = require('text!html/templates/commentTemplate.html');
 
 	var partTemplates 				= {};
 	partTemplates.lists 			= require('text!html/templates/parts/lists.html');
@@ -874,6 +879,24 @@ define(function (require, exports, module) {
 			_changeTaskState(checkListId,checkItemId);
 		});
 
+		// Changes List comment
+        $panel.on('click', '.comment-item', function(e){
+            e.stopPropagation();
+            var lineNumber = $(this).data('line-number'),
+                filePath = $(this).data('file-path'),
+                lineCh = $(this).data('line-ch');
+
+            // Open file and locate to comment in editor.
+            CommandManager.execute( Commands.FILE_OPEN, { fullPath: filePath } ).done( function() {
+                // Set focus on editor.
+                EditorManager.focusEditor();
+                EditorManager.getCurrentFullEditor().setCursorPos(
+                    lineNumber - 1,
+                    lineCh,
+                    true );
+            } );
+        });
+
 		$panel.on('click', '.checklist-name', function() {
 			var $checklist = $(this).siblings('.tasks');
 			if ($checklist.css('display') === 'none') {
@@ -1039,7 +1062,10 @@ define(function (require, exports, module) {
 			var combinedTemplate = _combineTemplates(listsTemplate);
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(combinedTemplate, data));
 		})
-		.fail(_displayError);
+		.fail(_displayError)
+		.always(function(){
+            displayTrelloComments(Parser.getTrelloComments());
+        });
 	}
 	
 	/**
@@ -1121,6 +1147,57 @@ define(function (require, exports, module) {
 		}
 	}
 
+    function displayTrelloComments(newComments) {
+        var compliedChangesList = null;
+
+        // check lists panel exist
+        if ($('.tab-lists .lists', $panel).length === 0) {
+            return;
+        }
+
+        // remove older comment item
+        $('.list-item .comment-item', $panel).remove();
+
+        // merge comment item to trello list
+        $('.list-item h5 a', $panel).each(function(index, listElem){
+            var listName = $(listElem).html(),
+                countElem = $(listElem).parent().find('span'),
+                nameRegexp = '\\s*' + listName.replace(/\s+/g, '\\s*') + '\\s*',
+                tagRegexp = new RegExp(nameRegexp, 'gi'),
+                groupComments = [],
+                otherComments = [],
+                commentHtml = "";
+
+            newComments.forEach(function(comment){
+                if (tagRegexp.test(comment.tag())) {
+                    groupComments.push(comment);
+                } else {
+                    otherComments.push(comment);
+                }
+            });
+
+            newComments = otherComments;
+            // render
+            if (groupComments.length > 0) {
+				countElem.html('<span class="comment-counter">' + groupComments.length + '+</span>'
+						   + $(listElem).closest('.list-item').find('.cards .card-item').length);
+                commentHtml = Mustache.render(commentTemplate, {
+                    comments: groupComments
+                });
+                $(commentHtml).insertBefore($(listElem).closest('.list-item').find('.cards').children().first());
+            }
+
+        });
+
+        // remove older Changes List.
+        $('.tab-lists .lists #changes-list', $panel).remove();
+        compliedChangesList = Mustache.render(changesListTemplate, {
+            count: newComments.length,
+            comments: newComments
+        });
+        $(compliedChangesList).insertBefore($('.tab-lists .lists', $panel).children().first());
+    }
+
 	/////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////// CHANGE ///////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -1192,6 +1269,8 @@ define(function (require, exports, module) {
 		var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
 		CommandManager.register(_ExtensionLabel, _ExtensionID, _Main);
 		viewMenu.addMenuItem(_ExtensionID, _ExtensionShortcut);
+		Parser.setup();
+        Parser.onTrelloCommentsChange(displayTrelloComments);
 	});
 
 	$icon = $('<a>').attr({
