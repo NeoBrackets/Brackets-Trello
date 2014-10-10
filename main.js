@@ -681,6 +681,10 @@ define(function (require, exports, module) {
 						$('.tab-tasks', $panel).children('.comments').children('h5').after(
 							Mustache.render(combinedTemplate, {comments:commentObj})
 						);
+						// you can always delete/edit your own card
+						$('#'+commentObj.id).find('.comment-body h5')
+							.append($('<i class="btn-cmd btn-edit cmd-edit-comment" data-comment-id="'+commentObj.id+'" />'))
+							.append($('<i class="btn-cmd btn-delete cmd-delete-comment" data-comment-id="'+commentObj.id+'" />'));
 					})
 					.fail(_displayError);
 			}
