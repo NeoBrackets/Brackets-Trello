@@ -1,0 +1,14 @@
+{{#checklists}}
+	<div class="checklist-item" id="{{id}}">
+		<h5 class="checklist-name">
+			<span id="checklist-name">{{name}}</span>
+			<i class="btn-cmd btn-edit cmd-edit-checklist" data-checklist-id="{{id}}" />
+			<i class="btn-cmd btn-hide cmd-hide-checked" data-checklist-id="{{id}}"/>
+			<i class="btn-cmd btn-delete cmd-delete-checklist" data-checklist-id="{{id}}"/>
+		</h5>
+		<div class="tasks">
+			{{> checkitems.html}}
+		</div>
+		<div class="cmd cmd-new-tasks" data-checklist-id="{{id}}">Add New Tasks</div>
+	</div>
+{{/checklists}}

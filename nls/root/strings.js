@@ -33,5 +33,13 @@ define({
 	MSG_NEW_LIST:			'New list has been created.',
 	MSG_NEW_CARD:			'New card has been created.',
 	MSG_NEW_TASKS:			'New tasks have been added to the card.',
-	MSG_AUTOSYNC_TIME:		'AutoSync time must be more than 2 seconds.'
+	MSG_AUTOSYNC_TIME:		'AutoSync time must be more than 2 seconds.',
+	MSG_DELETE_BOARD:		'Are you sure you want to archive this board?',
+	MSG_DELETE_LIST:		'Are you sure you want to archive this list?',
+	MSG_DELETE_CARD:		'Are you sure you want to archive this card?',
+	MSG_DELETE_TASK:		'Are you sure you want to delete this task?',
+	MSG_DELETE_CHECKLIST:	'Are you sure you want to delete this checklist?',
+	MSG_DELETE_COMMENT:		'Are you sure you want to delete this comment?',
+	MSG_DELETE_MEMBER:		'Are you sure you want to remove this member?',
+	BTN_YES:				'Yes'
 });

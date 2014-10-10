@@ -1,0 +1,14 @@
+{{#lists}}
+	<div class="list-item" id="{{id}}">
+		<h5 class="list-name">
+			<a href="#">{{name}}</a>
+			<span class="totalCards">{{totalCards}}</span>
+			<i class="btn-cmd btn-edit cmd-edit-list" data-list-id="{{id}}" />
+			<i class="btn-cmd btn-delete cmd-delete-list" data-list-id="{{id}}" />
+		</h5>
+		<div class="cards">
+			{{> cardsInList.html}}
+		</div>
+		<div class="cmd cmd-new-card" data-list-id="{{id}}">Add New Card</div>
+	</div>
+{{/lists}}

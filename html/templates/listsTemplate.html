@@ -1,18 +1,9 @@
-<h4>{{name}}</h4>
+<h4 class="board-name">
+	<span id="board-name">{{name}}</span>
+	<i class="btn-cmd btn-edit cmd-edit-board" data-board-id="{{id}}" />
+	<i class="btn-cmd btn-delete cmd-delete-board" data-board-id="{{id}}"/>
+</h4>
 <div class="lists">
-	{{#lists}}
-	<div class="list-item" id="{{id}}">
-		<h5><a href="#">{{name}}</a><span>{{totalCards}}</span></h5>
-		<div class="cards">
-			{{#cards}}
-			<div class="card-item" id="{{id}}">
-				<a href="#">{{name}}</a>
-				<span>{{taskCount}}</span>
-			</div>
-			{{/cards}}
-			<h5 class="cmd cmd-new-card" data-list-id="{{id}}">Add New Card</h5>
-		</div>
-	</div>
-	{{/lists}}
-	<h5 class="cmd cmd-new-list" data-board-id="{{id}}">Add New List</h5>
+	{{> lists.html}}
+	<div class="cmd cmd-new-list" data-board-id="{{id}}">Add New List</div>
 </div>
