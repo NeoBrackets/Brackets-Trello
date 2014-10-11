@@ -754,7 +754,7 @@ define(function (require, exports, module) {
 
 		var $notification = $('.notification', $panel);
 
-		$notification.empty().html(text).animate({
+		$notification.empty().css('top', ($panel.height() + $panel.prop('scrollTop') - 40) + 'px').html(text).animate({
 			opacity: 'show'
 		}, 'fast');
 		window.setTimeout(function() {
@@ -787,8 +787,9 @@ define(function (require, exports, module) {
 		// Drag and Drop of Cards
 		$panel.on('mousedown', '.card-item', function(evt) {
 			var py = evt.pageY, $this = $(this), offset = $this.offset();
-			var $dropzone, fromListId, toListId, cardId;
+			var $dropzone, fromListId, toListId, cardId, itemIndex;
 			fromListId = $this.parents('.list-item').attr('id');
+			itemIndex = $this.index();
 
 			$(document).on('mousemove', function(e) {
 				$this.css({
@@ -816,6 +817,8 @@ define(function (require, exports, module) {
 						Trello._move('card',
 									 {toList:toListId,card: cardId},{pos:"bottom"})
 						.done(_displayNotification).fail(_displayError);
+					} else {
+						$dropzone.find('.cards .card-item:eq('+itemIndex+')').before($this);
 					}
 				}
 				$(this).off('mousemove').off('mouseup');
@@ -1125,7 +1128,7 @@ define(function (require, exports, module) {
 
 		var $errormsg = $('.errormsg', $panel);
 
-		$errormsg.empty().html(text).animate({
+		$errormsg.empty().css('top', ($panel.height() + $panel.prop('scrollTop') - 40) + 'px').html(text).animate({
 			opacity: 'show'
 		}, 'fast');
 		window.setTimeout(function() {
