@@ -5,7 +5,7 @@ define(function (require, exports, module) {
         // TODO trello Support html next step
         commentRegexp = {
             'javascript': {
-                prefix: '(?:\\/\\/)+\\s*(',
+                prefix: '(?:\\/\\/)+\\s*((?:\\d|[a-f]){24})?\\s*(',
                 suffix: '\\s*)\\s*\\bTrello\\b[:\\s]\\s*(.*?)(?=\\n|\\r\\n|\\r|$)'
             }
         };
@@ -32,8 +32,9 @@ define(function (require, exports, module) {
         commentExp = new RegExp(commentRegexp[type].prefix + tagExp + commentRegexp[type].suffix, 'gi');
         while ((matchArray = commentExp.exec(content)) !== null) {
             trelloComment = new Comment();
-            trelloComment.tag(matchArray[1]);
-            trelloComment.content(matchArray[2]);
+			trelloComment.cardId(matchArray[1]);
+            trelloComment.tag(matchArray[2]);
+            trelloComment.content(matchArray[3]);
             trelloComment.lineNumber(matchArray.index);
             trelloComment.lineCh(matchArray.index - content.lastIndexOf( '\n' , matchArray.index ) - 1);
             allTrelloComments.push(trelloComment);

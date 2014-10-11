@@ -7,6 +7,7 @@ define(function (require, exports, module) {
 	var ExtensionUtils				= brackets.getModule('utils/ExtensionUtils'),
 		AppInit						= brackets.getModule('utils/AppInit'),
 		PreferencesManager			= brackets.getModule('preferences/PreferencesManager'),
+		DocumentManager         	= brackets.getModule("document/DocumentManager"),
 		CommandManager				= brackets.getModule('command/CommandManager'),
 		Commands            		= brackets.getModule( 'command/Commands' ),
         EditorManager       		= brackets.getModule( 'editor/EditorManager' ),
@@ -37,8 +38,8 @@ define(function (require, exports, module) {
 		editTaskNameTemplate		= require('text!html/templates/editTaskName.html'),
 		editCommentsTemplate		= require('text!html/templates/editCommentsTemplate.html'),
 		deleteConfirmationTemplate	= require('text!html/templates/deleteConfirmationTemplate.html'),
-		changesListTemplate = require('text!html/templates/changesListTemplate.html'),
-        commentTemplate     = require('text!html/templates/commentTemplate.html');
+		changesListTemplate 		= require('text!html/templates/changesListTemplate.html');
+
 
 	var partTemplates 				= {};
 	partTemplates.lists 			= require('text!html/templates/parts/lists.html');
@@ -47,6 +48,9 @@ define(function (require, exports, module) {
 	partTemplates.checkitems		= require('text!html/templates/parts/checkitems.html');
 	partTemplates.comments			= require('text!html/templates/parts/comments.html');
 	partTemplates.members			= require('text!html/templates/parts/members.html');
+	partTemplates.trelloComments	= require('text!html/templates/parts/trelloComments.html');
+
+	var trelloCommentCards = {};
 
 	// Extension Info.
 	var _ExtensionID		= 'brackets-trello',
@@ -873,7 +877,20 @@ define(function (require, exports, module) {
             _savePrefs('selected-list', $(this).parents('.list-item').attr('id'));
             _savePrefs('selected-list-name', $(this).parents('.list-item').find('h5 a').html());
 			_savePrefs('selected-card', $(this).attr('id'));
-			_displayTasks();
+			if (e.shiftKey && $(this).attr('id') in trelloCommentCards) {
+				// Open file and locate to comment in editor.
+				var comment = trelloCommentCards[$(this).attr('id')];
+				CommandManager.execute( Commands.FILE_OPEN, { fullPath: comment._filePath } ).done( function() {
+					// Set focus on editor.
+					EditorManager.focusEditor();
+					EditorManager.getCurrentFullEditor().setCursorPos(
+						comment._lineNum - 1,
+						comment._lineCh,
+						true );
+				});
+			} else {
+				_displayTasks();
+			}
 		});
 
 		// Task Name
@@ -969,14 +986,10 @@ define(function (require, exports, module) {
 		$panel.on('click', '.cmd-edit-comment', _openEditCommentDialog);
 
 		// Push Trello Comments
-		$panel.on('click', '.cmd-push-comments', function(e) {
-			e.stopPropagation();
-		});
+		$panel.on('click', '.cmd-push-comments', _pushComments);
+
 		// Push a single Trello Comment
-		$panel.on('click', '.cmd-push-comment', function(e) {
-			e.stopPropagation();
-			alert("Push Single comment!");
-		});
+		$panel.on('click', '.cmd-push-comment', _pushComment);
 	}
 
 	function _getActiveDropzone($cardItem) {
@@ -1164,6 +1177,7 @@ define(function (require, exports, module) {
 
     function displayTrelloComments(newComments) {
         var compliedChangesList = null;
+		trelloCommentCards = {};
 
         // check lists panel exist
         if ($('.tab-lists .lists', $panel).length === 0) {
@@ -1185,7 +1199,11 @@ define(function (require, exports, module) {
 
             newComments.forEach(function(comment){
                 if (tagRegexp.test(comment.tag())) {
-                    groupComments.push(comment);
+					if (!comment.cardId()) {
+                    	groupComments.push(comment);
+					} else {
+						trelloCommentCards[comment.cardId()] = comment;
+					}
                 } else {
                     otherComments.push(comment);
                 }
@@ -1195,7 +1213,7 @@ define(function (require, exports, module) {
             // render
             if (groupComments.length > 0) {
 				countElem.html('+'+groupComments.length);
-                commentHtml = Mustache.render(commentTemplate, {
+                commentHtml = Mustache.render(partTemplates.trelloComments, {
                     comments: groupComments
                 });
 				// are there normal cards in this list ?
@@ -1207,15 +1225,143 @@ define(function (require, exports, module) {
             }
 
         });
+		console.log('pushed comments: ',trelloCommentCards);
 
         // remove older Changes List.
         $('.tab-lists .lists #changes-list', $panel).remove();
-        compliedChangesList = Mustache.render(changesListTemplate, {
+        compliedChangesList = Mustache.render(_combineTemplates(changesListTemplate), {
             count: newComments.length,
             comments: newComments
         });
         $(compliedChangesList).insertBefore($('.tab-lists .lists', $panel).children().first());
     }
+
+	function _pushComment(e) {
+		e.stopPropagation();
+		var listId = $(this).parent('.comment-item').parent('.cards').parent('.list-item').attr("id");
+		var comment =
+		{
+			_content:  $(this).parent('.comment-item').find('.comment-name').text(),
+			_filePath:  $(this).parent('.comment-item').data('file-path'),
+			_lineNum:  $(this).parent('.comment-item').data('line-number'),
+			_lineCh:  $(this).parent('.comment-item').data('line-ch')
+		};
+		var pos = $(this).parent('.comment-item').index();
+		console.log('listId: '+listId);
+		console.log('comment: ',comment);
+		console.log('pos: '+pos);
+
+		var fullPath = DocumentManager.getCurrentDocument().file._path;
+		var cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
+		console.log('fullPath: '+fullPath);
+		console.log('cursorPos: ',cursorPos);
+
+		Trello._create('card',{list:listId},{name:comment._content}).done(function(data) {
+			_pushCommentToListUI(listId,comment,data,pos);
+			CommandManager.execute( Commands.FILE_OPEN, { fullPath: fullPath } ).done( function() {
+				// Set focus on editor.
+				EditorManager.focusEditor();
+				EditorManager.getCurrentFullEditor().setCursorPos(
+					cursorPos.line,
+					cursorPos.ch,
+					true
+				);
+			});
+		});
+
+
+	}
+
+	function _pushComments(e) {
+		e.stopPropagation();
+		var listId = $(this).data('list-id');
+		var listName = $(this).data('list-name');
+		console.log('listId: '+listId);
+		console.log('listName: '+listName);
+		var comments = Parser.getTrelloComments();
+
+		var nameRegexp = '\\s*' + listName.replace(/\s+/g, '\\s*') + '\\s*',
+			tagRegexp = new RegExp(nameRegexp, 'gi'),
+			listComments = [];
+
+		comments.forEach(function(comment){
+			if (tagRegexp.test(comment.tag())) {
+				listComments.push(comment);
+			}
+		});
+		var fullPath = DocumentManager.getCurrentDocument().file._path;
+		var cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
+
+		_pushArrayToList(listComments,listId).done(function() {
+			CommandManager.execute( Commands.FILE_OPEN, { fullPath: fullPath } ).done( function() {
+				// Set focus on editor.
+				EditorManager.focusEditor();
+				EditorManager.getCurrentFullEditor().setCursorPos(
+					cursorPos.line,
+					cursorPos.ch,
+					true
+				);
+			});
+		});
+	}
+
+	function _pushArrayToList(comments,listId,start) {
+		if (typeof start === "undefined") start = 0;
+		var result = new $.Deferred();
+		Trello._create('card',{list:listId},{name:comments[start]._content}).done(function(data) {
+			_pushCommentToListUI(listId,comments[start],data,0);
+			if (++start < comments.length) {
+				_pushArrayToList(comments,listId,start);
+			} else {
+				result.resolve();
+			}
+		});
+		return result.promise();
+	}
+
+	function _pushCommentToListUI(listId,comment,data,pos) {
+		// delete the comment card...
+		$('.tab-lists', $panel).children('.lists').children('#'+listId).find('.cards').children('.comment-item:eq('+pos+')').remove();
+
+		// ... and add a correct card in the list
+		data.taskCount = '';
+		var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
+		$('.tab-lists', $panel).children('.lists').children('#'+listId).children('.cards').append(
+			Mustache.render(combinedTemplate, {cards:data})
+		);
+		// update the counters
+		var totalCardsEle = $('.tab-lists', $panel).children('.lists').children('#'+listId).find('.totalCards');
+		totalCardsEle.text(parseInt(parseInt(totalCardsEle.text())+1));
+		var commentCounterEle = $('.tab-lists', $panel).children('.lists').children('#'+listId).find('.comment-counter');
+		commentCounterEle.text('+'+parseInt(parseInt(commentCounterEle.text())-1));
+		if (parseInt(commentCounterEle.text()) < 0) {
+			commentCounterEle.text('');
+		}
+		// add the card id to the comment
+		console.log('comment: ',comment);
+		CommandManager.execute( Commands.FILE_OPEN, { fullPath: comment._filePath } ).done( function() {
+			// Set focus on editor.
+            EditorManager.focusEditor();
+			var document = EditorManager.getCurrentFullEditor().document;
+			var range = document.getRange(
+				{line:comment._lineNum - 1,ch:comment._lineCh},{line:comment._lineNum,ch:0}
+			);
+			var match = /\/\/\/*|\/\**/.exec(range);
+			var startCh = comment._lineCh+match.index+match[0].length;
+			console.log(match);
+			document.replaceRange(
+				' '+data.id+' ',
+				{
+					line: 	comment._lineNum - 1,
+					ch: 	startCh
+				},
+				{
+					line:	comment._lineNum - 1,
+					ch: 	startCh
+				});
+				CommandManager.execute(Commands.FILE_SAVE, { fullPath: comment._filePath });
+		} );
+	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////// CHANGE ///////////////////////////////////////////
