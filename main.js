@@ -766,7 +766,7 @@ define(function (require, exports, module) {
 
 	/**
 	 * Event Controller
-	 * 
+	 *
 	 * @param {Object} $panel
 	 */
 	function _panelEventController($panel) {
@@ -792,7 +792,7 @@ define(function (require, exports, module) {
 
 			$(document).on('mousemove', function(e) {
 				$this.css({
-					top: offset.top + e.pageY - py
+					top: offset.top + $panel.prop('scrollTop') + e.pageY - py
 				}).addClass('moving');
 				$dropzone = _getActiveDropzone($this);
 				if ($dropzone) {
@@ -1034,7 +1034,7 @@ define(function (require, exports, module) {
 		})
 		.fail(_displayError);
 	}
-	
+
 	/**
 	 * Display Users' Lists
 	 */
@@ -1067,7 +1067,7 @@ define(function (require, exports, module) {
             displayTrelloComments(Parser.getTrelloComments());
         });
 	}
-	
+
 	/**
 	 * Display Tasks Tab (all about a special card)
 	 */
