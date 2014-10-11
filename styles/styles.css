@@ -141,7 +141,10 @@
 	display: inline;
 	vertical-align: middle;
 }
-#brackets-trello .list-item span,
+#brackets-trello #changes-list span {
+	margin-left: 10px;
+}
+#brackets-trello .list-item .totalCards,
 #brackets-trello .comment-item span,
 #brackets-trello .card-item span {
 	color: #adb9bd;
