@@ -867,6 +867,8 @@ define(function (require, exports, module) {
 		// Card Name
 		$panel.on('click', '.card-item', function(e) {
 			e.stopPropagation();
+            _savePrefs('selected-list', $(this).parents('.list-item').attr('id'));
+            _savePrefs('selected-list-name', $(this).parents('.list-item').find('h5 a').html());
 			_savePrefs('selected-card', $(this).attr('id'));
 			_displayTasks();
 		});
