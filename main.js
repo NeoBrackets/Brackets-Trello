@@ -754,7 +754,7 @@ define(function (require, exports, module) {
 
 		var $notification = $('.notification', $panel);
 
-		$notification.empty().html(text).animate({
+		$notification.empty().css('top', ($panel.height() + $panel.prop('scrollTop') - 40) + 'px').html(text).animate({
 			opacity: 'show'
 		}, 'fast');
 		window.setTimeout(function() {
@@ -1128,7 +1128,7 @@ define(function (require, exports, module) {
 
 		var $errormsg = $('.errormsg', $panel);
 
-		$errormsg.empty().html(text).animate({
+		$errormsg.empty().css('top', ($panel.height() + $panel.prop('scrollTop') - 40) + 'px').html(text).animate({
 			opacity: 'show'
 		}, 'fast');
 		window.setTimeout(function() {
