@@ -325,6 +325,9 @@
 }
 #brackets-trello .cards .comment-item {
 	position: relative;
+	transition: padding-left linear 100ms;
+}
+#brackets-trello .cards .comment-item:hover {
 	padding-left: 24px;
 }
 #brackets-trello .cards .comment-item .btn-push {
