@@ -232,7 +232,7 @@ define(function (require, exports, module) {
 		});
 		return result.promise();
 	}
-	
+
 	/**
 	 * Create tasks inside a checklist
 	 * @param   {Array}    data        empty array at beginning next step filled with the latest tasks
