@@ -323,3 +323,14 @@
 #brackets-trello .comment-item h5 {
 	margin-bottom: 0;
 }
+#brackets-trello .cards .comment-item {
+	position: relative;
+	padding-left: 24px;
+}
+#brackets-trello .cards .comment-item .btn-push {
+	top: 2px;
+	left: 5px;
+}
+#brackets-trello .cards .comment-item:hover .btn-push {
+	display: block;
+}

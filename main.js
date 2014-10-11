@@ -972,6 +972,11 @@ define(function (require, exports, module) {
 		$panel.on('click', '.cmd-push-comments', function(e) {
 			e.stopPropagation();
 		});
+		// Push a single Trello Comment
+		$panel.on('click', '.cmd-push-comment', function(e) {
+			e.stopPropagation();
+			alert("Push Single comment!");
+		});
 	}
 
 	function _getActiveDropzone($cardItem) {
