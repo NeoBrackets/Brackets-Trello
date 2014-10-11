@@ -285,6 +285,9 @@
 #brackets-trello .btn-add {
 	background-image: url(img/add.svg);
 }
+#brackets-trello .btn-push {
+	background-image: url(img/push.svg);
+}
 #brackets-trello .comments .btn-add,
 #brackets-trello .card-desc .btn-edit,
 #brackets-trello .comment-item .btn-delete,
@@ -303,6 +306,7 @@
 #brackets-trello .checklist-name .btn-hide {
 	right: 30px;
 }
+#brackets-trello .list-name .btn-push,
 #brackets-trello .checklist-name .btn-edit {
 	right: 55px;
 }

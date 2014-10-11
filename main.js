@@ -967,6 +967,11 @@ define(function (require, exports, module) {
 		$panel.on('click', '.cmd-add-comment', _openAddCommentDialog);
 		$panel.on('click', '.cmd-delete-comment', _openDeleteCommentDialog);
 		$panel.on('click', '.cmd-edit-comment', _openEditCommentDialog);
+
+		// Push Trello Comments
+		$panel.on('click', '.cmd-push-comments', function(e) {
+			e.stopPropagation();
+		});
 	}
 
 	function _getActiveDropzone($cardItem) {
