@@ -141,7 +141,10 @@
 	display: inline;
 	vertical-align: middle;
 }
-#brackets-trello .list-item span,
+#brackets-trello #changes-list span {
+	margin-left: 10px;
+}
+#brackets-trello .list-item .totalCards,
 #brackets-trello .comment-item span,
 #brackets-trello .card-item span {
 	color: #adb9bd;
@@ -282,6 +285,9 @@
 #brackets-trello .btn-add {
 	background-image: url(img/add.svg);
 }
+#brackets-trello .btn-push {
+	background-image: url(img/push.svg);
+}
 #brackets-trello .comments .btn-add,
 #brackets-trello .card-desc .btn-edit,
 #brackets-trello .comment-item .btn-delete,
@@ -300,6 +306,7 @@
 #brackets-trello .checklist-name .btn-hide {
 	right: 30px;
 }
+#brackets-trello .list-name .btn-push,
 #brackets-trello .checklist-name .btn-edit {
 	right: 55px;
 }

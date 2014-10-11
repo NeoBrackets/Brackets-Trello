@@ -967,6 +967,11 @@ define(function (require, exports, module) {
 		$panel.on('click', '.cmd-add-comment', _openAddCommentDialog);
 		$panel.on('click', '.cmd-delete-comment', _openDeleteCommentDialog);
 		$panel.on('click', '.cmd-edit-comment', _openEditCommentDialog);
+
+		// Push Trello Comments
+		$panel.on('click', '.cmd-push-comments', function(e) {
+			e.stopPropagation();
+		});
 	}
 
 	function _getActiveDropzone($cardItem) {
@@ -1166,7 +1171,7 @@ define(function (require, exports, module) {
         // merge comment item to trello list
         $('.list-item h5 a', $panel).each(function(index, listElem){
             var listName = $(listElem).html(),
-                countElem = $(listElem).parent().find('span'),
+                countElem = $(listElem).parent().find('.comment-counter'),
                 nameRegexp = '\\s*' + listName.replace(/\s+/g, '\\s*') + '\\s*',
                 tagRegexp = new RegExp(nameRegexp, 'gi'),
                 groupComments = [],
@@ -1184,12 +1189,16 @@ define(function (require, exports, module) {
             newComments = otherComments;
             // render
             if (groupComments.length > 0) {
-				countElem.html('<span class="comment-counter">' + groupComments.length + '+</span>'
-						   + $(listElem).closest('.list-item').find('.cards .card-item').length);
+				countElem.html('+'+groupComments.length);
                 commentHtml = Mustache.render(commentTemplate, {
                     comments: groupComments
                 });
-                $(commentHtml).insertBefore($(listElem).closest('.list-item').find('.cards').children().first());
+				// are there normal cards in this list ?
+				if ($(listElem).closest('.list-item').find('.cards').children().first().length > 0) {
+                	$(commentHtml).insertBefore($(listElem).closest('.list-item').find('.cards').children().first());
+				} else {
+					$(listElem).closest('.list-item').find('.cards').html(commentHtml);
+				}
             }
 
         });
