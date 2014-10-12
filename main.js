@@ -9,13 +9,15 @@ define(function (require, exports, module) {
 		PreferencesManager			= brackets.getModule('preferences/PreferencesManager'),
 		DocumentManager         	= brackets.getModule("document/DocumentManager"),
 		CommandManager				= brackets.getModule('command/CommandManager'),
-		Commands            		= brackets.getModule( 'command/Commands' ),
-        EditorManager       		= brackets.getModule( 'editor/EditorManager' ),
+		Commands            		= brackets.getModule('command/Commands'),
+        EditorManager       		= brackets.getModule('editor/EditorManager'),
+		KeyEvent					= brackets.getModule('utils/KeyEvent'),
 		Dialogs						= brackets.getModule('widgets/Dialogs'),
 		Menus						= brackets.getModule('command/Menus'),
 		Parser		              	= require('modules/parser'),
 		Trello						= require('Trello'),
-		strings						= require('i18n!nls/strings');
+		strings						= require('i18n!nls/strings'),
+		ParseUtils 					= require('modules/parseUtils');
 
 	var mainPanel					= require('text!html/mainPanel.html'),
 		prefDialogHTML				= require('text!html/prefsDialog.html'),
@@ -1225,7 +1227,6 @@ define(function (require, exports, module) {
             }
 
         });
-		console.log('pushed comments: ',trelloCommentCards);
 
         // remove older Changes List.
         $('.tab-lists .lists #changes-list', $panel).remove();
@@ -1236,6 +1237,10 @@ define(function (require, exports, module) {
         $(compliedChangesList).insertBefore($('.tab-lists .lists', $panel).children().first());
     }
 
+	/**
+	 * Push a single comment to a trello list
+	 * @param {Object} e click event
+	 */
 	function _pushComment(e) {
 		e.stopPropagation();
 		var listId = $(this).parent('.comment-item').parent('.cards').parent('.list-item').attr("id");
@@ -1256,22 +1261,25 @@ define(function (require, exports, module) {
 		console.log('fullPath: '+fullPath);
 		console.log('cursorPos: ',cursorPos);
 
-		Trello._create('card',{list:listId},{name:comment._content}).done(function(data) {
-			_pushCommentToListUI(listId,comment,data,pos);
-			CommandManager.execute( Commands.FILE_OPEN, { fullPath: fullPath } ).done( function() {
-				// Set focus on editor.
-				EditorManager.focusEditor();
-				EditorManager.getCurrentFullEditor().setCursorPos(
-					cursorPos.line,
-					cursorPos.ch,
-					true
-				);
+		Trello._get('boardMembers',{board:_prefs.get('selected-board')},{}).done(function(members) {
+			comment = _parseMembers(comment,members);
+			console.log('comment: ',comment);
+			var set = {name:comment._content};
+			if (comment._idMembers.length > 0) {
+				set.idMembers = comment._idMembers.join(',');
+			}
+			Trello._create('card',{list:listId},set).done(function(data) {
+				_pushCommentToListUI(listId,comment,data,pos);
+				_jumpToFile(fullPath,cursorPos);
 			});
 		});
 
-
 	}
 
+	/**
+	 * Push all comments of a special list into the remote trello list
+	 * @param {Object} e click event
+	 */
 	function _pushComments(e) {
 		e.stopPropagation();
 		var listId = $(this).data('list-id');
@@ -1286,32 +1294,41 @@ define(function (require, exports, module) {
 
 		comments.forEach(function(comment){
 			if (tagRegexp.test(comment.tag())) {
-				listComments.push(comment);
+				if (!comment.cardId()) {
+					listComments.push(comment);
+				}
 			}
 		});
 		var fullPath = DocumentManager.getCurrentDocument().file._path;
 		var cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
 
-		_pushArrayToList(listComments,listId).done(function() {
-			CommandManager.execute( Commands.FILE_OPEN, { fullPath: fullPath } ).done( function() {
-				// Set focus on editor.
-				EditorManager.focusEditor();
-				EditorManager.getCurrentFullEditor().setCursorPos(
-					cursorPos.line,
-					cursorPos.ch,
-					true
-				);
+		Trello._get('boardMembers',{board:_prefs.get('selected-board')},{}).done(function(members) {
+			_pushArrayToList(listId,listComments,members).done(function() {
+				_jumpToFile(fullPath,cursorPos);
 			});
 		});
 	}
 
-	function _pushArrayToList(comments,listId,start) {
+	/**
+	 * Push an array of trello comments to a list
+	 * @param   {String}        listId   id of the trello list
+	 * @param   {Comment|Array} comments array of comment objects
+	 * @param   {Array}         members  array of all board members
+	 * @param   {Number}        start    start to push with the start-th comment
+	 * @returns {Deferred}      empty resolve
+	 */
+	function _pushArrayToList(listId,comments,members,start) {
 		if (typeof start === "undefined") start = 0;
 		var result = new $.Deferred();
-		Trello._create('card',{list:listId},{name:comments[start]._content}).done(function(data) {
-			_pushCommentToListUI(listId,comments[start],data,0);
+		var comment = _parseMembers(comments[start],members);
+		var set = {name:comment._content};
+		if (comment._idMembers.length > 0) {
+			set.idMembers = comment._idMembers.join(',');
+		}
+		Trello._create('card',{list:listId},set).done(function(data) {
+			_pushCommentToListUI(listId,comment,data,0);
 			if (++start < comments.length) {
-				_pushArrayToList(comments,listId,start);
+				_pushArrayToList(comments,listId,members,start);
 			} else {
 				result.resolve();
 			}
@@ -1319,6 +1336,14 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 
+	/**
+	 * Push one comment to the UI
+	 * - delete the comment card and add it to the trello cards
+	 * @param {String} listId  id of the trello list
+	 * @param {Object} comment comment object that was pushed
+	 * @param {Object} data    card data
+	 * @param {Number} pos     the trello comment card is at position pos (needed for delete)
+	 */
 	function _pushCommentToListUI(listId,comment,data,pos) {
 		// delete the comment card...
 		$('.tab-lists', $panel).children('.lists').children('#'+listId).find('.cards').children('.comment-item:eq('+pos+')').remove();
@@ -1334,7 +1359,7 @@ define(function (require, exports, module) {
 		totalCardsEle.text(parseInt(parseInt(totalCardsEle.text())+1));
 		var commentCounterEle = $('.tab-lists', $panel).children('.lists').children('#'+listId).find('.comment-counter');
 		commentCounterEle.text('+'+parseInt(parseInt(commentCounterEle.text())-1));
-		if (parseInt(commentCounterEle.text()) < 0) {
+		if (parseInt(commentCounterEle.text()) === 0) {
 			commentCounterEle.text('');
 		}
 		// add the card id to the comment
@@ -1363,6 +1388,45 @@ define(function (require, exports, module) {
 		} );
 	}
 
+	/**
+	 * Get all members that are specified in the comment._content
+	 * - add them to comment._idMembers and remove them from ._content
+	 * @param   {Object} comment      comment object including ._content
+	 * @param   {Array}  boardMembers array of all board members
+	 * @returns {Object} comment object (including ._idMembers)
+	 */
+	function _parseMembers(comment,boardMembers) {
+		var matches = null;
+		var regex = /(?:^| )@([a-z0-9]+)/g;
+		comment._idMembers = [];
+		while ((matches = regex.exec(comment._content)) !== null) {
+			console.log('matches', matches);
+			var memberPos = boardMembers.keyIndexOf('username',matches[1]);
+			if (memberPos >= 0) {
+				comment._idMembers.push(boardMembers[memberPos].id);
+				comment._content = comment._content.replaceRange(matches.index,matches.index+matches[0].length,"");
+			}
+		}
+		return comment;
+	}
+
+	/**
+	 * Jump to a file and set the cursor position
+	 * @param {String} fullPath  path to the file
+	 * @param {Object} cursorPos cursor position (.line,.ch)
+	 */
+	function _jumpToFile(fullPath,cursorPos) {
+		CommandManager.execute( Commands.FILE_OPEN, { fullPath: fullPath } ).done( function() {
+			// Set focus on editor.
+			EditorManager.focusEditor();
+			EditorManager.getCurrentFullEditor().setCursorPos(
+				cursorPos.line,
+				cursorPos.ch,
+				true
+			);
+		});
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////// CHANGE ///////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -1376,20 +1440,64 @@ define(function (require, exports, module) {
 	////////////////////////////////  Mustache improvement //////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
 
+	/**
+	 * Combine templates a template can include other templates with
+	 * - `{{> fileName.html}}` The file must be required with partTemplates.fileName
+	 * @param   {String} template template content which can include other templates (recursive)
+	 * @returns {String} combined template
+	 */
 	function _combineTemplates(template) {
 		return template.replace(/{{> (.*?)\.html}}/g,function(match,p1) {
 			return _combineTemplates(partTemplates[p1]);
 		});
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////     Prototypes    //////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////
+
 	/**
-	 function _combineTemplates(array) {
-		for (var i = array.length-2; i >= 0; i--) {
-			array[i].file = array[i].file.replace(new RegExp('{{> '+array[i+1].name+'}}','g'),array[i+1].file);
-		}
-		return array[0].file;
-	 }
+	 * Find the position of an needle in an array of objects for a special key
+	 * @param   {String} key    key which should be checked against the needle
+	 * @param   {String} needle string that should be array[i][key]
+	 * @returns {Number} return the positon i if needle was found otherwise -1
 	 */
+	Array.prototype.keyIndexOf = function(key,needle) {
+		var array = this;
+		for (var i = 0; i < array.length; i++) {
+			if (array[i][key] == needle) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * replace a range inside a string
+	 * @param   {Number} start   start at position start
+	 * @param   {Number} end     end directly before this position (end-start == length)
+	 * @param   {String} replace subsitute the range with this string
+	 * @returns {String} new string
+	 */
+	String.prototype.replaceRange = function(start,end,replace) {
+		return this.substring(0,start) + replace + this.substring(end);
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////  KeyEvents  //////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////
+
+	function handleKey($event,editor,event) {
+		if (event.type === 'keydown' && (event.keyCode === KeyEvent.DOM_VK_DELETE || event.keyCode === KeyEvent.DOM_VK_BACK_SPACE)) {
+			var languageId 		= editor.getLanguageForSelection().getId();
+			var selectionPos 	= editor.getSelection(true);
+			var selection 		= editor.document.getRange(selectionPos.start,selectionPos.end,true);
+			var comments = ParseUtils.parseText(selection, ['idea', 'todo', 'doing', 'done'], languageId);
+			console.log(comments);
+		}
+	}
+
+
 
 	// Toggle Panel Visibility
 	function _toggleVisibility() {
@@ -1429,6 +1537,17 @@ define(function (require, exports, module) {
 		_toggleVisibility();
 	}
 
+	/**
+     * Add/Remove listeners when the editor changes
+     * @param {object} event     Event object
+     * @param {editor} newEditor Brackets editor
+     * @param {editor} oldEditor Brackets editor
+     */
+    function updateEditorListeners(event, newEditor, oldEditor) {
+        $(oldEditor).off('keyEvent', handleKey);
+        $(newEditor).on('keyEvent', handleKey);
+    }
+
 	AppInit.appReady(function () {
 		ExtensionUtils.loadStyleSheet(module, 'styles/styles.css');
 		var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
@@ -1436,6 +1555,10 @@ define(function (require, exports, module) {
 		viewMenu.addMenuItem(_ExtensionID, _ExtensionShortcut);
 		Parser.setup();
         Parser.onTrelloCommentsChange(displayTrelloComments);
+
+		// Key Events
+		$(EditorManager).on('activeEditorChange', updateEditorListeners);
+		$(EditorManager.getCurrentFullEditor()).on('keyEvent', handleKey);
 	});
 
 	$icon = $('<a>').attr({
