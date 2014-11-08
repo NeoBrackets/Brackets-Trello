@@ -327,6 +327,12 @@
 	position: relative;
 	padding-left: 24px;
 }
+#brackets-trello #changes-list .comment-item {
+	padding-left: 0;
+}
+#brackets-trello #changes-list .comment-item:hover .btn-cmd {
+	display: none;
+}
 #brackets-trello .cards .comment-item .btn-push {
 	top: 2px;
 	left: 5px;
