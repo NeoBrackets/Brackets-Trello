@@ -7,6 +7,7 @@ define(function(require, exports, module){
         this._content = '';
         this._tag = '';
         this._lineCh = 0;
+        this._cardId = false;
     };
 
     comment.prototype.filePath = function(filePath) {
@@ -45,6 +46,14 @@ define(function(require, exports, module){
         }
 
         this._lineCh = ch;
+    };
+
+	comment.prototype.cardId = function(cardId) {
+        if (cardId === undefined) {
+            return this._cardId;
+        }
+
+        this._cardId = cardId;
     };
 
     comment.prototype.equals = function(otherComment) {
