@@ -791,15 +791,17 @@ define(function (require, exports, module) {
 		}).dblclick(_toggleVisibility);
 
 		// Drag and Drop of Cards
-		$panel.on('mousedown', '.card-item', function(evt) {
+		$panel.on('mousedown', '.card-item, .comment-item', function(evt) {
 			var py = evt.pageY, $this = $(this), offset = $this.offset();
 			var $dropzone, fromListId, toListId, cardId, itemIndex;
 			fromListId = $this.parents('.list-item').attr('id');
 			itemIndex = $this.index();
+			var isComment = $this.hasClass('comment-item'),
+				$parentList = $this.parents('.list-item');
 
 			$(document).on('mousemove', function(e) {
 				$this.css({
-					top: offset.top + $panel.prop('scrollTop') + e.pageY - py
+					top: (isComment) ? e.pageY - py : offset.top + $panel.prop('scrollTop') + e.pageY - py
 				}).addClass('moving');
 				$dropzone = _getActiveDropzone($this);
 				if ($dropzone) {
@@ -807,24 +809,33 @@ define(function (require, exports, module) {
 				}
 			}).on('mouseup', function() {
 				$this.removeClass('moving');
+				$this.removeAttr('style');
 				if ($dropzone) {
 					$dropzone.removeClass('dropzone');
-					$dropzone.find('.cards').append($this);
-					toListId = $this.parents('.list-item').attr('id');
-					cardId = $this.attr('id');
-					console.log('toListId: '+toListId);
-					if (fromListId !== toListId) {
-						// we need to update the totalCards counter
-						var totalCardsEleFrom = $('.tab-lists', $panel).children('.lists').children('#'+fromListId).children('.list-name').children('.totalCards');
-						var totalCardsEleTo = $('.tab-lists', $panel).children('.lists').children('#'+toListId).children('.list-name').children('.totalCards');
-						totalCardsEleFrom.text(parseInt(parseInt(totalCardsEleFrom.text())-1));
-						totalCardsEleTo.text(parseInt(parseInt(totalCardsEleTo.text())+1));
-
-						Trello._move('card',
-									 {toList:toListId,card: cardId},{pos:"bottom"})
-						.done(_displayNotification).fail(_displayError);
+					if ($dropzone.attr('id') === 'changes-list') {
+						$parentList.find('.cards').append($this);
 					} else {
-						$dropzone.find('.cards .card-item:eq('+itemIndex+')').before($this);
+						$dropzone.find('.cards').append($this);
+					}
+					toListId = $this.parents('.list-item').attr('id');
+					if (!isComment) { // Card item is being dragged!
+						cardId = $this.attr('id');
+						console.log('toListId: '+toListId);
+						if (fromListId !== toListId) {
+							// we need to update the totalCards counter
+							var totalCardsEleFrom = $('.tab-lists', $panel).children('.lists').children('#'+fromListId).children('.list-name').children('.totalCards');
+							var totalCardsEleTo = $('.tab-lists', $panel).children('.lists').children('#'+toListId).children('.list-name').children('.totalCards');
+							totalCardsEleFrom.text(parseInt(parseInt(totalCardsEleFrom.text())-1));
+							totalCardsEleTo.text(parseInt(parseInt(totalCardsEleTo.text())+1));
+
+							Trello._move('card',
+										 {toList:toListId,card: cardId},{pos:"bottom"})
+							.done(_displayNotification).fail(_displayError);
+						}
+					}
+					if (fromListId === toListId) {
+						(isComment) ? $dropzone.find('.cards .comment-item:eq('+itemIndex+')').before($this) :
+									  $dropzone.find('.cards .card-item:eq('+itemIndex+')').before($this);
 					}
 				}
 				$(this).off('mousemove').off('mouseup');
