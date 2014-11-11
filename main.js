@@ -845,7 +845,7 @@ define(function (require, exports, module) {
 			var $dropzone, fromListId, toListId, cardId, itemIndex;
 			fromListId = $this.parents('.list-item').attr('id');
 			itemIndex = $this.index();
-			var isComment = $this.hasClass('comment-item'),
+			var isComment = $this.hasClass('code-comment-item'),
 				$parentList = $this.parents('.list-item');
 
 			$(document).on('mousemove', function(e) {
