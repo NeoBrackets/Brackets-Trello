@@ -3,10 +3,10 @@
 		<h5 class="list-name">
 			<a href="#">{{name}}</a>
 			<span class="totalCards">{{totalCards}}</span>
-			<span class="comment-counter"></span>
+			<span class="code-comment-counter"></span>
 			<i class="btn-cmd btn-edit cmd-edit-list" data-list-id="{{id}}" />
 			<i class="btn-cmd btn-delete cmd-delete-list" data-list-id="{{id}}" />
-			<i class="btn-cmd btn-push cmd-push-comments" data-list-id="{{id}}" />
+			<i class="btn-cmd btn-push cmd-push-comments" data-list-id="{{id}}" data-list-name="{{name}}" />
 		</h5>
 		<div class="cards">
 			{{> cardsInList.html}}

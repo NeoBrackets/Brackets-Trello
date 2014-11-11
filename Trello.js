@@ -78,7 +78,6 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log(url);
 		var result = $.Deferred();
 		$.getJSON(url,
 		function(data) {
@@ -479,12 +478,6 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 
-	function _performSync(tasks) {
-		var result = $.Deferred();
-		result.resolve('Sync was performed');
-		return result.promise();
-	}
-
 	function _updateBoardName(name) {
 		var result = $.Deferred();
 		result.resolve('Board was updated');
@@ -548,7 +541,6 @@ define(function (require, exports, module) {
 	exports._edit = _edit;
 	exports._delete = _delete;
 	exports._move = _move;
-	exports._performSync			= _performSync;
 	exports._addNewMembers			= _addNewMembers;
 	exports._deleteMember			= _deleteMember;
 	exports._deleteComment			= _deleteComment;
