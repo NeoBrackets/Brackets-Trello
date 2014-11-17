@@ -7,6 +7,10 @@ define(function (require, exports, module) {
             'javascript': {
                 prefix: '(?:\\/\\/)+\\s*((?:\\d|[a-f]){24})?\\s*(',
                 suffix: '\\s*)\\s*\\bTrello\\b[:\\s]\\s*(.*?)(?=\\n|\\r\\n|\\r|$)'
+            },
+            'html': {
+                prefix: '(?:<!--)+\\s*((?:\\d|[a-f]){24})?\\s*(',
+                suffix: '\\s*)\\s*\\bTrello\\b[:\\s]\\s*(.*?)(?=-->)'
             }
         };
 

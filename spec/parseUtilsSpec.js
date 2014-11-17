@@ -256,6 +256,33 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 }
             });
         });
+        
+        describe('Test one line html comment case, use <!-- --> to comment', function () {
+            it(' <!-- trello this is a trello comment of html --> should be a trello comment of html file.', function () {
+                var comments = parseUtils.parseText('<!-- trello this is a trello comment of html -->', tags, 'html');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('');
+                expect(comments[0].content()).toBe('this is a trello comment of html ');
+            });
+            
+            it(' <!-- todo trello this is a trello todo comment of html --> should be a trello comment of html file.', function () {
+                var comments = parseUtils.parseText('<!-- todo trello this is a trello todo comment of html -->', tags, 'html');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('todo');
+                expect(comments[0].content()).toBe('this is a trello todo comment of html ');
+            });
+            
+            it(' padding <!-- todo trello this is a trello todo comment with padding before comment of html --> should be a trello comment of html file.', function () {
+                var comments = parseUtils.parseText(' padding <!-- todo trello this is a trello todo comment with padding before comment of html -->', tags, 'html');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(9);
+                expect(comments[0].tag()).toBe('todo');
+                expect(comments[0].content()).toBe('this is a trello todo comment with padding before comment of html ');
+            });
+
+        });
 
 
     });
