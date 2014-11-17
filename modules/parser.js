@@ -29,6 +29,7 @@ define(function (require, exports, module) {
     function registerFileChangeListener() {
 
         var $documentManager = $(DocumentManager);
+        var $projectManager = $(ProjectManager);
         FileSystem.on('change', function (event, file) {
             // Bail if not a file or file is outside current project root.
             if (file === null || file.isFile !== true || file.fullPath.indexOf(ProjectManager.getProjectRoot().fullPath) === -1) {
@@ -52,6 +53,11 @@ define(function (require, exports, module) {
                 // Just find again now
                 asynFindTrelloComments();
             }
+        });
+        
+        $projectManager.on('projectOpen', function(event, directory){
+           // reparse 
+            asynFindTrelloComments();
         });
     }
 
