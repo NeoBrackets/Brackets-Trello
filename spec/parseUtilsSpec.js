@@ -281,7 +281,30 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 expect(comments[0].tag()).toBe('todo');
                 expect(comments[0].content()).toBe('this is a trello todo comment with padding before comment of html ');
             });
-
+        });
+        
+        describe('Test one line php comment case, use // to comment', function () {
+            
+            var testFunc = function () {
+                /* 
+                 <?php
+                  // trello this is a trello comment in php file
+                  // todo trello this is a todo trello comment in php file
+                 ?>
+                  */
+                var test = 0;
+            };
+            
+            it(getFunctionContent(testFunc) + ' should have 2 trello comment.', function () {
+                var comments = parseUtils.parseText(getFunctionContent(testFunc), tags, 'php');
+                expect(comments.length).toBe(2);
+                expect(comments[0].lineNumber()).toBe(65);
+                expect(comments[0].tag()).toBe('');
+                expect(comments[0].content()).toBe('this is a trello comment in php file');
+                expect(comments[1].lineNumber()).toBe(131);
+                expect(comments[1].tag()).toBe('todo');
+                expect(comments[1].content()).toBe('this is a todo trello comment in php file');
+            });
         });
 
 
