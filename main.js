@@ -53,6 +53,8 @@ define(function (require, exports, module) {
 	partTemplates.trelloComments	= require('text!html/templates/parts/trelloComments.html');
 
 	var trelloCommentCards = {};
+	var cache = {};
+
 
 	// Extension Info.
 	var _ExtensionID		= 'brackets-trello',
@@ -83,8 +85,6 @@ define(function (require, exports, module) {
 	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-card', 'selected-checklist'];
 
 	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
-
-	var _taskChanges = {};
 
 	// save the state of expanded list and checklists
 	var _expandedLists = {},
@@ -164,9 +164,58 @@ define(function (require, exports, module) {
 	 * Perform Sync
 	 */
 	function _initSync() {
-		Trello._performSync(_taskChanges)
-			.done(_displayNotification)
-			.fail(_displayError);
+		var boardId 	= _prefs.get("selected-board");
+		var listId  	= _prefs.get("selected-list");
+		var boardName 	= _prefs.get("selected-board-name");
+		var listName  	= _prefs.get("selected-list-name");
+
+		// current tab
+		var currentTab = $panel.find('.btn-boards').hasClass('active') ? 'boards' : false;
+		if (!currentTab) currentTab = $panel.find('.btn-lists').hasClass('active') ? 'lists' : 'tasks';
+
+		Trello._get(currentTab,cache.ids,cache.settings)
+		.done(function(data) {
+			if (currentTab == "lists") {
+				data.name = boardName;
+				data.id   = boardId;
+			} else if (currentTab == "tasks") {
+				data.boardName = boardName;
+				data.listName = listName;
+			}
+			if (!compareObjects(cache.data,data)) {
+				console.log('change');
+				console.log('data: ',data);
+				console.log('vs: ',cache.data);
+				cache.data = data;
+				switch(currentTab) {
+					case "boards":
+						$('.tab-boards', $panel).html(Mustache.render(boardsTemplate, data));
+						break;
+					case "lists":
+						var combinedTemplate = _combineTemplates(listsTemplate);
+						$('.tab-lists', $panel).html(Mustache.render(combinedTemplate, data));
+						displayTrelloComments(cache.comments);
+						_expandLists();
+						break;
+					case "tasks":
+						var combinedTemplate = _combineTemplates(tasksTemplate);
+						$('.tab-tasks', $panel).html(Mustache.render(combinedTemplate, data));
+						_taskChecksAndAdmin(data);
+						break;
+				}
+			}
+		});
+	}
+
+	function compareObjects(x,y) {
+		var breakVar = false;
+		$.each(x, function(index, value) {
+			if (JSON.stringify(value) !== JSON.stringify(y[index]))
+				breakVar = true;
+				return;
+		});
+		if (breakVar) return false;
+		return true;
 	}
 
 	/**
@@ -675,10 +724,10 @@ define(function (require, exports, module) {
 		var cardId = _prefs.get("selected-card");
 		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.render(newCommentTemplate, strings))),
 			$dialog = dialog.getElement();
-		$dialog.find('.comment-text').focus();
+		$dialog.find('.card-comment-text').focus();
 		dialog.done(function(id) {
 			if (id === 'save') {
-				Trello._create('comment',{card:cardId},{text:$dialog.find('.comment-text').val()})
+				Trello._create('comment',{card:cardId},{text:$dialog.find('.card-comment-text').val()})
 					.done(function(data) {
 						_displayNotification();
 						var commentObj = {};
@@ -693,7 +742,7 @@ define(function (require, exports, module) {
 							Mustache.render(combinedTemplate, {comments:commentObj})
 						);
 						// you can always delete/edit your own card
-						$('#'+commentObj.id).find('.comment-body h5')
+						$('#'+commentObj.id).find('.card-comment-body h5')
 							.append($('<i class="btn-cmd btn-edit cmd-edit-comment" data-comment-id="'+commentObj.id+'" />'))
 							.append($('<i class="btn-cmd btn-delete cmd-delete-comment" data-comment-id="'+commentObj.id+'" />'));
 					})
@@ -705,17 +754,17 @@ define(function (require, exports, module) {
 	function _openEditCommentDialog() {
 		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.render(editCommentsTemplate, strings))),
 			$dialog = dialog.getElement();
-		$dialog.find('.comment-text').val($(this).parent('h5').siblings('p').html()).focus();
+		$dialog.find('.card-comment-text').val($(this).parent('h5').siblings('p').html()).focus();
 		var commentId = $(this).data('comment-id');
 		var cardId = _prefs.get("selected-card");
 		dialog.done(function(id) {
 			if (id === 'save') {
-				var commentText = $dialog.find('.comment-text').val();
+				var commentText = $dialog.find('.card-comment-text').val();
 				Trello._edit('comment',{card:cardId,comment:commentId},{text:commentText})
 					.done(function(data) {
 						_displayNotification();
 						$('.tab-tasks', $panel)
-						.children('.comments').children('#'+commentId).children('.comment-body').children('.comment').html(commentText);
+						.children('.comments').children('#'+commentId).children('.card-comment-body').children('.comment').html(commentText);
 					})
 					.fail(_displayError);
 			}
@@ -791,12 +840,12 @@ define(function (require, exports, module) {
 		}).dblclick(_toggleVisibility);
 
 		// Drag and Drop of Cards
-		$panel.on('mousedown', '.card-item, .comment-item', function(evt) {
+		$panel.on('mousedown', '.card-item, .code-comment-item', function(evt) {
 			var py = evt.pageY, $this = $(this), offset = $this.offset();
 			var $dropzone, fromListId, toListId, cardId, itemIndex;
 			fromListId = $this.parents('.list-item').attr('id');
 			itemIndex = $this.index();
-			var isComment = $this.hasClass('comment-item'),
+			var isComment = $this.hasClass('code-comment-item'),
 				$parentList = $this.parents('.list-item');
 
 			$(document).on('mousemove', function(e) {
@@ -834,7 +883,7 @@ define(function (require, exports, module) {
 						}
 					}
 					if (fromListId === toListId) {
-						(isComment) ? $dropzone.find('.cards .comment-item:eq('+itemIndex+')').before($this) :
+						(isComment) ? $dropzone.find('.cards .code-comment-item:eq('+itemIndex+')').before($this) :
 									  $dropzone.find('.cards .card-item:eq('+itemIndex+')').before($this);
 					}
 				}
@@ -890,6 +939,7 @@ define(function (require, exports, module) {
             _savePrefs('selected-list', $(this).parents('.list-item').attr('id'));
             _savePrefs('selected-list-name', $(this).parents('.list-item').find('h5 a').html());
 			_savePrefs('selected-card', $(this).attr('id'));
+			console.log('trelloCommentCards: ', trelloCommentCards);
 			if (e.shiftKey && $(this).attr('id') in trelloCommentCards) {
 				// Open file and locate to comment in editor.
 				var comment = trelloCommentCards[$(this).attr('id')];
@@ -908,14 +958,13 @@ define(function (require, exports, module) {
 
 		// Task Name
 		$panel.on('change', '.task-item input', function(e) {
-			_taskChanges[$(this).attr('id')] = e.target.checked;
 			var checkListId = $(this).parent().parent('.tasks').parent('.checklist-item').attr("id");
 			var checkItemId = $(this).attr("id");
 			_changeTaskState(checkListId,checkItemId);
 		});
 
 		// Changes List comment
-        $panel.on('click', '.comment-item', function(e){
+        $panel.on('click', '.code-comment-item', function(e){
             e.stopPropagation();
             var lineNumber = $(this).data('line-number'),
                 filePath = $(this).data('file-path'),
@@ -945,7 +994,7 @@ define(function (require, exports, module) {
 		});
 
 		$panel.on('click', '.cmd-hide-comments', function() {
-			var $comments = $(this).siblings('.comment-item');
+			var $comments = $(this).siblings('.card-comment-item');
 			if ($comments.css('display') === 'none') {
 				$comments.show();
 			} else if ($comments.css('display') === 'block') {
@@ -1071,6 +1120,11 @@ define(function (require, exports, module) {
 			_displaySpinner(false);
 			_setNewButtonActive(ITEM_TYPE.BOARDS);
 			_setButtonActive($panel.find('.btn-boards'));
+			cache 	= {
+					data: data,
+					ids: {},
+					settings: {fields:["id","name"]}
+			};
 			$('.tab-boards', $panel).empty().show().append(Mustache.render(boardsTemplate, data));
 		})
 		.fail(_displayError);
@@ -1083,12 +1137,13 @@ define(function (require, exports, module) {
 		var boardName = _prefs.get("selected-board-name");
 		var boardId   = _prefs.get("selected-board");
 
+		/**
 		if (visible) {
 			_setButtonActive($('.btn-lists', $panel));
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			$('.tab-lists', $panel).show();
 			return;
-		}
+		}*/
 
 		_displaySpinner(true);
 		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","badges"],members:["all"]}).done(function(data) {
@@ -1101,11 +1156,19 @@ define(function (require, exports, module) {
 			activeUserRole = data.memberRole.memberType;
 			console.log('listData: ',data);
 			var combinedTemplate = _combineTemplates(listsTemplate);
+			cache  	= {
+				data: data,
+				ids:{board:boardId},
+				settings:{fields:["id","name"],
+						  cards:["open"],card_fields:["name","badges"],members:["all"]
+						 }
+			};
 			$('.tab-lists', $panel).empty().show().append(Mustache.render(combinedTemplate, data));
 		})
 		.fail(_displayError)
 		.always(function(){
             displayTrelloComments(Parser.getTrelloComments());
+			_expandLists();
         });
 	}
 
@@ -1130,30 +1193,50 @@ define(function (require, exports, module) {
 			console.log('tasks for: '+cardId);
 			console.log(data);
 			var combinedTemplate = _combineTemplates(tasksTemplate);
+			cache 	= {
+					data: data,
+					ids: {card:cardId},
+					settings:{members:[true],actions:['commentCard'],
+					 member_fields:["avatarHash","username","fullName"]}
+			};
 			$('.tab-tasks', $panel).empty().show().append(Mustache.render(combinedTemplate, data));
 
-			// set checkmarks
-			$.each(data.checklists,function(checklistIndex,checklist) {
-				$.each(checklist.checkItems,function(checkItemIndex,checkItem) {
-					$('#' + checkItem.id).prop('checked',(checkItem.state === "complete") ? true : false);
-				});
-			});
-
-			// insert comment edit/delete if it's allowed
-			if (data.comments && data.comments.length >= 1) {
-				data.comments.forEach(function(comment) {
-					if (activeUserRole === "admin" || activeUserId === comment.memberId) {
-						$('#'+comment.id).find('.comment-body h5')
-							.append($('<i class="btn-cmd btn-edit cmd-edit-comment" data-comment-id="'+comment.id+'" />'))
-							.append($('<i class="btn-cmd btn-delete cmd-delete-comment" data-comment-id="'+comment.id+'" />'));
-					}
-				});
-			}
-
-			$('.tab-tasks .members', $panel).show();
+			// set admin panel and checkmarks on tasks tab
+			_taskChecksAndAdmin(data);
 
 		})
 		.fail(_displayError);
+	}
+
+	/**
+	 * Expand all lists that were open using _expandedLists
+	 */
+	function _expandLists() {
+		$.each(_expandedLists, function(index,value) {
+			if (value)
+				$panel.find(".lists").find("#"+index).trigger("click");
+		});
+	}
+
+	function _taskChecksAndAdmin(data) {
+		// set checkmarks
+		$.each(data.checklists,function(checklistIndex,checklist) {
+			$.each(checklist.checkItems,function(checkItemIndex,checkItem) {
+				$('#' + checkItem.id).prop('checked',(checkItem.state === "complete") ? true : false);
+			});
+		});
+
+		// insert comment edit/delete if it's allowed
+		if (data.comments && data.comments.length >= 1) {
+			data.comments.forEach(function(comment) {
+				if (activeUserRole === "admin" || activeUserId === comment.memberId) {
+					$('#'+comment.id).find('.card-comment-body h5')
+						.append($('<i class="btn-cmd btn-edit cmd-edit-comment" data-comment-id="'+comment.id+'" />'))
+						.append($('<i class="btn-cmd btn-delete cmd-delete-comment" data-comment-id="'+comment.id+'" />'));
+				}
+			});
+		}
+		$('.tab-tasks .members', $panel).show();
 	}
 
 	/**
@@ -1189,6 +1272,9 @@ define(function (require, exports, module) {
 	}
 
     function displayTrelloComments(newComments) {
+		cache.comments = newComments;
+		console.log(newComments);
+
         var compliedChangesList = null;
 		trelloCommentCards = {};
 
@@ -1197,18 +1283,23 @@ define(function (require, exports, module) {
             return;
         }
 
+		if(typeof newComments === "undefined") {
+			return;
+		}
+
         // remove older comment item
-        $('.list-item .comment-item', $panel).remove();
+        $('.list-item .code-comment-item', $panel).remove();
 
         // merge comment item to trello list
         $('.list-item h5 a', $panel).each(function(index, listElem){
             var listName = $(listElem).html(),
-                countElem = $(listElem).parent().find('.comment-counter'),
+                countElem = $(listElem).parent().find('.code-comment-counter'),
                 nameRegexp = '\\s*' + listName.replace(/\s+/g, '\\s*') + '\\s*',
-                tagRegexp = new RegExp(nameRegexp, 'gi'),
+                tagRegexp = new RegExp(nameRegexp, 'i'),
                 groupComments = [],
                 otherComments = [],
                 commentHtml = "";
+
 
             newComments.forEach(function(comment){
                 if (tagRegexp.test(comment.tag())) {
@@ -1254,15 +1345,15 @@ define(function (require, exports, module) {
 	 */
 	function _pushComment(e) {
 		e.stopPropagation();
-		var listId = $(this).parent('.comment-item').parent('.cards').parent('.list-item').attr("id");
+		var listId = $(this).parent('.code-comment-item').parent('.cards').parent('.list-item').attr("id");
 		var comment =
 		{
-			_content:  $(this).parent('.comment-item').find('.comment-name').text(),
-			_filePath:  $(this).parent('.comment-item').data('file-path'),
-			_lineNum:  $(this).parent('.comment-item').data('line-number'),
-			_lineCh:  $(this).parent('.comment-item').data('line-ch')
+			_content:  $(this).parent('.code-comment-item').find('.code-comment-name').text(),
+			_filePath:  $(this).parent('.code-comment-item').data('file-path'),
+			_lineNum:  $(this).parent('.code-comment-item').data('line-number'),
+			_lineCh:  $(this).parent('.code-comment-item').data('line-ch')
 		};
-		var pos = $(this).parent('.comment-item').index();
+		var pos = $(this).parent('.code-comment-item').index();
 		console.log('listId: '+listId);
 		console.log('comment: ',comment);
 		console.log('pos: '+pos);
@@ -1280,6 +1371,9 @@ define(function (require, exports, module) {
 				set.idMembers = comment._idMembers.join(',');
 			}
 			Trello._create('card',{list:listId},set).done(function(data) {
+				// save that there is a new comment card
+				trelloCommentCards[data.id] = comment;
+
 				_pushCommentToListUI(listId,comment,data,pos);
 				_jumpToFile(fullPath,cursorPos);
 			});
@@ -1337,6 +1431,9 @@ define(function (require, exports, module) {
 			set.idMembers = comment._idMembers.join(',');
 		}
 		Trello._create('card',{list:listId},set).done(function(data) {
+			// save that there is a new comment card
+			trelloCommentCards[data.id] = comment;
+
 			_pushCommentToListUI(listId,comment,data,0);
 			if (++start < comments.length) {
 				_pushArrayToList(comments,listId,members,start);
@@ -1357,7 +1454,7 @@ define(function (require, exports, module) {
 	 */
 	function _pushCommentToListUI(listId,comment,data,pos) {
 		// delete the comment card...
-		$('.tab-lists', $panel).children('.lists').children('#'+listId).find('.cards').children('.comment-item:eq('+pos+')').remove();
+		$('.tab-lists', $panel).children('.lists').children('#'+listId).find('.cards').children('.code-comment-item:eq('+pos+')').remove();
 
 		// ... and add a correct card in the list
 		data.taskCount = '';
@@ -1368,7 +1465,7 @@ define(function (require, exports, module) {
 		// update the counters
 		var totalCardsEle = $('.tab-lists', $panel).children('.lists').children('#'+listId).find('.totalCards');
 		totalCardsEle.text(parseInt(parseInt(totalCardsEle.text())+1));
-		var commentCounterEle = $('.tab-lists', $panel).children('.lists').children('#'+listId).find('.comment-counter');
+		var commentCounterEle = $('.tab-lists', $panel).children('.lists').children('#'+listId).find('.code-comment-counter');
 		commentCounterEle.text('+'+parseInt(parseInt(commentCounterEle.text())-1));
 		if (parseInt(commentCounterEle.text()) === 0) {
 			commentCounterEle.text('');

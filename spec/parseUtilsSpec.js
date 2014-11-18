@@ -177,7 +177,7 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
         describe('Test multiple line comment case, use /**/ to comment', function () {
             var testFunc = function () {
                 /* todo trello I am the first trello comment.
-                 * trello: I am the second trello comment.// trello i am third a trello comment.
+                 * trello: I am the second trello comment.// 545e0eced178ed945d68bc40  trello i am third a trello comment.
                  // trello I am the fouth trello comment.
                  * todoTrello I am not a trello comment.
                  * Trelloit I'm not a trello comment.
@@ -193,7 +193,7 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 expect(comments.length).toBe(6);
                 expect(comments[0].content()).toBe('I am the first trello comment.');
                 expect(comments[0].tag()).toBe('todo');
-                expect(comments[1].content()).toBe('I am the second trello comment.// trello i am third a trello comment.');
+                expect(comments[1].content()).toBe('I am the second trello comment.// 545e0eced178ed945d68bc40  trello i am third a trello comment.');
                 expect(comments[2].content()).toBe('i am third a trello comment.');
                 expect(comments[2].tag()).toBe('');
                 expect(comments[3].content()).toBe('I am the fouth trello comment.');
