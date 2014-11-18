@@ -56,27 +56,27 @@ define(function (require, exports, module) {
             if (otherTrelloComments.length > 0) {
                 allTrelloComments = sortAndFilterSameComments(allTrelloComments);
             }
-        }
+        } else {
+            commentExp = new RegExp(commentRegexp[type].prefix + tagExp + commentRegexp[type].suffix, 'gi');
+            while ((matchArray = commentExp.exec(content)) !== null) {
+                trelloComment = new Comment();
+                trelloComment.cardId(matchArray[1]);
+                trelloComment.tag(matchArray[2]);
+                trelloComment.content(matchArray[3]);
+                trelloComment.lineNumber(matchArray.index);
+                trelloComment.lineCh(matchArray.index - content.lastIndexOf( '\n' , matchArray.index ) - 1);
+                allTrelloComments.push(trelloComment);
+            }
 
-        commentExp = new RegExp(commentRegexp[type].prefix + tagExp + commentRegexp[type].suffix, 'gi');
-        while ((matchArray = commentExp.exec(content)) !== null) {
-            trelloComment = new Comment();
-			trelloComment.cardId(matchArray[1]);
-            trelloComment.tag(matchArray[2]);
-            trelloComment.content(matchArray[3]);
-            trelloComment.lineNumber(matchArray.index);
-            trelloComment.lineCh(matchArray.index - content.lastIndexOf( '\n' , matchArray.index ) - 1);
-            allTrelloComments.push(trelloComment);
-        }
-
-        // find comments using /**/to comment.
-        if (type === 'javascript') {
-            otherTrelloComments = parseTrelloCommentsOfMultiLineJSSynta(content, tags);
-            otherTrelloComments.forEach(function(comment){
-               allTrelloComments.push(comment);
-            });
-            if (otherTrelloComments.length > 0) {
-                allTrelloComments = sortAndFilterSameComments(allTrelloComments);
+            // find comments using /**/to comment.
+            if (type === 'javascript') {
+                otherTrelloComments = parseTrelloCommentsOfMultiLineJSSynta(content, tags);
+                otherTrelloComments.forEach(function(comment){
+                   allTrelloComments.push(comment);
+                });
+                if (otherTrelloComments.length > 0) {
+                    allTrelloComments = sortAndFilterSameComments(allTrelloComments);
+                }
             }
         }
 
@@ -150,23 +150,20 @@ define(function (require, exports, module) {
         while ((matchCommentArray = commentRegex.exec(content)) !== null) {
 
             lastIndex = 0;
-            while ((matchTrelloArray = trelloRegex.exec(matchCommentArray[1])) !== null) {
-                // we check trello prefix manually, because js does no support reverse look expression.
-//                if (isTrelloCommentPrefix(matchCommentArray[1].substr(lastIndex, matchTrelloArray.index - lastIndex))) {
-                    trelloComment = new Comment();
-                    trelloComment.tag(matchTrelloArray[1]);
-                    trelloComment.content(matchTrelloArray[2]);
-                    trelloComment.lineNumber(matchCommentArray.index + matchTrelloArray.index);
-                    trelloComments.push(trelloComment);
-//                }
+            while ((matchTrelloArray = trelloRegex.exec(matchCommentArray[0])) !== null) {
+                trelloComment = new Comment();
+                trelloComment.tag(matchTrelloArray[2]);
+                trelloComment.content(matchTrelloArray[3]);
+                trelloComment.lineNumber(matchCommentArray.index + matchTrelloArray.index);
+                trelloComments.push(trelloComment);
                 lastIndex = matchTrelloArray.index + matchTrelloArray[0].length;
             }
             
-            var otherTrelloComments = parseTrelloCommentsOfMultiLineJSSynta(matchCommentArray[1], tags);
-            otherTrelloComments.forEach( pushComment );
+            // parse multiple line comment , same as js multiple line comment
+            parseTrelloCommentsOfMultiLineJSSynta(matchCommentArray[0], tags).forEach( pushPhpMultiLineComment );
         }
         
-        function pushComment(comment){
+        function pushPhpMultiLineComment(comment){
             comment.lineNumber(matchCommentArray.index + comment.lineNumber());
             trelloComments.push(comment);
         }
