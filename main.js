@@ -1326,6 +1326,9 @@ define(function (require, exports, module) {
 				} else {
 					$(listElem).closest('.list-item').find('.cards').html(commentHtml);
 				}
+            } else {
+                // clear old counter
+                countElem.html('');
             }
 
         });
