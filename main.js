@@ -842,8 +842,9 @@ define(function (require, exports, module) {
 		// Drag and Drop of Cards
 		$panel.on('mousedown', '.card-item, .code-comment-item', function(evt) {
 			var py = evt.pageY, $this = $(this), offset = $this.offset();
-			var $dropzone, fromListId, toListId, cardId, itemIndex;
-			fromListId = $this.parents('.list-item').attr('id');
+			var $fromList, $dropzone, fromListId, toListId, cardId, itemIndex;
+			$fromList = $this.parents('.list-item');
+			fromListId = $fromList.attr('id');
 			itemIndex = $this.index();
 			var isComment = $this.hasClass('code-comment-item'),
 				$parentList = $this.parents('.list-item');
@@ -866,6 +867,11 @@ define(function (require, exports, module) {
 					} else {
 						$dropzone.find('.cards').append($this);
 					}
+					
+					// update comment counter
+					_addCodeCommentCounter($fromList, -1);
+					_addCodeCommentCounter($dropzone, 1);
+
 					toListId = $this.parents('.list-item').attr('id');
 					if (!isComment) { // Card item is being dragged!
 						cardId = $this.attr('id');
@@ -1052,6 +1058,38 @@ define(function (require, exports, module) {
 
 		// Push a single Trello Comment
 		$panel.on('click', '.cmd-push-comment', _pushComment);
+	}
+    
+	/**
+	 * add count to list's code comment counter and refresh view
+	 * 
+	 * @param{object} $listItem list item's jquery object
+	 * @param{Number} count     code comment count, can be positive number or negative number
+	 * 
+	 */
+	function _addCodeCommentCounter($listItem, count) {
+		var $counterItem = $listItem.find('.code-comment-counter'),
+			newCount = $counterItem.data('counter') + count;
+
+		if (newCount < 0) {
+			newCount = 0;
+		}
+
+		$counterItem.data('counter', newCount);
+		if (_isChangesList($listItem)) {
+			$counterItem.html(newCount);
+		} else {
+			$counterItem.html('+' + newCount);
+		}
+	}
+
+	/**
+	 * 
+	 * @param{Object} $listItem list jquery item
+	 * return true if the list is changes list, otherwise false
+	 */
+	function _isChangesList($listItem) {
+		return $listItem.attr('id') === 'changes-list';
 	}
 
 	function _getActiveDropzone($cardItem) {
@@ -1330,7 +1368,8 @@ define(function (require, exports, module) {
                 // clear old counter
                 countElem.html('');
             }
-
+            // set comment counter
+            countElem.data('counter', groupComments.length);
         });
 
         // remove older Changes List.
