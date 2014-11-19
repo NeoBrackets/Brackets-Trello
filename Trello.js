@@ -51,7 +51,7 @@ define(function (require, exports, module) {
 			if (key == "since" && get[key]) {
 				optionStr += key+'='+(new Date(new Date() - 1000*get[key]).toUTCString())+'&';
 			} else
-			optionStr += key+'='+encodeURIComponent(get[key].join(','))+'&';
+			optionStr += key+'='+get[key].join(',')+'&';
 		}
 		var url;
 		switch (type) {
