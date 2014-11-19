@@ -51,7 +51,7 @@ define(function (require, exports, module) {
 			if (key == "since" && get[key]) {
 				optionStr += key+'='+(new Date(new Date() - 1000*get[key]).toUTCString())+'&';
 			} else
-			optionStr += key+'='+get[key].join(',')+'&';
+			optionStr += key+'='+encodeURIComponent(get[key].join(','))+'&';
 		}
 		var url;
 		switch (type) {
@@ -180,7 +180,7 @@ define(function (require, exports, module) {
 		}
 		for (var key in set) {
 			if (type != "checklist" || key != "tasks") {
-				setStr += key+'='+set[key]+'&';
+				setStr += key+'='+encodeURIComponent(set[key])+'&';
 			}
 		}
 		var url;
@@ -271,7 +271,7 @@ define(function (require, exports, module) {
 		var result = $.Deferred();
 		var setStr = '?';
 		for (var key in set) {
-			setStr += key+'='+set[key]+'&';
+			setStr += key+'='+encodeURIComponent(set[key])+'&';
 		}
 		var sendType;
 		switch (type) {
@@ -312,7 +312,7 @@ define(function (require, exports, module) {
 		var result = $.Deferred();
 		var editStr = '?';
 		for (var key in edit) {
-			editStr += key+'='+edit[key]+'&';
+			editStr += key+'='+encodeURIComponent(edit[key])+'&';
 		}
 		var sendType;
 		switch (type) {
@@ -424,7 +424,7 @@ define(function (require, exports, module) {
 		var result = $.Deferred();
 		var optStr = '';
 		for (var key in options) {
-			optStr += key+'='+options[key]+'&';
+			optStr += key+'='+encodeURIComponent(options[key])+'&';
 		}
 		var sendType;
 		switch (type) {

@@ -1419,10 +1419,10 @@ define(function (require, exports, module) {
 
 	/**
 	 * Push an array of trello comments to a list
-	 * @param   {String}        listId   id of the trello list
-	 * @param   {Comment|Array} comments array of comment objects
-	 * @param   {Array}         members  array of all board members
-	 * @param   {Number}        start    start to push with the start-th comment
+	 * @param   {String}        listId    id of the trello list
+	 * @param   {Comment|Array} comments  array of comment objects
+	 * @param   {Array}         members   array of all board members
+	 * @param   {Number}        [start=0] start to push with the start-th comment
 	 * @returns {Deferred}      empty resolve
 	 */
 	function _pushArrayToList(listId,comments,members,start) {
@@ -1482,7 +1482,10 @@ define(function (require, exports, module) {
 			var range = document.getRange(
 				{line:comment._lineNum - 1,ch:comment._lineCh},{line:comment._lineNum,ch:0}
 			);
-			var match = /\/\/\/*|\/\**/.exec(range);
+			console.log('range: '+range);
+			// supported comment structure: //,/**,#,<!--
+			// 546c6299d50000bfce22c1dd  trello @weilin you need to update this regex when you change the parser :/
+			var match = /\/\/+|\/\*+|#+|<!--+/.exec(range);
 			var startCh = comment._lineCh+match.index+match[0].length;
 			console.log(match);
 			document.replaceRange(
