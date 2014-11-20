@@ -805,7 +805,7 @@ define(function (require, exports, module) {
 	 * Display Notification
 	 */
 	function _displayNotification(text) {
-		if (!text) return;
+		if (!text || text.trim().length === 0) return;
 
 		var $notification = $('.notification', $panel);
 
