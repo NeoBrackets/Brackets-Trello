@@ -850,6 +850,12 @@ define(function (require, exports, module) {
 				$parentList = $this.parents('.list-item');
 
 			$(document).on('mousemove', function(e) {
+                
+                // add a mouse move range to protect click event
+                if (Math.abs(e.pageY - py) <= 1 ) {
+                    return;
+                }
+                
 				$this.css({
 					top: (isComment) ? e.pageY - py : offset.top + $panel.prop('scrollTop') + e.pageY - py
 				}).addClass('moving');
@@ -858,6 +864,13 @@ define(function (require, exports, module) {
 					$dropzone.addClass('dropzone');
 				}
 			}).on('mouseup', function() {
+                
+                // check moving before
+                if (!$this.hasClass('moving')) {
+                    $(this).off('mousemove').off('mouseup');
+                    return;
+                }
+
 				$this.removeClass('moving');
 				$this.removeAttr('style');
 				if ($dropzone) {
