@@ -862,15 +862,15 @@ define(function (require, exports, module) {
 				$this.removeAttr('style');
 				if ($dropzone) {
 					$dropzone.removeClass('dropzone');
-					if ($dropzone.attr('id') === 'changes-list') {
+					if (_isChangesList($dropzone)) {
 						$parentList.find('.cards').append($this);
 					} else {
 						$dropzone.find('.cards').append($this);
 					}
 					
 					// update comment counter
-					_addCodeCommentCounter($fromList, -1);
-					_addCodeCommentCounter($dropzone, 1);
+					_updateCodeCommentCounter($fromList);
+					_updateCodeCommentCounter($dropzone);
 
 					toListId = $this.parents('.list-item').attr('id');
 					if (!isComment) { // Card item is being dragged!
@@ -1061,25 +1061,22 @@ define(function (require, exports, module) {
 	}
     
 	/**
-	 * add count to list's code comment counter and refresh view
+	 * update list's code comment counter and refresh view
 	 * 
 	 * @param{object} $listItem list item's jquery object
 	 * @param{Number} count     code comment count, can be positive number or negative number
 	 * 
 	 */
-	function _addCodeCommentCounter($listItem, count) {
+	function _updateCodeCommentCounter($listItem) {
 		var $counterItem = $listItem.find('.code-comment-counter'),
-			newCount = $counterItem.data('counter') + count;
+			count = $listItem.find('.code-comment-item').length;
 
-		if (newCount < 0) {
-			newCount = 0;
-		}
-
-		$counterItem.data('counter', newCount);
 		if (_isChangesList($listItem)) {
-			$counterItem.html(newCount);
+			$counterItem.html(count);
+		} else if (count === 0) {
+			$counterItem.html('');
 		} else {
-			$counterItem.html('+' + newCount);
+			$counterItem.html('+' + count);
 		}
 	}
 
@@ -1331,6 +1328,7 @@ define(function (require, exports, module) {
         // merge comment item to trello list
         $('.list-item h5 a', $panel).each(function(index, listElem){
             var listName = $(listElem).html(),
+                $listItem = $(listElem).closest('.list-item'),
                 countElem = $(listElem).parent().find('.code-comment-counter'),
                 nameRegexp = '\\s*' + listName.replace(/\s+/g, '\\s*') + '\\s*',
                 tagRegexp = new RegExp(nameRegexp, 'i'),
@@ -1354,22 +1352,18 @@ define(function (require, exports, module) {
             newComments = otherComments;
             // render
             if (groupComments.length > 0) {
-				countElem.html('+'+groupComments.length);
                 commentHtml = Mustache.render(partTemplates.trelloComments, {
                     comments: groupComments
                 });
 				// are there normal cards in this list ?
 				if ($(listElem).closest('.list-item').find('.cards').children().first().length > 0) {
-                	$(commentHtml).insertBefore($(listElem).closest('.list-item').find('.cards').children().first());
+                	$(commentHtml).insertBefore($listItem.find('.cards').children().first());
 				} else {
-					$(listElem).closest('.list-item').find('.cards').html(commentHtml);
+					$listItem.find('.cards').html(commentHtml);
 				}
-            } else {
-                // clear old counter
-                countElem.html('');
             }
             // set comment counter
-            countElem.data('counter', groupComments.length);
+			_updateCodeCommentCounter($listItem);
         });
 
         // remove older Changes List.
