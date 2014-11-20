@@ -842,12 +842,10 @@ define(function (require, exports, module) {
 		// Drag and Drop of Cards
 		$panel.on('mousedown', '.card-item, .code-comment-item', function(evt) {
 			var py = evt.pageY, $this = $(this), offset = $this.offset();
-			var $fromList, $dropzone, fromListId, toListId, cardId, itemIndex;
+			var $fromList, $toList, $dropzone, fromListId, toListId, cardId, isComment;
+            
 			$fromList = $this.parents('.list-item');
-			fromListId = $fromList.attr('id');
-			itemIndex = $this.index();
-			var isComment = $this.hasClass('code-comment-item'),
-				$parentList = $this.parents('.list-item');
+            isComment = $this.hasClass('code-comment-item');
 
 			$(document).on('mousemove', function(e) {
                 
@@ -870,42 +868,57 @@ define(function (require, exports, module) {
                     $(this).off('mousemove').off('mouseup');
                     return;
                 }
-
+                
+                // remove style
 				$this.removeClass('moving');
 				$this.removeAttr('style');
-				if ($dropzone) {
-					$dropzone.removeClass('dropzone');
-					if (_isChangesList($dropzone)) {
-						$parentList.find('.cards').append($this);
-					} else {
-						$dropzone.find('.cards').append($this);
-					}
-					
-					// update comment counter
-					_updateCodeCommentCounter($fromList);
-					_updateCodeCommentCounter($dropzone);
+                if ($dropzone) {
+                    $dropzone.removeClass('dropzone');
+                }
 
-					toListId = $this.parents('.list-item').attr('id');
-					if (!isComment) { // Card item is being dragged!
-						cardId = $this.attr('id');
-						console.log('toListId: '+toListId);
-						if (fromListId !== toListId) {
-							// we need to update the totalCards counter
-							var totalCardsEleFrom = $('.tab-lists', $panel).children('.lists').children('#'+fromListId).children('.list-name').children('.totalCards');
-							var totalCardsEleTo = $('.tab-lists', $panel).children('.lists').children('#'+toListId).children('.list-name').children('.totalCards');
-							totalCardsEleFrom.text(parseInt(parseInt(totalCardsEleFrom.text())-1));
-							totalCardsEleTo.text(parseInt(parseInt(totalCardsEleTo.text())+1));
+                if ( !$dropzone || (_isChangesList($dropzone) && !isComment) 
+                    || $fromList.attr('id') === $dropzone.attr('id') ) {
+                    // trello card wouldn't be moved to changes list or none list, or src list equal to dest list
+                    // note: this is a trick to stop click event after draging
+                    var captureClickAfterDragFunc = function(e) {
+                        e.stopPropagation(); 
+                        this.removeEventListener('click', captureClickAfterDragFunc, true);
+                    };
+                    $this.parents('.cards')[0].addEventListener('click', captureClickAfterDragFunc, true);
+                    $(this).off('mousemove').off('mouseup');
+                    return;
+                }
 
-							Trello._move('card',
-										 {toList:toListId,card: cardId},{pos:"bottom"})
-							.done(_displayNotification).fail(_displayError);
-						}
-					}
-					if (fromListId === toListId) {
-						(isComment) ? $dropzone.find('.cards .code-comment-item:eq('+itemIndex+')').before($this) :
-									  $dropzone.find('.cards .card-item:eq('+itemIndex+')').before($this);
-					}
-				}
+                // move card|comment to list
+                if (isComment && $dropzone.find('.card-item').length > 0) {
+                    $this.insertBefore($dropzone.find('.card-item').first());
+                } else {
+                    $dropzone.find('.cards').append($this);
+                }
+                $toList = $this.parents('.list-item');
+
+                // update comment counter
+                _updateCodeCommentCounter($fromList);
+                _updateCardCounter($fromList);
+                _updateCodeCommentCounter($toList);
+                _updateCardCounter($toList);
+
+                // sync card moving to trello
+                if (!isComment) { 
+                    fromListId = $fromList.attr('id');
+                    toListId = $toList.attr('id');
+                    cardId = $this.attr('id');
+                    console.log('toListId: '+toListId);
+                    if (fromListId !== toListId) {
+                        Trello._move('card', { 
+                            toList:toListId,
+                            card: cardId 
+                        }, {
+                            pos:"bottom"
+                        } ).done(_displayNotification).fail(_displayError);
+                    }
+                }
+
 				$(this).off('mousemove').off('mouseup');
 			});
 		});
