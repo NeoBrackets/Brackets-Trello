@@ -841,9 +841,9 @@ define(function (require, exports, module) {
 
 		// Drag and Drop of Cards
 		$panel.on('mousedown', '.card-item, .code-comment-item', function(evt) {
-			var py = evt.pageY, $this = $(this), offset = $this.offset();
-			var $fromList, $toList, $dropzone, fromListId, toListId, cardId, isComment;
-            
+			var py = evt.pageY, $this = $(this), offset = $this.offset(), scrollTop = $panel.prop('scrollTop');
+			var $fromList, $toList, $dropzone, fromListId, toListId, cardId, isComment, bottom;
+
 			$fromList = $this.parents('.list-item');
             isComment = $this.hasClass('code-comment-item');
 
@@ -853,10 +853,19 @@ define(function (require, exports, module) {
                 if (Math.abs(e.pageY - py) <= 1 ) {
                     return;
                 }
-                
+				
+				// scroll with mouse moving
+				bottom = $panel.prop('clientHeight') - e.pageY;
+				if (bottom < 20) {
+					$panel.prop('scrollTop', $panel.prop('scrollTop') + 20);
+				} else if ($panel[0].clientHeight - bottom < 20 ) {
+					$panel.prop('scrollTop', $panel.prop('scrollTop') - 20);
+				}
+				
 				$this.css({
-					top: (isComment) ? e.pageY - py : offset.top + $panel.prop('scrollTop') + e.pageY - py
+					top: (isComment) ? $panel.prop('scrollTop') - scrollTop + e.pageY - py : offset.top + $panel.prop('scrollTop') + e.pageY - py
 				}).addClass('moving');
+				
 				$dropzone = _getActiveDropzone($this);
 				if ($dropzone) {
 					$dropzone.addClass('dropzone');
