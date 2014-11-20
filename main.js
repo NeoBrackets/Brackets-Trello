@@ -230,7 +230,7 @@ define(function (require, exports, module) {
 				Trello._create('board',{},{name:$dialog.find('.board-name').val()})
 				.done(
 					function(data) {
-						_displayNotification;
+						_displayNotification();
 						// add the new board to the panel
 						// get the correct children because boards are ordered by name asc
 						var index = 0;
@@ -276,7 +276,7 @@ define(function (require, exports, module) {
 				Trello._create('list',{board:boardId},{name:$dialog.find('.list-name').val(),pos:"bottom"})
 				.done(
 					function(data) {
-						_displayNotification;
+						_displayNotification();
 						// add the new list
 						data.totalCards = 0;
 						var combinedTemplate = _combineTemplates(partTemplates.lists);
@@ -308,7 +308,7 @@ define(function (require, exports, module) {
 							  )
 				.done(
 					function(data) {
-						_displayNotification;
+						_displayNotification();
 						data.taskCount = '';
 						var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
 						$('.tab-lists', $panel).children('.lists').children('#'+data.idList).children('.cards').append(
