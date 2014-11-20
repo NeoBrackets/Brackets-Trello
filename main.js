@@ -805,11 +805,13 @@ define(function (require, exports, module) {
 	 * Display Notification
 	 */
 	function _displayNotification(text) {
-		if (!text || text.trim().length === 0) return;
+		if (!text || text.toString().trim().length === 0) {
+			return;
+		}
 
 		var $notification = $('.notification', $panel);
 
-		$notification.empty().css('top', ($panel.height() + $panel.prop('scrollTop') - 40) + 'px').html(text).animate({
+		$notification.empty().css('top', ($panel.height() + $panel.prop('scrollTop') - 40) + 'px').html(text.toString()).animate({
 			opacity: 'show'
 		}, 'fast');
 		window.setTimeout(function() {
