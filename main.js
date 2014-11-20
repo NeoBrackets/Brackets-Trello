@@ -1077,8 +1077,6 @@ define(function (require, exports, module) {
 	 * update list's code comment counter and refresh view
 	 * 
 	 * @param{object} $listItem list item's jquery object
-	 * @param{Number} count     code comment count, can be positive number or negative number
-	 * 
 	 */
 	function _updateCodeCommentCounter($listItem) {
 		var $counterItem = $listItem.find('.code-comment-counter'),
@@ -1092,6 +1090,20 @@ define(function (require, exports, module) {
 			$counterItem.html('+' + count);
 		}
 	}
+    
+    /**
+	 * update list's card counter and refresh view
+	 * 
+	 * @param{object} $listItem list item's jquery object
+	 */
+    function _updateCardCounter($listItem) {
+        var $counterItem = $listItem.find('.totalCards'),
+			count = $listItem.find('.card-item').length;
+        
+        if ($counterItem.length > 0) {
+            $counterItem.text(count);
+        }
+    }
 
 	/**
 	 * 
@@ -1502,23 +1514,22 @@ define(function (require, exports, module) {
 	 * @param {Number} pos     the trello comment card is at position pos (needed for delete)
 	 */
 	function _pushCommentToListUI(listId,comment,data,pos) {
+        var $listItem = $('.tab-lists', $panel).children('.lists').children('#'+listId);
+        
 		// delete the comment card...
-		$('.tab-lists', $panel).children('.lists').children('#'+listId).find('.cards').children('.code-comment-item:eq('+pos+')').remove();
+		$listItem.find('.cards').children('.code-comment-item:eq('+pos+')').remove();
 
 		// ... and add a correct card in the list
 		data.taskCount = '';
 		var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
-		$('.tab-lists', $panel).children('.lists').children('#'+listId).children('.cards').append(
+		$listItem.children('.cards').append(
 			Mustache.render(combinedTemplate, {cards:data})
 		);
+        
 		// update the counters
-		var totalCardsEle = $('.tab-lists', $panel).children('.lists').children('#'+listId).find('.totalCards');
-		totalCardsEle.text(parseInt(parseInt(totalCardsEle.text())+1));
-		var commentCounterEle = $('.tab-lists', $panel).children('.lists').children('#'+listId).find('.code-comment-counter');
-		commentCounterEle.text('+'+parseInt(parseInt(commentCounterEle.text())-1));
-		if (parseInt(commentCounterEle.text()) === 0) {
-			commentCounterEle.text('');
-		}
+        _updateCardCounter($listItem);
+        _updateCodeCommentCounter($listItem);
+
 		// add the card id to the comment
 		console.log('comment: ',comment);
 		CommandManager.execute( Commands.FILE_OPEN, { fullPath: comment._filePath } ).done( function() {
