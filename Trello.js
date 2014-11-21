@@ -138,6 +138,7 @@ define(function (require, exports, module) {
 							returnObject[type] = data;
 							result.resolve(returnObject);
 						}
+
 						break;
 					case "cardMembers":
 					case "boardMembers":
@@ -205,8 +206,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log('create '+type);
-		console.log(url);
+
 		$.post(url,
 		function(data) {
 			if(data) {
@@ -228,6 +228,7 @@ define(function (require, exports, module) {
 			} else {
 				result.reject();
 			}
+
 		});
 		return result.promise();
 	}
@@ -243,8 +244,6 @@ define(function (require, exports, module) {
 	 */
 	function _createTasks(data,checklistID,tasks,start,end) {
 		var result = $.Deferred();
-		console.log('tasks: ',tasks);
-		console.log('task: ',tasks[start]);
 		_create('task',{checklist:checklistID},{name:tasks[start]}).done(function (task) {
 			data[start] = task;
 			start++;
@@ -341,7 +340,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log('url: '+url);
+
 		$.ajax({
 			url:url,
 			type: sendType
@@ -398,8 +397,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log(url);
-		console.log(sendType);
+
 		$.ajax({
 			url:url,
 			type: sendType
@@ -441,8 +439,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log(url);
-		console.log(sendType);
+
 		$.ajax({
 			url:url,
 			type: sendType

@@ -173,6 +173,9 @@ define(function (require, exports, module) {
 		var currentTab = $panel.find('.btn-boards').hasClass('active') ? 'boards' : false;
 		if (!currentTab) currentTab = $panel.find('.btn-lists').hasClass('active') ? 'lists' : 'tasks';
 
+		if ((!cache.hasOwnProperty("ids") || $.isEmptyObject(cache.ids)) && currentTab != "boards")
+			return;
+
 		Trello._get(currentTab,cache.ids,cache.settings)
 		.done(function(data) {
 			if (currentTab == "lists") {
@@ -183,9 +186,6 @@ define(function (require, exports, module) {
 				data.listName = listName;
 			}
 			if (!compareObjects(cache.data,data)) {
-				console.log('change');
-				console.log('data: ',data);
-				console.log('vs: ',cache.data);
 				cache.data = data;
 				switch(currentTab) {
 					case "boards":
@@ -236,7 +236,6 @@ define(function (require, exports, module) {
 						var index = 0;
 						var found = false;
 						$.each($('.tab-boards', $panel).children('.boards').children('.board-item'), function(nthChild,item) {
-							console.log($(item).children('h4').text().toLowerCase() + ' vs. ' + data.name.toLowerCase());
 							if  ($(item).children('h4').text().toLowerCase() > data.name.toLowerCase()) {
 								found = true;
 								return false;
@@ -351,7 +350,7 @@ define(function (require, exports, module) {
 					for (var t = 0; t < tasks.length; t++) {
 						var task = data.tasks[t];
 						var combinedTemplate = _combineTemplates(partTemplates.checkitems);
-						console.log(combinedTemplate);
+
 						// add the new task
 						$('.tab-tasks', $panel).children('.checklists').children('#'+_prefs.get('selected-checklist')).children('.tasks').append(
 							Mustache.render(combinedTemplate, {checkItems:task})
@@ -383,7 +382,7 @@ define(function (require, exports, module) {
 						tasks.push($(this).val());
 					}
 				})
-				console.log('tasks: ',tasks);
+
 				Trello._createTasks([],_prefs.get('selected-checklist'),tasks,0,$dialog.find('.task-name').length)
 				.done(function(data) {
 						_displayNotification();
@@ -408,8 +407,6 @@ define(function (require, exports, module) {
 		var cardId   = _prefs.get("selected-card");
 		Trello._get('boardMembers',{board:boardId},{}).done(function(boardMembers) {
 			Trello._get('cardMembers',{card:cardId},{}).done(function(cardMembers) {
-				console.log('Board Members: ',boardMembers);
-				console.log('Card Members: ',cardMembers);
 				// difference between boardMembers and cardMembers
 				var members = [];
 				for (var bm = 0; bm < boardMembers.length; bm++) {
@@ -569,9 +566,7 @@ define(function (require, exports, module) {
 		var cardId = $('.card-name', $panel).attr('id');
 		var checklistId = $(this).parent('.task-item').parent('.tasks').parent('.checklist-item').attr('id');
 		var checkitemId = $(this).data('task-id');
-		console.log(cardId);
-		console.log(checklistId);
-		console.log(checkitemId);
+
 		$dialog.find('.task-name').val($(this).siblings('label').text().trim()).focus();
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -631,7 +626,6 @@ define(function (require, exports, module) {
 				if (id === 'yes') {
 					Trello._delete('board',{board:boardId}).done(function(data) {
 						_displayNotification();
-						console.log('deleted Board: ',data);
 						_displayBoards();
 					}).fail(_displayError);
 				}
@@ -647,7 +641,6 @@ define(function (require, exports, module) {
 				if (id === 'yes') {
 					Trello._delete('list',{list:listId}).done(function(data) {
 						_displayNotification();
-						console.log('deleted List: ',data);
 						thisEle.parent('.list-name').parent('.list-item').remove();
 					}).fail(_displayError);
 				}
@@ -736,7 +729,7 @@ define(function (require, exports, module) {
 						commentObj.username = data.memberCreator.username,
 						commentObj.avatarHash = data.memberCreator.avatarHash,
 						commentObj.comment = data.data.text;
-						console.log(commentObj);
+
 						var combinedTemplate = _combineTemplates(partTemplates.comments);
 						$('.tab-tasks', $panel).children('.comments').children('h5').after(
 							Mustache.render(combinedTemplate, {comments:commentObj})
@@ -917,7 +910,6 @@ define(function (require, exports, module) {
                     fromListId = $fromList.attr('id');
                     toListId = $toList.attr('id');
                     cardId = $this.attr('id');
-                    console.log('toListId: '+toListId);
                     if (fromListId !== toListId) {
                         Trello._move('card', { 
                             toList:toListId,
@@ -980,7 +972,7 @@ define(function (require, exports, module) {
             _savePrefs('selected-list', $(this).parents('.list-item').attr('id'));
             _savePrefs('selected-list-name', $(this).parents('.list-item').find('h5 a').html());
 			_savePrefs('selected-card', $(this).attr('id'));
-			console.log('trelloCommentCards: ', trelloCommentCards);
+
 			if (e.shiftKey && $(this).attr('id') in trelloCommentCards) {
 				// Open file and locate to comment in editor.
 				var comment = trelloCommentCards[$(this).attr('id')];
@@ -1092,7 +1084,7 @@ define(function (require, exports, module) {
 		$panel.on('click', '.cmd-push-comments', _pushComments);
 
 		// Push a single Trello Comment
-		$panel.on('click', '.cmd-push-comment', _pushComment);
+		$panel.on('click', '.cmd-push-comment', _pushComments);
 	}
     
 	/**
@@ -1236,7 +1228,7 @@ define(function (require, exports, module) {
 			data.id   = boardId;
 			activeUserId = data.memberRole.idMember;
 			activeUserRole = data.memberRole.memberType;
-			console.log('listData: ',data);
+
 			var combinedTemplate = _combineTemplates(listsTemplate);
 			cache  	= {
 				data: data,
@@ -1272,8 +1264,8 @@ define(function (require, exports, module) {
 
 			data.boardName = boardName;
 			data.listName = listName;
-			console.log('tasks for: '+cardId);
-			console.log(data);
+
+
 			var combinedTemplate = _combineTemplates(tasksTemplate);
 			cache 	= {
 					data: data,
@@ -1355,7 +1347,6 @@ define(function (require, exports, module) {
 
     function displayTrelloComments(newComments) {
 		cache.comments = newComments;
-		console.log(newComments);
 
         var compliedChangesList = null;
 		trelloCommentCards = {};
@@ -1385,15 +1376,15 @@ define(function (require, exports, module) {
 
 
             newComments.forEach(function(comment){
-                if (tagRegexp.test(comment.tag())) {
-					if (!comment.cardId()) {
-                    	groupComments.push(comment);
+				if (comment.cardId()) {
+					trelloCommentCards[comment.cardId()] = comment;
+				} else {
+					if (tagRegexp.test(comment.tag())) {
+						groupComments.push(comment);
 					} else {
-						trelloCommentCards[comment.cardId()] = comment;
+						otherComments.push(comment);
 					}
-                } else {
-                    otherComments.push(comment);
-                }
+				}
             });
 
             newComments = otherComments;
@@ -1423,78 +1414,48 @@ define(function (require, exports, module) {
     }
 
 	/**
-	 * Push a single comment to a trello list
+	 * Push all comments of a special list into the remote trello list
 	 * @param {Object} e click event
 	 */
-	function _pushComment(e) {
+	function _pushComments(e) {
 		e.stopPropagation();
-		var listId = $(this).parent('.code-comment-item').parent('.cards').parent('.list-item').attr("id");
-		var comment =
-		{
-			_content:  $(this).parent('.code-comment-item').find('.code-comment-name').text(),
-			_filePath:  $(this).parent('.code-comment-item').data('file-path'),
-			_lineNum:  $(this).parent('.code-comment-item').data('line-number'),
-			_lineCh:  $(this).parent('.code-comment-item').data('line-ch')
-		};
-		var pos = $(this).parent('.code-comment-item').index();
-		console.log('listId: '+listId);
-		console.log('comment: ',comment);
-		console.log('pos: '+pos);
+
+
+		var comments = [];
+		if ($(this)[0].className.indexOf('cmd-push-comments') >= 0) {
+			// all comments in this list
+			var listId = $(this).data('list-id');
+
+			$(this).parent('.list-name').parent('.list-item').children('.cards').find('.code-comment-item').each(function(i,ele) {
+				comments.push(_getCommentByEle(ele));
+			});
+		} else {
+			// only one comment in a list
+			var listId = $(this).parent('.code-comment-item').parent('.cards').parent('.list-item').attr("id");
+			var ele = $(this).parent('.code-comment-item');
+			comments.push(_getCommentByEle(ele));
+
+		}
 
 		var fullPath = DocumentManager.getCurrentDocument().file._path;
 		var cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
-		console.log('fullPath: '+fullPath);
-		console.log('cursorPos: ',cursorPos);
 
 		Trello._get('boardMembers',{board:_prefs.get('selected-board')},{}).done(function(members) {
-			comment = _parseMembers(comment,members);
-			console.log('comment: ',comment);
-			var set = {name:comment._content};
-			if (comment._idMembers.length > 0) {
-				set.idMembers = comment._idMembers.join(',');
-			}
-			Trello._create('card',{list:listId},set).done(function(data) {
-				// save that there is a new comment card
-				trelloCommentCards[data.id] = comment;
-
-				_pushCommentToListUI(listId,comment,data,pos);
+			_pushArrayToList(listId,comments,members).done(function() {
 				_jumpToFile(fullPath,cursorPos);
 			});
 		});
 
 	}
 
-	/**
-	 * Push all comments of a special list into the remote trello list
-	 * @param {Object} e click event
-	 */
-	function _pushComments(e) {
-		e.stopPropagation();
-		var listId = $(this).data('list-id');
-		var listName = $(this).data('list-name');
-		console.log('listId: '+listId);
-		console.log('listName: '+listName);
-		var comments = Parser.getTrelloComments();
 
-		var nameRegexp = '\\s*' + listName.replace(/\s+/g, '\\s*') + '\\s*',
-			tagRegexp = new RegExp(nameRegexp, 'gi'),
-			listComments = [];
-
-		comments.forEach(function(comment){
-			if (tagRegexp.test(comment.tag())) {
-				if (!comment.cardId()) {
-					listComments.push(comment);
-				}
-			}
-		});
-		var fullPath = DocumentManager.getCurrentDocument().file._path;
-		var cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
-
-		Trello._get('boardMembers',{board:_prefs.get('selected-board')},{}).done(function(members) {
-			_pushArrayToList(listId,listComments,members).done(function() {
-				_jumpToFile(fullPath,cursorPos);
-			});
-		});
+	function _getCommentByEle(ele) {
+		return {
+				_content:  	$(ele).find('.code-comment-name').text(),
+				_filePath:  $(ele).data('file-path'),
+				_lineNum:  	$(ele).data('line-number'),
+				_lineCh:  	$(ele).data('line-ch')
+			};
 	}
 
 	/**
@@ -1508,18 +1469,23 @@ define(function (require, exports, module) {
 	function _pushArrayToList(listId,comments,members,start) {
 		if (typeof start === "undefined") start = 0;
 		var result = new $.Deferred();
+
 		var comment = _parseMembers(comments[start],members);
 		var set = {name:comment._content};
+
 		if (comment._idMembers.length > 0) {
 			set.idMembers = comment._idMembers.join(',');
 		}
+
 		Trello._create('card',{list:listId},set).done(function(data) {
 			// save that there is a new comment card
 			trelloCommentCards[data.id] = comment;
 
 			_pushCommentToListUI(listId,comment,data,0);
 			if (++start < comments.length) {
-				_pushArrayToList(comments,listId,members,start);
+				_pushArrayToList(listId,comments,members,start).done(function() {
+					result.resolve();
+				});
 			} else {
 				result.resolve();
 			}
@@ -1553,7 +1519,6 @@ define(function (require, exports, module) {
         _updateCodeCommentCounter($listItem);
 
 		// add the card id to the comment
-		console.log('comment: ',comment);
 		CommandManager.execute( Commands.FILE_OPEN, { fullPath: comment._filePath } ).done( function() {
 			// Set focus on editor.
             EditorManager.focusEditor();
@@ -1561,12 +1526,12 @@ define(function (require, exports, module) {
 			var range = document.getRange(
 				{line:comment._lineNum - 1,ch:comment._lineCh},{line:comment._lineNum,ch:0}
 			);
-			console.log('range: '+range);
+
 			// supported comment structure: //,/**,#,<!--
-			// 546c6299d50000bfce22c1dd  trello @weilin you need to update this regex when you change the parser :/
+			// 546dfca35ae692ebf65458dc doing trello @weilin you need to update this regex when you change the parser :/
 			var match = /\/\/+|\/\*+|#+|<!--+/.exec(range);
 			var startCh = comment._lineCh+match.index+match[0].length;
-			console.log(match);
+
 			document.replaceRange(
 				' '+data.id+' ',
 				{
@@ -1593,7 +1558,6 @@ define(function (require, exports, module) {
 		var regex = /(?:^| )@([a-z0-9]+)/g;
 		comment._idMembers = [];
 		while ((matches = regex.exec(comment._content)) !== null) {
-			console.log('matches', matches);
 			var memberPos = boardMembers.keyIndexOf('username',matches[1]);
 			if (memberPos >= 0) {
 				comment._idMembers.push(boardMembers[memberPos].id);
@@ -1686,7 +1650,6 @@ define(function (require, exports, module) {
 			var selectionPos 	= editor.getSelection(true);
 			var selection 		= editor.document.getRange(selectionPos.start,selectionPos.end,true);
 			var comments = ParseUtils.parseText(selection, ['idea', 'todo', 'doing', 'done'], languageId);
-			console.log(comments);
 		}
 	}
 
