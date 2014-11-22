@@ -230,7 +230,7 @@ define(function (require, exports, module) {
 				Trello._create('board',{},{name:$dialog.find('.board-name').val()})
 				.done(
 					function(data) {
-						_displayNotification();
+						
 						// add the new board to the panel
 						// get the correct children because boards are ordered by name asc
 						var index = 0;
@@ -274,9 +274,8 @@ define(function (require, exports, module) {
 		dialog.done(function(id) {
 			if (id === 'save') {
 				Trello._create('list',{board:boardId},{name:$dialog.find('.list-name').val(),pos:"bottom"})
-				.done(
-					function(data) {
-						_displayNotification();
+				.done( function(data) {
+
 						// add the new list
 						data.totalCards = 0;
 						var combinedTemplate = _combineTemplates(partTemplates.lists);
@@ -306,9 +305,8 @@ define(function (require, exports, module) {
 							   {list:_prefs.get('selected-list')},
 							   {name:$dialog.find('.card-name').val(),desc:$dialog.find('.card-desc').val()}
 							  )
-				.done(
-					function(data) {
-						_displayNotification();
+				.done( function(data) {
+					
 						data.taskCount = '';
 						var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
 						$('.tab-lists', $panel).children('.lists').children('#'+data.idList).children('.cards').append(
@@ -340,8 +338,8 @@ define(function (require, exports, module) {
 						tasks.push($(this).val());
 					}
 				});
-				Trello._create('checklist',{board:boardId,card:cardId},{name:name,tasks:tasks}).done(function(data) {
-					_displayNotification();
+				Trello._create('checklist',{board:boardId,card:cardId},{name:name,tasks:tasks}).done( function(data) {
+
 					_savePrefs('selected-checklist',data.checklist.id);
 					var combinedTemplate = _combineTemplates(partTemplates.checklists);
 					// add the new task
@@ -385,8 +383,8 @@ define(function (require, exports, module) {
 				})
 				console.log('tasks: ',tasks);
 				Trello._createTasks([],_prefs.get('selected-checklist'),tasks,0,$dialog.find('.task-name').length)
-				.done(function(data) {
-						_displayNotification();
+				.done( function(data) {
+					
 						for (var t = 0; t < data.length; t++) {
 							var task = data[t];
 							var combinedTemplate = _combineTemplates(partTemplates.checkitems);
@@ -437,8 +435,7 @@ define(function (require, exports, module) {
 								newMembers.push($(this).data('member-id'));
 							}
 						});
-						Trello._addNewMembers(newMembers,cardId).done(function(data) {
-							_displayNotification();
+						Trello._addNewMembers(newMembers,cardId).done( function(data) { 
 							var showNewMembers = [];
 							var combinedTemplate = _combineTemplates(partTemplates.members);
 							for (var nm = 0; nm < data.idMembers.length; nm++) {
@@ -470,8 +467,8 @@ define(function (require, exports, module) {
 				if (id === 'save') {
 					var name = $dialog.find('.board-name').val();
 					if (name.length >= 1) {
-						Trello._edit('board',{board:boardId},{name:name}).done(function(data) {
-							_displayNotification();
+						Trello._edit('board',{board:boardId},{name:name}).done( function(data) {
+							
 							// we need to change the name inside the ui as well
 							$('.board-name', $panel).children('#board-name').text(name);
 							// new board name inside prefs
@@ -492,8 +489,7 @@ define(function (require, exports, module) {
 			if (id === 'save') {
 				var name = $dialog.find('.list-name').val();
 				if (name.length >= 1) {
-					Trello._edit('list',{list:listId},{name:name}).done(function(data) {
-							_displayNotification();
+					Trello._edit('list',{list:listId},{name:name}).done( function(data) {
 							// we need to change the name inside the ui as well
 							$('.lists', $panel).children('#'+listId).children('.list-name').children('a').text(name);
 							// new list name inside prefs
@@ -514,8 +510,7 @@ define(function (require, exports, module) {
 			if (id === 'save') {
 				var name = $dialog.find('.card-name').val();
 				if (name.length >= 1) {
-					Trello._edit('card',{card:cardId},{name:name}).done(function(data) {
-							_displayNotification();
+					Trello._edit('card',{card:cardId},{name:name}).done( function(data) {
 							// we need to change the name inside the ui as well
 							$('.card-name', $panel).children('#card-name').text(name);
 						}).fail(_displayError);
@@ -535,7 +530,6 @@ define(function (require, exports, module) {
 				var desc = $dialog.find('.card-desc').val();
 				if (desc.length >= 1) {
 					Trello._edit('card',{card:cardId},{desc:desc}).done(function(data) {
-							_displayNotification();
 							// we need to change the desc inside the ui as well
 							$('.card-desc', $panel).children('#card-desc').text(desc);
 						}).fail(_displayError);
@@ -554,7 +548,6 @@ define(function (require, exports, module) {
 			if (id === 'save') {
 				var name = $dialog.find('.checklist-name').val();
 				Trello._edit('checklist',{checklist:checklistId},{name:name}).done(function(data) {
-							_displayNotification();
 							// we need to change the name inside the ui as well
 							$('.checklists', $panel).children('#'+checklistId).children('.checklist-name').children('#checklist-name').text(name);
 						}).fail(_displayError);
@@ -577,7 +570,6 @@ define(function (require, exports, module) {
 			if (id === 'save') {
 				var name = $dialog.find('.task-name').val();
 				Trello._edit('checkitem',{card:cardId,checklist:checklistId,checkitem:checkitemId},{value:name}).done(function(data) {
-							_displayNotification();
 							// we need to change the name inside the ui as well
 							$('.checklists', $panel).children('#'+checklistId).children('.tasks')
 							.children('.task-item').children("label[for='"+checkitemId+"']").text(name);
@@ -630,7 +622,6 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('board',{board:boardId}).done(function(data) {
-						_displayNotification();
 						console.log('deleted Board: ',data);
 						_displayBoards();
 					}).fail(_displayError);
@@ -646,7 +637,6 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('list',{list:listId}).done(function(data) {
-						_displayNotification();
 						console.log('deleted List: ',data);
 						thisEle.parent('.list-name').parent('.list-item').remove();
 					}).fail(_displayError);
@@ -660,7 +650,6 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('card',{card:_prefs.get('selected-card')}).done(function(data) {
-						_displayNotification();
 						_displayLists();
 					}).fail(_displayError);
 				}
@@ -675,7 +664,6 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('checklist',{checklist:checklistId}).done(function(data) {
-						_displayNotification();
 						thisEle.parent('.checklist-name').parent('.checklist-item').remove();
 					}).fail(_displayError);
 				}
@@ -691,7 +679,6 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('checkItem',{checklist:checklistId,checkItem:taskId}).done(function(data) {
-						_displayNotification();
 						thisEle.parent('.task-item').remove();
 					}).fail(_displayError);
 				}
@@ -729,7 +716,6 @@ define(function (require, exports, module) {
 			if (id === 'save') {
 				Trello._create('comment',{card:cardId},{text:$dialog.find('.card-comment-text').val()})
 					.done(function(data) {
-						_displayNotification();
 						var commentObj = {};
 						commentObj.id = data.id;
 						commentObj.fullName = data.memberCreator.fullName,
@@ -762,7 +748,6 @@ define(function (require, exports, module) {
 				var commentText = $dialog.find('.card-comment-text').val();
 				Trello._edit('comment',{card:cardId,comment:commentId},{text:commentText})
 					.done(function(data) {
-						_displayNotification();
 						$('.tab-tasks', $panel)
 						.children('.comments').children('#'+commentId).children('.card-comment-body').children('.comment').html(commentText);
 					})
@@ -778,7 +763,6 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('comment',{comment:commentId,card:cardId}).done(function(data) {
-						_displayNotification();
 						$('.tab-tasks', $panel)
 						.children('.comments').children('#'+commentId).remove();
 					}).fail(_displayError);
@@ -794,7 +778,6 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('cardMember',{card:cardId,member:memberId}).done(function(data) {
-						_displayNotification();
 						$('.tab-tasks', $panel).children('.members').children('#'+memberId).remove();
 					}).fail(_displayError);
 				}
@@ -926,7 +909,7 @@ define(function (require, exports, module) {
                             card: cardId 
                         }, {
                             pos:"bottom"
-                        } ).done(_displayNotification).fail(_displayError);
+                        } ).fail(_displayError);
                     }
                 }
 
