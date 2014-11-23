@@ -14,31 +14,7 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
 
     describe('Test parseUtils', function () {
 
-        describe('Test one line comment case, use // to comment', function () {
-            it('"//trello it one trello card\\n" should be trello comment', function () {
-                var comments = parseUtils.parseText('//trello it one trello card\\n', tags, 'javascript');
-                expect(comments.length).toBe(1);
-                expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].tag()).toBe('');
-                expect(comments[0].content()).toBe('it one trello card\\n');
-            });
-
-            it('"//  trello it one trello card\\n" should be trello comment', function () {
-                var comments = parseUtils.parseText('//  trello it one trello card\\n', tags, 'javascript');
-                expect(comments.length).toBe(1);
-                expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].tag()).toBe('');
-                expect(comments[0].content()).toBe('it one trello card\\n');
-            });
-
-            it('"//TRELlo it one trello card\\n" should be trello comment', function () {
-                var comments = parseUtils.parseText('//TRELlo it one trello card\\n', tags, 'javascript');
-                expect(comments.length).toBe(1);
-                expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].tag()).toBe('');
-                expect(comments[0].content()).toBe('it one trello card\\n');
-            });
-
+        describe('Test one line comment case in javascript file, use // to comment', function () {
             it('"//trello: it one trello card\\n" should be trello comment', function () {
                 var comments = parseUtils.parseText('//trello: it one trello card\\n', tags, 'javascript');
                 expect(comments.length).toBe(1);
@@ -47,60 +23,73 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 expect(comments[0].content()).toBe('it one trello card\\n');
             });
 
-            it('"// trello: it one trello card\\n" should be trello comment', function () {
-                var comments = parseUtils.parseText('//trello: it one trello card\\n', tags, 'javascript');
+            it('"//  trello: it one trello card\\n" should be trello comment', function () {
+                var comments = parseUtils.parseText('//  trello: it one trello card\\n', tags, 'javascript');
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(0);
                 expect(comments[0].tag()).toBe('');
                 expect(comments[0].content()).toBe('it one trello card\\n');
             });
 
-            it('html should not support now', function () {
+            it('"//TRELlo: it one trello card\\n" should be trello comment', function () {
+                var comments = parseUtils.parseText('//TRELlo: it one trello card\\n', tags, 'javascript');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('');
+                expect(comments[0].content()).toBe('it one trello card\\n');
+            });
+			
+			it('"//TRELlo:it one trello card\\n" should be trello comment', function () {
+                var comments = parseUtils.parseText('//TRELlo:it one trello card\\n', tags, 'javascript');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('');
+                expect(comments[0].content()).toBe('it one trello card\\n');
+            });
+
+            it('"//trello it one trello card\\n" should not be trello comment, because it doesn\'t have :', function () {
+                var comments = parseUtils.parseText('//trello it one trello card\\n', tags, 'javascript');
+                expect(comments.length).toBe(0);
+            });
+
+            it('html should not support // comment now', function () {
                 var comments = parseUtils.parseText('//trello it one trello card\\n', tags, 'html');
                 expect(comments.length).toBe(0);
             });
 
-            it('"//   trello it one trello card" should be trello comment', function () {
-                var comments = parseUtils.parseText('//   trello it one trello card', tags, 'javascript');
-                expect(comments.length).toBe(1);
-                expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].tag()).toBe('');
-                expect(comments[0].content()).toBe('it one trello card');
-            });
-
-            it('"//todo trello it one trello card\\n" should be a todo trello comment', function () {
-                var comments = parseUtils.parseText('//todo trello it one trello card\\n', tags, 'javascript');
+            it('"// trello todo: it one trello card\\n" should be a todo trello comment', function () {
+                var comments = parseUtils.parseText('// trello todo: it one trello card\\n', tags, 'javascript');
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(0);
                 expect(comments[0].tag()).toBe('todo');
                 expect(comments[0].content()).toBe('it one trello card\\n');
             });
 
-            it('"//  doing trello it one trello card\\n" should be a doing trello comment', function () {
-                var comments = parseUtils.parseText('//  doing trello it one trello card\\n', tags, 'javascript');
+            it('"//    trello   do ing  :it one trello card\\n" should be a do ing trello comment', function () {
+                var comments = parseUtils.parseText('//    trello   do ing  :it one trello card\\n', tags, 'javascript');
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].tag()).toBe('doing');
+                expect(comments[0].tag()).toBe('do ing');
                 expect(comments[0].content()).toBe('it one trello card\\n');
             });
 
-            it('"//  I am not a trello comment" should not be trello comment', function () {
-                var comments = parseUtils.parseText('//  I am not a trello comment', 'javascript');
+            it('"//  I am not a trello: comment" should not be trello comment', function () {
+                var comments = parseUtils.parseText('//  I am not a trello: comment', 'javascript');
                 expect(comments.length).toBe(0);
             });
 
-            it('"//  todotrello it one trello card\\n" should not be trello comment', function () {
-                var comments = parseUtils.parseText('//  todotrello it one trello card\\n', 'javascript');
+            it('"//  trellotodo: it one trello card\\n" should not be trello comment', function () {
+                var comments = parseUtils.parseText('//  trellotodo: it one trello card\\n', 'javascript');
                 expect(comments.length).toBe(0);
             });
 
-            it('"// todo trelloit one trello card\\n" should not be trello comment', function () {
-                var comments = parseUtils.parseText('// todo trelloit one trello card\\n', 'javascript');
+            it('"//  trelloit todo: one trello card\\n" should not be trello comment', function () {
+                var comments = parseUtils.parseText('//  trelloit todo: one trello card\\n', 'javascript');
                 expect(comments.length).toBe(0);
             });
 
-            it('"// todo it one trello card\\n" should not be trello comment', function () {
-                var comments = parseUtils.parseText('// todo it one trello card\\n', 'javascript');
+            it('"// todo it one trello: card\\n" should not be trello comment', function () {
+                var comments = parseUtils.parseText('// todo it one trello: card\\n', 'javascript');
                 expect(comments.length).toBe(0);
             });
 
@@ -110,98 +99,102 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
         describe('Test multiple line comment case, use // to comment', function () {
             var testFunc = function () {
                 // trello: test multiple line.
-                // trello it will be parsed on second line
                 // I am not a trello comment
-                // TODO trello i am a todo trello comment
+                //  trello TODO: i am a todo trello comment
                 var test = 0;
             };
 
-            it(getFunctionContent(testFunc) + ' should contains 3 trello comments.', function () {
+            it(getFunctionContent(testFunc) + ' should contains 2 trello comments.', function () {
                 var comments = parseUtils.parseText(getFunctionContent(testFunc), tags, 'javascript');
-                expect(comments.length).toBe(3);
-                expect(comments[0].lineNumber()).toBe(18);
+                expect(comments.length).toBe(2);
+                expect(comments[0].lineNumber()).toBe(17);
                 expect(comments[0].content()).toBe('test multiple line.');
-                expect(comments[1].lineNumber()).toBe(66);
-                expect(comments[1].content()).toBe('it will be parsed on second line');
-                expect(comments[2].lineNumber()).toBe(172);
-                expect(comments[2].content()).toBe('i am a todo trello comment');
+                expect(comments[1].lineNumber()).toBe(109);
+                expect(comments[1].content()).toBe('i am a todo trello comment');
             });
 
         });
-
-        describe('Test one line comment case, use /**/ to comment', function () {
-            it(' /*trello this is a trello comment */ should be a trello comment.', function () {
-                var comments = parseUtils.parseText('/*trello this is a trello comment */', tags, 'javascript');
-                expect(comments.length).toBe(1);
-                expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].tag()).toBe('');
-                expect(comments[0].content()).toBe('this is a trello comment ');
-            });
-
-            it(' /* trello: this is a trello comment */ should be a trello comment.', function () {
-                var comments = parseUtils.parseText('/* trello: this is a trello comment */', tags, 'javascript');
-                expect(comments.length).toBe(1);
-                expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].tag()).toBe('');
-                expect(comments[0].content()).toBe('this is a trello comment ');
-            });
-
-            it(' /* todo trello this is a trello comment */ should be a todo trello comment.', function () {
-                var comments = parseUtils.parseText('/* todo trello this is a trello comment */', tags, 'javascript');
-                expect(comments.length).toBe(1);
-                expect(comments[0].tag()).toBe('todo');
-                expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].content()).toBe('this is a trello comment ');
-            });
-
-            it(' /*doing trello: this is a trello comment */ should be a todo trello comment.', function () {
-                var comments = parseUtils.parseText('/*doing trello: this is a trello comment */', tags, 'javascript');
-                expect(comments.length).toBe(1);
-                expect(comments[0].tag()).toBe('doing');
-                expect(comments[0].lineNumber()).toBe(0);
-                expect(comments[0].content()).toBe('this is a trello comment ');
-            });
-
-            it(' /* todotrello this is not a trello comment */ should not be a trello comment.', function () {
-                var comments = parseUtils.parseText('/* todotrello this is not a trello comment */', tags, 'javascript');
+		
+		describe('Test one line comment case, use /**/ to comment', function () {
+			it(' /*trello : this is not a trello comment now */ should not be a trello comment. because we don\'t support /** comment now', function () {
+                var comments = parseUtils.parseText('/*trello : this is not a trello comment now */', tags, 'javascript');
                 expect(comments.length).toBe(0);
             });
+		});
 
-            it(' /*trellothis is not a trello comment */ should be a trello comment.', function () {
-                var comments = parseUtils.parseText('/*trellothis is not a trello comment */', tags, 'javascript');
-                expect(comments.length).toBe(0);
-            });
+//        describe('Test one line comment case, use /**/ to comment', function () {
+//            it(' /*trello this is a trello comment */ should be a trello comment.', function () {
+//                var comments = parseUtils.parseText('/*trello this is a trello comment */', tags, 'javascript');
+//                expect(comments.length).toBe(1);
+//                expect(comments[0].lineNumber()).toBe(0);
+//                expect(comments[0].tag()).toBe('');
+//                expect(comments[0].content()).toBe('this is a trello comment ');
+//            });
+//
+//            it(' /* trello: this is a trello comment */ should be a trello comment.', function () {
+//                var comments = parseUtils.parseText('/* trello: this is a trello comment */', tags, 'javascript');
+//                expect(comments.length).toBe(1);
+//                expect(comments[0].lineNumber()).toBe(0);
+//                expect(comments[0].tag()).toBe('');
+//                expect(comments[0].content()).toBe('this is a trello comment ');
+//            });
+//
+//            it(' /* todo trello this is a trello comment */ should be a todo trello comment.', function () {
+//                var comments = parseUtils.parseText('/* todo trello this is a trello comment */', tags, 'javascript');
+//                expect(comments.length).toBe(1);
+//                expect(comments[0].tag()).toBe('todo');
+//                expect(comments[0].lineNumber()).toBe(0);
+//                expect(comments[0].content()).toBe('this is a trello comment ');
+//            });
+//
+//            it(' /*doing trello: this is a trello comment */ should be a todo trello comment.', function () {
+//                var comments = parseUtils.parseText('/*doing trello: this is a trello comment */', tags, 'javascript');
+//                expect(comments.length).toBe(1);
+//                expect(comments[0].tag()).toBe('doing');
+//                expect(comments[0].lineNumber()).toBe(0);
+//                expect(comments[0].content()).toBe('this is a trello comment ');
+//            });
+//
+//            it(' /* todotrello this is not a trello comment */ should not be a trello comment.', function () {
+//                var comments = parseUtils.parseText('/* todotrello this is not a trello comment */', tags, 'javascript');
+//                expect(comments.length).toBe(0);
+//            });
+//
+//            it(' /*trellothis is not a trello comment */ should be a trello comment.', function () {
+//                var comments = parseUtils.parseText('/*trellothis is not a trello comment */', tags, 'javascript');
+//                expect(comments.length).toBe(0);
+//            });
+//
+//        });
 
-        });
-
-        describe('Test multiple line comment case, use /**/ to comment', function () {
-            var testFunc = function () {
-                /* todo trello I am the first trello comment.
-                 * trello: I am the second trello comment.// 545e0eced178ed945d68bc40  trello i am third a trello comment.
-                 // trello I am the fouth trello comment.
-                 * todoTrello I am not a trello comment.
-                 * Trelloit I'm not a trello comment.
-                 *      trello I am the fiveth trello comment.
-                */
-                // I am not a trello comment
-                // TODO trello I am the sixth trello comment.
-                var test = 0;
-            };
-
-            it(getFunctionContent(testFunc) + ' should contains 5 trello comments.', function () {
-                var comments = parseUtils.parseText(getFunctionContent(testFunc), tags, 'javascript');
-                expect(comments.length).toBe(6);
-                expect(comments[0].content()).toBe('I am the first trello comment.');
-                expect(comments[0].tag()).toBe('todo');
-                expect(comments[1].content()).toBe('I am the second trello comment.// 545e0eced178ed945d68bc40  trello i am third a trello comment.');
-                expect(comments[2].content()).toBe('i am third a trello comment.');
-                expect(comments[2].tag()).toBe('');
-                expect(comments[3].content()).toBe('I am the fouth trello comment.');
-                expect(comments[4].content()).toBe('I am the fiveth trello comment.');
-                expect(comments[5].content()).toBe('I am the sixth trello comment.');
-                expect(comments[5].tag()).toBe('TODO');
-            });
-        });
+//        describe('Test multiple line comment case, use /**/ to comment', function () {
+//            var testFunc = function () {
+//                /* todo trello I am the first trello comment.
+//                 * trello: I am the second trello comment.// 545e0eced178ed945d68bc40  trello i am third a trello comment.
+//                 // trello I am the fouth trello comment.
+//                 * todoTrello I am not a trello comment.
+//                 * Trelloit I'm not a trello comment.
+//                 *      trello I am the fiveth trello comment.
+//                */
+//                // I am not a trello comment
+//                // TODO trello I am the sixth trello comment.
+//                var test = 0;
+//            };
+//
+//            it(getFunctionContent(testFunc) + ' should contains 5 trello comments.', function () {
+//                var comments = parseUtils.parseText(getFunctionContent(testFunc), tags, 'javascript');
+//                expect(comments.length).toBe(6);
+//                expect(comments[0].content()).toBe('I am the first trello comment.');
+//                expect(comments[0].tag()).toBe('todo');
+//                expect(comments[1].content()).toBe('I am the second trello comment.// 545e0eced178ed945d68bc40  trello i am third a trello comment.');
+//                expect(comments[2].content()).toBe('i am third a trello comment.');
+//                expect(comments[2].tag()).toBe('');
+//                expect(comments[3].content()).toBe('I am the fouth trello comment.');
+//                expect(comments[4].content()).toBe('I am the fiveth trello comment.');
+//                expect(comments[5].content()).toBe('I am the sixth trello comment.');
+//                expect(comments[5].tag()).toBe('TODO');
+//            });
+//        });
 
         describe('Test sorting comments', function () {
 
@@ -258,28 +251,60 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
         });
         
         describe('Test one line html comment case, use <!-- --> to comment', function () {
-            it(' <!-- trello this is a trello comment of html --> should be a trello comment of html file.', function () {
-                var comments = parseUtils.parseText('<!-- trello this is a trello comment of html -->', tags, 'html');
+            it(' <!-- trello: this is a trello comment of html --> should be a trello comment of html file.', function () {
+                var comments = parseUtils.parseText('<!-- trello: this is a trello comment of html -->', tags, 'html');
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(0);
                 expect(comments[0].tag()).toBe('');
                 expect(comments[0].content()).toBe('this is a trello comment of html ');
             });
-            
-            it(' <!-- todo trello this is a trello todo comment of html --> should be a trello comment of html file.', function () {
-                var comments = parseUtils.parseText('<!-- todo trello this is a trello todo comment of html -->', tags, 'html');
+			
+			it(' <!--      trello   todo   : this is a trello comment of html --> should be a todo trello comment of html file.', function () {
+                var comments = parseUtils.parseText('<!--     trello   todo   : this is a trello comment of html -->', tags, 'html');
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(0);
                 expect(comments[0].tag()).toBe('todo');
-                expect(comments[0].content()).toBe('this is a trello todo comment of html ');
+                expect(comments[0].content()).toBe('this is a trello comment of html ');
             });
-            
-            it(' padding <!-- todo trello this is a trello todo comment with padding before comment of html --> should be a trello comment of html file.', function () {
-                var comments = parseUtils.parseText(' padding <!-- todo trello this is a trello todo comment with padding before comment of html -->', tags, 'html');
+			
+			it(' <!--trello do ing: this is a trello comment of html --> should be a do ing trello comment of html file.', function () {
+                var comments = parseUtils.parseText('<!--trello do ing: this is a trello comment of html -->', tags, 'html');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('do ing');
+                expect(comments[0].content()).toBe('this is a trello comment of html ');
+            });
+
+            it(' padding <!-- trello todo: this is a trello todo comment with padding before comment of html --> pading should be a todo trello comment of html file.', function () {
+                var comments = parseUtils.parseText(' padding <!-- trello todo: this is a trello todo comment with padding before comment of html --> pading', tags, 'html');
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(9);
                 expect(comments[0].tag()).toBe('todo');
                 expect(comments[0].content()).toBe('this is a trello todo comment with padding before comment of html ');
+            });
+			
+			it(' <!--trellodo ing: this is not a trello comment of html --> should not be a trello comment of html file.', function () {
+                var comments = parseUtils.parseText(' <!--trellodo ing: this is not a trello comment of html -->', tags, 'html');
+                expect(comments.length).toBe(0);
+            });
+			
+        });
+		
+		describe('Test multiple line html comment case, use <!-- --> to comment', function () {
+            
+            var testFunc = function () {
+                /* 
+                 <!--
+                  trello todo: 
+                  	this is a todo trello comment in php file
+                 -->
+                  */
+                var test = 0;
+            };
+            
+            it(getFunctionContent(testFunc) + ' should not be a trello todo comment. because we don\'t support it now', function () {
+                var comments = parseUtils.parseText(getFunctionContent(testFunc), tags, 'html');
+                expect(comments.length).toBe(0);
             });
         });
         
@@ -288,22 +313,41 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
             var testFunc = function () {
                 /* 
                  <?php
-                  // trello this is a trello comment in php file
-                  // todo trello this is a todo trello comment in php file
+                  // trello: this is a trello comment in php file
+				  // trello this is not a trello comment in php file. Because it doesn't have colon 
+                  //  trello todo: this is a trello todo comment in php file
+				  //trello do ing : this is a trello do ing comment in php file
+				  // trellodo ing: this is not a trello comment in php file.Because it doesn't have a signle trello at begin
+				  // this is not a trello: comment in php file. Because the world trello is not at the begin.
+				  # trello : this is a trello comment in php file
+				  # trello to do: this is a trello comment in php file
                  ?>
                   */
                 var test = 0;
             };
             
-            it(getFunctionContent(testFunc) + ' should have 2 trello comment.', function () {
+            it(getFunctionContent(testFunc) + ' should have 5 trello comment.', function () {
                 var comments = parseUtils.parseText(getFunctionContent(testFunc), tags, 'php');
-                expect(comments.length).toBe(2);
-                expect(comments[0].lineNumber()).toBe(65);
+                expect(comments.length).toBe(5);
+                expect(comments[0].lineNumber()).toBe(62);
                 expect(comments[0].tag()).toBe('');
                 expect(comments[0].content()).toBe('this is a trello comment in php file');
-                expect(comments[1].lineNumber()).toBe(131);
+				
+                expect(comments[1].lineNumber()).toBe(217);
                 expect(comments[1].tag()).toBe('todo');
-                expect(comments[1].content()).toBe('this is a todo trello comment in php file');
+                expect(comments[1].content()).toBe('this is a trello todo comment in php file');
+				
+				expect(comments[2].lineNumber()).toBe(282);
+                expect(comments[2].tag()).toBe('do ing');
+                expect(comments[2].content()).toBe('this is a trello do ing comment in php file');
+				
+				expect(comments[3].lineNumber()).toBe(561);
+                expect(comments[3].tag()).toBe('');
+                expect(comments[3].content()).toBe('this is a trello comment in php file');
+				
+				expect(comments[4].lineNumber()).toBe(615);
+                expect(comments[4].tag()).toBe('to do');
+                expect(comments[4].content()).toBe('this is a trello comment in php file');
             });
         });
 
