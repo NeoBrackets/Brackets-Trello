@@ -1403,34 +1403,33 @@ define(function (require, exports, module) {
 	 * @param {Object} e click event
 	 */
 	function _pushComments(e) {
+		var $this = $(this),
+			isPushAllListComments = $this.hasClass('cmd-push-comments'),
+			listId = null,
+			comments = [],
+			fullPath = "",
+			cursorPos = -1;
+		
 		e.stopPropagation();
-
-
-		var comments = [];
-		if ($(this)[0].className.indexOf('cmd-push-comments') >= 0) {
-			// all comments in this list
-			var listId = $(this).data('list-id');
-
-			$(this).parent('.list-name').parent('.list-item').children('.cards').find('.code-comment-item').each(function(i,ele) {
+		
+		if (isPushAllListComments) {
+			listId = $this.data('list-id');
+			$this.closest('.list-item').find('.code-comment-item').each(function(i,ele) {
 				comments.push(_getCommentByEle(ele));
 			});
 		} else {
 			// only one comment in a list
-			var listId = $(this).parent('.code-comment-item').parent('.cards').parent('.list-item').attr("id");
-			var ele = $(this).parent('.code-comment-item');
-			comments.push(_getCommentByEle(ele));
-
+			listId = $this.closest('.list-item').attr("id");
+			comments.push(_getCommentByEle($this.parent('.code-comment-item')));
 		}
 
-		var fullPath = DocumentManager.getCurrentDocument().file._path;
-		var cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
-
-		Trello._get('boardMembers',{board:_prefs.get('selected-board')},{}).done(function(members) {
+		fullPath = DocumentManager.getCurrentDocument().file._path;
+		cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
+		Trello.getBoardMembers(_prefs.get('selected-board')).done(function(members) {
 			_pushArrayToList(listId,comments,members).done(function() {
 				_jumpToFile(fullPath,cursorPos);
 			});
 		});
-
 	}
 
 
