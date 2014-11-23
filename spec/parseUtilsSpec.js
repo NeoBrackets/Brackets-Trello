@@ -72,6 +72,25 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 expect(comments[0].tag()).toBe('do ing');
                 expect(comments[0].content()).toBe('it one trello card\\n');
             });
+			
+			it('"// trello todo: it one trello card [545e0eced178ed945d68bc40]" should be a todo trello comment with card ID', function () {
+                var comments = parseUtils.parseText('// trello todo: it one trello card [545e0eced178ed945d68bc40]', tags, 'javascript');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('todo');
+				expect(comments[0].cardId()).toBe('545e0eced178ed945d68bc40');
+                expect(comments[0].content()).toBe('it one trello card');
+            });
+			
+			it('"// trello todo: it one trello card [545e0eced178ed945d68bc40] tailed" should be a todo trello comment, but can not find card ID', function () {
+                var comments = parseUtils.parseText('// trello todo: it one trello card [545e0eced178ed945d68bc40] tailed', tags, 'javascript');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('todo');
+				expect(comments[0].cardId()).toBe(false);
+                expect(comments[0].content()).toBe('it one trello card [545e0eced178ed945d68bc40] tailed');
+            });
+
 
             it('"//  I am not a trello: comment" should not be trello comment', function () {
                 var comments = parseUtils.parseText('//  I am not a trello: comment', 'javascript');
@@ -256,7 +275,7 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(0);
                 expect(comments[0].tag()).toBe('');
-                expect(comments[0].content()).toBe('this is a trello comment of html ');
+                expect(comments[0].content()).toBe('this is a trello comment of html');
             });
 			
 			it(' <!--      trello   todo   : this is a trello comment of html --> should be a todo trello comment of html file.', function () {
@@ -264,7 +283,7 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(0);
                 expect(comments[0].tag()).toBe('todo');
-                expect(comments[0].content()).toBe('this is a trello comment of html ');
+                expect(comments[0].content()).toBe('this is a trello comment of html');
             });
 			
 			it(' <!--trello do ing: this is a trello comment of html --> should be a do ing trello comment of html file.', function () {
@@ -272,7 +291,25 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(0);
                 expect(comments[0].tag()).toBe('do ing');
-                expect(comments[0].content()).toBe('this is a trello comment of html ');
+                expect(comments[0].content()).toBe('this is a trello comment of html');
+            });
+			
+			it(' <!--trello done: this is a trello comment of html [545e0eced178ed945d68bc40] --> should be a do ing trello comment with card ID of html file.', function () {
+                var comments = parseUtils.parseText('<!--trello done: this is a trello comment of html [545e0eced178ed945d68bc40] -->', tags, 'html');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('done');
+				expect(comments[0].cardId()).toBe('545e0eced178ed945d68bc40');
+                expect(comments[0].content()).toBe('this is a trello comment of html');
+            });
+			
+			it(' <!--trello done: this is a trello comment of html [545e0eced178ed945d68bc40] tailed --> should be a do ing trello comment html file, but can not find the card ID.', function () {
+                var comments = parseUtils.parseText('<!--trello done: this is a trello comment of html [545e0eced178ed945d68bc40] tailed -->', tags, 'html');
+                expect(comments.length).toBe(1);
+                expect(comments[0].lineNumber()).toBe(0);
+                expect(comments[0].tag()).toBe('done');
+				expect(comments[0].cardId()).toBe(false);
+                expect(comments[0].content()).toBe('this is a trello comment of html [545e0eced178ed945d68bc40] tailed');
             });
 
             it(' padding <!-- trello todo: this is a trello todo comment with padding before comment of html --> pading should be a todo trello comment of html file.', function () {
@@ -280,7 +317,7 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 expect(comments.length).toBe(1);
                 expect(comments[0].lineNumber()).toBe(9);
                 expect(comments[0].tag()).toBe('todo');
-                expect(comments[0].content()).toBe('this is a trello todo comment with padding before comment of html ');
+                expect(comments[0].content()).toBe('this is a trello todo comment with padding before comment of html');
             });
 			
 			it(' <!--trellodo ing: this is not a trello comment of html --> should not be a trello comment of html file.', function () {
@@ -296,15 +333,18 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
                 /* 
                  <!--
                   trello todo: 
-                  	this is a todo trello comment in php file
+                  	this is a todo trello comment in html file
                  -->
                   */
                 var test = 0;
             };
             
-            it(getFunctionContent(testFunc) + ' should not be a trello todo comment. because we don\'t support it now', function () {
+            it(getFunctionContent(testFunc) + ' should be a trello todo comment. ', function () {
                 var comments = parseUtils.parseText(getFunctionContent(testFunc), tags, 'html');
-                expect(comments.length).toBe(0);
+                expect(comments.length).toBe(1);
+				expect(comments[0].lineNumber()).toBe(38);
+                expect(comments[0].tag()).toBe('todo');
+                expect(comments[0].content()).toBe('this is a todo trello comment in html file');
             });
         });
         
@@ -320,7 +360,9 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
 				  // trellodo ing: this is not a trello comment in php file.Because it doesn't have a signle trello at begin
 				  // this is not a trello: comment in php file. Because the world trello is not at the begin.
 				  # trello : this is a trello comment in php file
-				  # trello to do: this is a trello comment in php file
+				  # trello to do: this is a trello comment in php [545e0eced178ed945d68bc40] file
+				  // trello done: this is a trello done comment [545e0eced178ed945d68bc40]
+				  # trello other: this is a trello other comment [545e0eced178ed945d68bc40]
                  ?>
                   */
                 var test = 0;
@@ -328,7 +370,7 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
             
             it(getFunctionContent(testFunc) + ' should have 5 trello comment.', function () {
                 var comments = parseUtils.parseText(getFunctionContent(testFunc), tags, 'php');
-                expect(comments.length).toBe(5);
+                expect(comments.length).toBe(7);
                 expect(comments[0].lineNumber()).toBe(62);
                 expect(comments[0].tag()).toBe('');
                 expect(comments[0].content()).toBe('this is a trello comment in php file');
@@ -347,7 +389,19 @@ define(['modules/parseUtils', 'modules/objects/comment'], function (parseUtils, 
 				
 				expect(comments[4].lineNumber()).toBe(615);
                 expect(comments[4].tag()).toBe('to do');
-                expect(comments[4].content()).toBe('this is a trello comment in php file');
+				expect(comments[4].cardId()).toBe(false);
+                expect(comments[4].content()).toBe('this is a trello comment in php [545e0eced178ed945d68bc40] file');
+				
+				expect(comments[5].lineNumber()).toBe(701);
+                expect(comments[5].tag()).toBe('done');
+				expect(comments[5].cardId()).toBe('545e0eced178ed945d68bc40');
+                expect(comments[5].content()).toBe('this is a trello done comment');
+				
+				expect(comments[6].lineNumber()).toBe(780);
+                expect(comments[6].tag()).toBe('other');
+				expect(comments[6].cardId()).toBe('545e0eced178ed945d68bc40');
+                expect(comments[6].content()).toBe('this is a trello other comment');
+				
             });
         });
 

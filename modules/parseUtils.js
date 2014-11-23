@@ -6,17 +6,17 @@ define(function (require, exports, module) {
         commentRegexp = {
             'javascript': {
                 prefix: '(?:\\/\\/)+\\s*\\bTrello\\b',
-                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)(?=\\n|\\r\\n|\\r|$)'
+                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)\\s*(?:\\[([a-f0-9]{24})\\])?\\s*(?:$|\\n|\\r\\n|\\r)'
             },
             'html': {
                 prefix: '(?:<!--)+\\s*\\bTrello\\b',
-                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)(?=-->)'
+                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)\\s*(?:\\[([a-f0-9]{24})\\])?\\s*-->'
             },
             'php': {
 //                prefix: '(?:\\/\\/|#)+\\s*((?:\\d|[a-f]){24})?\\s*(',
 //                suffix: '\\s*)\\s*\\bTrello\\b[:\\s]\\s*(.*?)(?=\\n|\\r\\n|\\r|$)'
 				prefix: '(?:\\/\\/|#)+\\s*\\bTrello\\b',
-                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)(?=\\n|\\r\\n|\\r|$)'
+                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)\\s*(?:\\[([a-f0-9]{24})\\])?\\s*(?:$|\\n|\\r\\n|\\r)'
             }
         };
 
@@ -62,9 +62,9 @@ define(function (require, exports, module) {
             commentExp = new RegExp(commentRegexp[type].prefix + tagExp + commentRegexp[type].suffix, 'gi');
             while ((matchArray = commentExp.exec(content)) !== null) {
                 trelloComment = new Comment();
-//                trelloComment.cardId(matchArray[1]);
                 trelloComment.tag(matchArray[1]);
                 trelloComment.content(matchArray[2]);
+				trelloComment.cardId(matchArray[3]);
                 trelloComment.lineNumber(matchArray.index);
                 trelloComment.lineCh(matchArray.index - content.lastIndexOf( '\n' , matchArray.index ) - 1);
                 allTrelloComments.push(trelloComment);
@@ -156,6 +156,7 @@ define(function (require, exports, module) {
                 trelloComment = new Comment();
                 trelloComment.tag(matchTrelloArray[1]);
                 trelloComment.content(matchTrelloArray[2]);
+				trelloComment.cardId(matchTrelloArray[3]);
                 trelloComment.lineNumber(matchCommentArray.index + matchTrelloArray.index);
                 trelloComments.push(trelloComment);
                 lastIndex = matchTrelloArray.index + matchTrelloArray[0].length;
