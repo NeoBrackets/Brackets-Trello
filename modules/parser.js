@@ -124,6 +124,7 @@ define(function (require, exports, module) {
         trelloComments.forEach(function (comment) {
             comment.filePath(file.fullPath);
             comment.lineNumber(StringUtils.offsetToLineNum(lines, comment.lineNumber()) + 1);
+			comment.endLineNumber(StringUtils.offsetToLineNum(lines, comment.endLineNumber()) + 1);
         });
 
         return trelloComments;

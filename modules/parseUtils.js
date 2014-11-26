@@ -43,11 +43,13 @@ define(function (require, exports, module) {
             commentExp = new RegExp(commentRegexp.html.prefix + tagExp + commentRegexp.html.suffix, 'gi');
             while ((matchArray = commentExp.exec(content)) !== null) {
                 trelloComment = new Comment();
-//                trelloComment.cardId(matchArray[1]);
                 trelloComment.tag(matchArray[1]);
                 trelloComment.content(matchArray[2]);
+				trelloComment.cardId(matchArray[3]);
                 trelloComment.lineNumber(matchArray.index);
+				trelloComment.endLineNumber(matchArray.index + matchArray[0].indexOf(matchArray[2]) + matchArray[2].length);
                 trelloComment.lineCh(matchArray.index - content.lastIndexOf( '\n' , matchArray.index ) - 1);
+				trelloComment.endLineCh(trelloComment.endLineNumber() - content.lastIndexOf( '\n' , trelloComment.endLineNumber() - 1 ) - 1);
                 allTrelloComments.push(trelloComment);
             }
             
@@ -66,7 +68,9 @@ define(function (require, exports, module) {
                 trelloComment.content(matchArray[2]);
 				trelloComment.cardId(matchArray[3]);
                 trelloComment.lineNumber(matchArray.index);
+				trelloComment.endLineNumber(matchArray.index + matchArray[0].indexOf(matchArray[2]) + matchArray[2].length);
                 trelloComment.lineCh(matchArray.index - content.lastIndexOf( '\n' , matchArray.index ) - 1);
+				trelloComment.endLineCh(trelloComment.endLineNumber() - content.lastIndexOf( '\n' , trelloComment.endLineNumber() - 1 ) - 1);
                 allTrelloComments.push(trelloComment);
             }
 
@@ -158,6 +162,9 @@ define(function (require, exports, module) {
                 trelloComment.content(matchTrelloArray[2]);
 				trelloComment.cardId(matchTrelloArray[3]);
                 trelloComment.lineNumber(matchCommentArray.index + matchTrelloArray.index);
+				trelloComment.endLineNumber(trelloComment.lineNumber() + matchTrelloArray[0].indexOf(matchTrelloArray[2]) + matchTrelloArray[2].length);
+                trelloComment.lineCh(trelloComment.lineNumber() - content.lastIndexOf( '\n', trelloComment.lineNumber() ) - 1);
+				trelloComment.endLineCh(trelloComment.endLineNumber() - content.lastIndexOf( '\n' , trelloComment.endLineNumber() -1 ) - 1);
                 trelloComments.push(trelloComment);
                 lastIndex = matchTrelloArray.index + matchTrelloArray[0].length;
             }

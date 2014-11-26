@@ -4,9 +4,11 @@ define(function(require, exports, module){
     var comment = function(){
         this._filePath = '';
         this._lineNum = -1;
+		this._endLineNum = -1;
         this._content = '';
         this._tag = '';
         this._lineCh = 0;
+		this._endLineCh = 0;
         this._cardId = false;
     };
 
@@ -24,6 +26,14 @@ define(function(require, exports, module){
         }
 
         this._lineNum = lineNum;
+    };
+	
+	comment.prototype.endLineNumber = function(lineNum) {
+        if (lineNum === undefined) {
+            return this._endLineNum;
+        }
+
+        this._endLineNum = lineNum;
     };
 
     comment.prototype.content = function(content) {
@@ -46,6 +56,14 @@ define(function(require, exports, module){
         }
 
         this._lineCh = ch;
+    };
+	
+	comment.prototype.endLineCh = function(ch) {
+        if (ch === undefined) {
+            return this._endLineCh;
+        }
+
+        this._endLineCh = ch;
     };
 
 	comment.prototype.cardId = function(cardId) {
