@@ -5,16 +5,18 @@ define(function (require, exports, module) {
         // TODO trello Support html next step
         commentRegexp = {
             'javascript': {
-                prefix: '(?:\\/\\/)+\\s*((?:\\d|[a-f]){24})?\\s*(',
-                suffix: '\\s*)\\s*\\bTrello\\b[:\\s]\\s*(.*?)(?=\\n|\\r\\n|\\r|$)'
+                prefix: '(?:\\/\\/)+\\s*\\bTrello\\b',
+                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)\\s*(?:\\[([a-f0-9]{24})\\])?\\s*(?:$|\\n|\\r\\n|\\r)'
             },
             'html': {
-                prefix: '(?:<!--)+\\s*((?:\\d|[a-f]){24})?\\s*(',
-                suffix: '\\s*)\\s*\\bTrello\\b[:\\s]\\s*(.*?)(?=-->)'
+                prefix: '(?:<!--)+\\s*\\bTrello\\b',
+                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)\\s*(?:\\[([a-f0-9]{24})\\])?\\s*-->'
             },
             'php': {
-                prefix: '(?:\\/\\/|#)+\\s*((?:\\d|[a-f]){24})?\\s*(',
-                suffix: '\\s*)\\s*\\bTrello\\b[:\\s]\\s*(.*?)(?=\\n|\\r\\n|\\r|$)'
+//                prefix: '(?:\\/\\/|#)+\\s*((?:\\d|[a-f]){24})?\\s*(',
+//                suffix: '\\s*)\\s*\\bTrello\\b[:\\s]\\s*(.*?)(?=\\n|\\r\\n|\\r|$)'
+				prefix: '(?:\\/\\/|#)+\\s*\\bTrello\\b',
+                suffix: '\\s*([^:].*?)?\\s*:\\s*(.*?)\\s*(?:\\[([a-f0-9]{24})\\])?\\s*(?:$|\\n|\\r\\n|\\r)'
             }
         };
 
@@ -31,21 +33,23 @@ define(function (require, exports, module) {
             return allTrelloComments;
         }
 
-        if (tags !== undefined && tags !== null || tags.length > 0) {
-            tags.forEach( function(tag){
-                tagExp = tagExp + tag + '|';
-            });
-        }
+//        if (tags !== undefined && tags !== null || tags.length > 0) {
+//            tags.forEach( function(tag){
+//                tagExp = tagExp + tag + '|';
+//            });
+//        }
         
         if (type === 'php') {
             commentExp = new RegExp(commentRegexp.html.prefix + tagExp + commentRegexp.html.suffix, 'gi');
             while ((matchArray = commentExp.exec(content)) !== null) {
                 trelloComment = new Comment();
-                trelloComment.cardId(matchArray[1]);
-                trelloComment.tag(matchArray[2]);
-                trelloComment.content(matchArray[3]);
+                trelloComment.tag(matchArray[1]);
+                trelloComment.content(matchArray[2]);
+				trelloComment.cardId(matchArray[3]);
                 trelloComment.lineNumber(matchArray.index);
+				trelloComment.endLineNumber(matchArray.index + matchArray[0].indexOf(matchArray[2]) + matchArray[2].length);
                 trelloComment.lineCh(matchArray.index - content.lastIndexOf( '\n' , matchArray.index ) - 1);
+				trelloComment.endLineCh(trelloComment.endLineNumber() - content.lastIndexOf( '\n' , trelloComment.endLineNumber() - 1 ) - 1);
                 allTrelloComments.push(trelloComment);
             }
             
@@ -60,24 +64,26 @@ define(function (require, exports, module) {
             commentExp = new RegExp(commentRegexp[type].prefix + tagExp + commentRegexp[type].suffix, 'gi');
             while ((matchArray = commentExp.exec(content)) !== null) {
                 trelloComment = new Comment();
-                trelloComment.cardId(matchArray[1]);
-                trelloComment.tag(matchArray[2]);
-                trelloComment.content(matchArray[3]);
+                trelloComment.tag(matchArray[1]);
+                trelloComment.content(matchArray[2]);
+				trelloComment.cardId(matchArray[3]);
                 trelloComment.lineNumber(matchArray.index);
+				trelloComment.endLineNumber(matchArray.index + matchArray[0].indexOf(matchArray[2]) + matchArray[2].length);
                 trelloComment.lineCh(matchArray.index - content.lastIndexOf( '\n' , matchArray.index ) - 1);
+				trelloComment.endLineCh(trelloComment.endLineNumber() - content.lastIndexOf( '\n' , trelloComment.endLineNumber() - 1 ) - 1);
                 allTrelloComments.push(trelloComment);
             }
 
-            // find comments using /**/to comment.
-            if (type === 'javascript') {
-                otherTrelloComments = parseTrelloCommentsOfMultiLineJSSynta(content, tags);
-                otherTrelloComments.forEach(function(comment){
-                   allTrelloComments.push(comment);
-                });
-                if (otherTrelloComments.length > 0) {
-                    allTrelloComments = sortAndFilterSameComments(allTrelloComments);
-                }
-            }
+            // don't find comments using /**/to comment. Because of efficiency
+//            if (type === 'javascript') {
+//                otherTrelloComments = parseTrelloCommentsOfMultiLineJSSynta(content, tags);
+//                otherTrelloComments.forEach(function(comment){
+//                   allTrelloComments.push(comment);
+//                });
+//                if (otherTrelloComments.length > 0) {
+//                    allTrelloComments = sortAndFilterSameComments(allTrelloComments);
+//                }
+//            }
         }
 
         return allTrelloComments;
@@ -140,11 +146,11 @@ define(function (require, exports, module) {
             trelloComment = null,
             trelloComments = [];
 
-        if (tags !== null && tags !== undefined && tags.length > 0) {
-            tags.forEach( function(tag){
-                tagExp = tagExp + tag + '|';
-            });
-        }
+//        if (tags !== null && tags !== undefined && tags.length > 0) {
+//            tags.forEach( function(tag){
+//                tagExp = tagExp + tag + '|';
+//            });
+//        }
 
         trelloRegex = new RegExp(commentRegexp.php.prefix + tagExp + commentRegexp.php.suffix, 'gi');
         while ((matchCommentArray = commentRegex.exec(content)) !== null) {
@@ -152,15 +158,19 @@ define(function (require, exports, module) {
             lastIndex = 0;
             while ((matchTrelloArray = trelloRegex.exec(matchCommentArray[0])) !== null) {
                 trelloComment = new Comment();
-                trelloComment.tag(matchTrelloArray[2]);
-                trelloComment.content(matchTrelloArray[3]);
+                trelloComment.tag(matchTrelloArray[1]);
+                trelloComment.content(matchTrelloArray[2]);
+				trelloComment.cardId(matchTrelloArray[3]);
                 trelloComment.lineNumber(matchCommentArray.index + matchTrelloArray.index);
+				trelloComment.endLineNumber(trelloComment.lineNumber() + matchTrelloArray[0].indexOf(matchTrelloArray[2]) + matchTrelloArray[2].length);
+                trelloComment.lineCh(trelloComment.lineNumber() - content.lastIndexOf( '\n', trelloComment.lineNumber() ) - 1);
+				trelloComment.endLineCh(trelloComment.endLineNumber() - content.lastIndexOf( '\n' , trelloComment.endLineNumber() -1 ) - 1);
                 trelloComments.push(trelloComment);
                 lastIndex = matchTrelloArray.index + matchTrelloArray[0].length;
             }
             
-            // parse multiple line comment , same as js multiple line comment
-            parseTrelloCommentsOfMultiLineJSSynta(matchCommentArray[0], tags).forEach( pushPhpMultiLineComment );
+            // don't parse multiple line comment now because of efficiency
+//            parseTrelloCommentsOfMultiLineJSSynta(matchCommentArray[0], tags).forEach( pushPhpMultiLineComment );
         }
         
         function pushPhpMultiLineComment(comment){

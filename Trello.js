@@ -6,6 +6,15 @@ define(function (require, exports, module) {
 
 
 	var appKey = "bd125fe95d77b8dadf45bd6103cf5c44";
+	
+	/**
+	 * get members of board
+	 * @param   {String} boardId board id for query
+	 * @returns {Deferred}     every activity
+	 */
+	function getBoardMembers(boardId) {
+		return _get('boardMembers', {board: boardId}, {});
+	}
 
 	/**
 	 * get an activity stream for a special board
@@ -530,7 +539,7 @@ define(function (require, exports, module) {
 		return result;
 	}
 
-
+	exports.getBoardMembers = getBoardMembers;
 	exports._get = _get;
 	exports._create = _create;
 	exports._createTasks = _createTasks;

@@ -11,6 +11,7 @@ define(function (require, exports, module) {
 		CommandManager				= brackets.getModule('command/CommandManager'),
 		Commands            		= brackets.getModule('command/Commands'),
         EditorManager       		= brackets.getModule('editor/EditorManager'),
+		MainViewManager             = brackets.getModule('view/MainViewManager'),
 		KeyEvent					= brackets.getModule('utils/KeyEvent'),
 		Dialogs						= brackets.getModule('widgets/Dialogs'),
 		Menus						= brackets.getModule('command/Menus'),
@@ -963,7 +964,7 @@ define(function (require, exports, module) {
 				var comment = trelloCommentCards[$(this).attr('id')];
 				CommandManager.execute( Commands.FILE_OPEN, { fullPath: comment._filePath } ).done( function() {
 					// Set focus on editor.
-					EditorManager.focusEditor();
+					MainViewManager.focusActivePane();
 					EditorManager.getCurrentFullEditor().setCursorPos(
 						comment._lineNum - 1,
 						comment._lineCh,
@@ -991,7 +992,8 @@ define(function (require, exports, module) {
             // Open file and locate to comment in editor.
             CommandManager.execute( Commands.FILE_OPEN, { fullPath: filePath } ).done( function() {
                 // Set focus on editor.
-                EditorManager.focusEditor();
+//                EditorManager.focusEditor();
+				MainViewManager.focusActivePane();
                 EditorManager.getCurrentFullEditor().setCursorPos(
                     lineNumber - 1,
                     lineCh,
@@ -1403,44 +1405,45 @@ define(function (require, exports, module) {
 	 * @param {Object} e click event
 	 */
 	function _pushComments(e) {
+		var $this = $(this),
+			isPushAllListComments = $this.hasClass('cmd-push-comments'),
+			listId = null,
+			comments = [],
+			fullPath = "",
+			cursorPos = -1;
+		
 		e.stopPropagation();
-
-
-		var comments = [];
-		if ($(this)[0].className.indexOf('cmd-push-comments') >= 0) {
-			// all comments in this list
-			var listId = $(this).data('list-id');
-
-			$(this).parent('.list-name').parent('.list-item').children('.cards').find('.code-comment-item').each(function(i,ele) {
+		
+		if (isPushAllListComments) {
+			listId = $this.data('list-id');
+			$this.closest('.list-item').find('.code-comment-item').each(function(i,ele) {
 				comments.push(_getCommentByEle(ele));
 			});
 		} else {
 			// only one comment in a list
-			var listId = $(this).parent('.code-comment-item').parent('.cards').parent('.list-item').attr("id");
-			var ele = $(this).parent('.code-comment-item');
-			comments.push(_getCommentByEle(ele));
-
+			listId = $this.closest('.list-item').attr("id");
+			comments.push(_getCommentByEle($this.parent('.code-comment-item')));
 		}
 
-		var fullPath = DocumentManager.getCurrentDocument().file._path;
-		var cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
-
-		Trello._get('boardMembers',{board:_prefs.get('selected-board')},{}).done(function(members) {
+		fullPath = DocumentManager.getCurrentDocument().file._path;
+		cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
+		Trello.getBoardMembers(_prefs.get('selected-board')).done(function(members) {
 			_pushArrayToList(listId,comments,members).done(function() {
 				_jumpToFile(fullPath,cursorPos);
 			});
 		});
-
 	}
 
 
 	function _getCommentByEle(ele) {
 		return {
-				_content:  	$(ele).find('.code-comment-name').text(),
-				_filePath:  $(ele).data('file-path'),
-				_lineNum:  	$(ele).data('line-number'),
-				_lineCh:  	$(ele).data('line-ch')
-			};
+			_content:  	$(ele).find('.code-comment-name').text(),
+			_filePath:  $(ele).data('file-path'),
+			_lineNum:  	$(ele).data('line-number'),
+			_lineCh:  	$(ele).data('line-ch'),
+			_endLineNum:$(ele).data('end-line-number'),
+			_endLineCh: $(ele).data('end-line-ch')
+		};
 	}
 
 	/**
@@ -1467,6 +1470,7 @@ define(function (require, exports, module) {
 			trelloCommentCards[data.id] = comment;
 
 			_pushCommentToListUI(listId,comment,data,0);
+			_attachId2Comment(comment, data.id);
 			if (++start < comments.length) {
 				_pushArrayToList(listId,comments,members,start).done(function() {
 					result.resolve();
@@ -1502,32 +1506,26 @@ define(function (require, exports, module) {
 		// update the counters
         _updateCardCounter($listItem);
         _updateCodeCommentCounter($listItem);
-
-		// add the card id to the comment
+	}
+	
+	/**
+	 * add trello card ID to the comment which was pushed to trello just now.
+	 * @param {Comment} comment which was pushed to trello just now.
+	 * @param {String} id card Id of trello card 
+	 */
+	function _attachId2Comment(comment, id) {
 		CommandManager.execute( Commands.FILE_OPEN, { fullPath: comment._filePath } ).done( function() {
 			// Set focus on editor.
-            EditorManager.focusEditor();
+            MainViewManager.focusActivePane();
 			var document = EditorManager.getCurrentFullEditor().document;
-			var range = document.getRange(
-				{line:comment._lineNum - 1,ch:comment._lineCh},{line:comment._lineNum,ch:0}
-			);
-
-			// supported comment structure: //,/**,#,<!--
-			// 546dfca35ae692ebf65458dc doing trello @weilin you need to update this regex when you change the parser :/
-			var match = /\/\/+|\/\*+|#+|<!--+/.exec(range);
-			var startCh = comment._lineCh+match.index+match[0].length;
-
-			document.replaceRange(
-				' '+data.id+' ',
-				{
-					line: 	comment._lineNum - 1,
-					ch: 	startCh
-				},
-				{
-					line:	comment._lineNum - 1,
-					ch: 	startCh
-				});
-				CommandManager.execute(Commands.FILE_SAVE, { fullPath: comment._filePath });
+			document.replaceRange(' ['+ id +']', {
+				line: 	comment._endLineNum - 1,
+				ch: 	comment._endLineCh
+			}, {
+				line:	comment._endLineNum - 1,
+				ch: 	comment._endLineCh
+			} );
+			CommandManager.execute(Commands.FILE_SAVE, { fullPath: comment._filePath });
 		} );
 	}
 
@@ -1560,7 +1558,7 @@ define(function (require, exports, module) {
 	function _jumpToFile(fullPath,cursorPos) {
 		CommandManager.execute( Commands.FILE_OPEN, { fullPath: fullPath } ).done( function() {
 			// Set focus on editor.
-			EditorManager.focusEditor();
+			MainViewManager.focusActivePane();
 			EditorManager.getCurrentFullEditor().setCursorPos(
 				cursorPos.line,
 				cursorPos.ch,
