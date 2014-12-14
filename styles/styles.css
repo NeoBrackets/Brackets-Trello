@@ -78,6 +78,10 @@
 #brackets-trello .trello-content a {
 	color: #cccccc;
 }
+#brackets-trello .trello-content .code-comment-item .code-comment-name,
+#brackets-trello .trello-content .code-comment-counter {
+    color: #69b966;
+}
 #brackets-trello .trello-content .tab {
 	display: none;
 }
@@ -109,6 +113,7 @@
 	color: #F00;
 	display: block;
 }
+#brackets-trello .code-comment-item.moving,
 #brackets-trello .card-item.moving {
 	position: absolute;
 	background: #454545;
@@ -137,7 +142,11 @@
 	display: inline;
 	vertical-align: middle;
 }
-#brackets-trello .list-item span,
+#brackets-trello #changes-list span {
+	margin-left: 10px;
+}
+#brackets-trello .list-item .totalCards,
+#brackets-trello .code-comment-item span,
 #brackets-trello .card-item span {
 	color: #adb9bd;
 	margin-left: 10px;
@@ -186,7 +195,6 @@
 	width: 200px;
 	position: absolute;
 	background: #3c3f41;
-	bottom: 10px;
 	margin: 0 20px;
 	border: 1px solid #0089BE;
 	padding: 5px 10px;
@@ -211,8 +219,8 @@
 #brackets-trello-new-checklist .task-name {
 	width: 470px;
 }
-#brackets-trello-edit-comment .comment-text,
-#brackets-trello-new-comment .comment-text,
+#brackets-trello-edit-comment .card-comment-text,
+#brackets-trello-new-comment .card-comment-text,
 #brackets-trello-edit-card-desc .card-desc {
 	resize: vertical;
 	width: 555px;
@@ -228,7 +236,6 @@
 #brackets-trello .errormsg {
 	width: 200px;
 	position: absolute;
-	bottom: 10px;
 	margin: 0 20px;
 	border: 1px solid #F00;
 	padding: 5px 10px;
@@ -244,8 +251,8 @@
 #brackets-trello .checklist-name,
 #brackets-trello .card-name,
 #brackets-trello .card-desc,
-#brackets-trello .comments h5,
-#brackets-trello .comment-item {
+#brackets-trello .card-comments h5,
+#brackets-trello .code-comment-item {
 	position: relative;
 }
 #brackets-trello .board-name:hover .btn-cmd,
@@ -254,8 +261,8 @@
 #brackets-trello .card-name:hover .btn-cmd,
 #brackets-trello .card-desc:hover .btn-cmd,
 #brackets-trello .task-item:hover .btn-cmd,
-#brackets-trello .comments h5:hover .btn-cmd,
-#brackets-trello .comment-item:hover .btn-cmd,
+#brackets-trello .card-comments h5:hover .btn-cmd,
+#brackets-trello .code-comment-item:hover .btn-cmd,
 #brackets-trello .member-item:hover .btn-cmd{
 	display: block;
 }
@@ -279,9 +286,12 @@
 #brackets-trello .btn-add {
 	background-image: url(img/add.svg);
 }
-#brackets-trello .comments .btn-add,
+#brackets-trello .btn-push {
+	background-image: url(img/push.svg);
+}
+#brackets-trello .card-comments .btn-add,
 #brackets-trello .card-desc .btn-edit,
-#brackets-trello .comment-item .btn-delete,
+#brackets-trello .card-comment-item .btn-delete,
 #brackets-trello .card-name .btn-delete,
 #brackets-trello .board-name .btn-delete,
 #brackets-trello .list-name .btn-delete,
@@ -289,7 +299,7 @@
 #brackets-trello .task-item .btn-delete {
 	right: 5px;
 }
-#brackets-trello .comment-item .btn-edit,
+#brackets-trello .card-comment-item .btn-edit,
 #brackets-trello .card-name .btn-edit,
 #brackets-trello .task-item .btn-edit,
 #brackets-trello .board-name .btn-edit,
@@ -297,19 +307,37 @@
 #brackets-trello .checklist-name .btn-hide {
 	right: 30px;
 }
+#brackets-trello .list-name .btn-push,
 #brackets-trello .checklist-name .btn-edit {
 	right: 55px;
 }
-#brackets-trello .comment-item img {
+#brackets-trello .card-comment-item img {
 	float: left;
 	height: 30px;
 	width: 30px;
 	border: 1px solid #202020;
 	border-radius: 3px;
 }
-#brackets-trello .comment-item .comment-body {
+#brackets-trello .card-comment-item .card-comment-body {
 	padding-left: 40px;
 }
-#brackets-trello .comment-item h5 {
+#brackets-trello .card-comment-item h5 {
 	margin-bottom: 0;
+}
+#brackets-trello .cards .code-comment-item {
+	position: relative;
+	padding-left: 24px;
+}
+#brackets-trello #changes-list .code-comment-item {
+	padding-left: 0;
+}
+#brackets-trello #changes-list .code-comment-item:hover .btn-cmd {
+	display: none;
+}
+#brackets-trello .cards .code-comment-item .btn-push {
+	top: 2px;
+	left: 5px;
+}
+#brackets-trello .cards .code-comment-item:hover .btn-push {
+	display: block;
 }

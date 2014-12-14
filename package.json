@@ -1,12 +1,18 @@
 {
-	"name": "neobrackets.trello",
-	"title": "Brackets Trello",
-	"description": "Sync tasks with Trello",
-	"homepage": "",
-	"version": "0.1.0",
-	"author": "NeoBrackets Working Group",
-	"licence": "MIT",
-	"engines": {
-		"brackets": ">=0.42.0"
-	}
+  "name": "neobrackets.trello",
+  "title": "Brackets Trello",
+  "description": "Sync tasks with Trello",
+  "homepage": "",
+  "version": "0.1.0",
+  "author": "NeoBrackets Working Group",
+  "licence": "MIT",
+  "engines": {
+    "brackets": ">=0.42.0"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+	"grunt-contrib-jasmine": "latest",
+    "grunt-contrib-jshint": "latest",
+    "grunt-template-jasmine-requirejs": "latest"
+  }
 }

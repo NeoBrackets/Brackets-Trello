@@ -6,6 +6,15 @@ define(function (require, exports, module) {
 
 
 	var appKey = "bd125fe95d77b8dadf45bd6103cf5c44";
+	
+	/**
+	 * get members of board
+	 * @param   {String} boardId board id for query
+	 * @returns {Deferred}     every activity
+	 */
+	function getBoardMembers(boardId) {
+		return _get('boardMembers', {board: boardId}, {});
+	}
 
 	/**
 	 * get an activity stream for a special board
@@ -78,7 +87,6 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log(url);
 		var result = $.Deferred();
 		$.getJSON(url,
 		function(data) {
@@ -139,6 +147,7 @@ define(function (require, exports, module) {
 							returnObject[type] = data;
 							result.resolve(returnObject);
 						}
+
 						break;
 					case "cardMembers":
 					case "boardMembers":
@@ -181,7 +190,7 @@ define(function (require, exports, module) {
 		}
 		for (var key in set) {
 			if (type != "checklist" || key != "tasks") {
-				setStr += key+'='+set[key]+'&';
+				setStr += key+'='+encodeURIComponent(set[key])+'&';
 			}
 		}
 		var url;
@@ -206,8 +215,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log('create '+type);
-		console.log(url);
+
 		$.post(url,
 		function(data) {
 			if(data) {
@@ -229,10 +237,11 @@ define(function (require, exports, module) {
 			} else {
 				result.reject();
 			}
+
 		});
 		return result.promise();
 	}
-	
+
 	/**
 	 * Create tasks inside a checklist
 	 * @param   {Array}    data        empty array at beginning next step filled with the latest tasks
@@ -244,8 +253,6 @@ define(function (require, exports, module) {
 	 */
 	function _createTasks(data,checklistID,tasks,start,end) {
 		var result = $.Deferred();
-		console.log('tasks: ',tasks);
-		console.log('task: ',tasks[start]);
 		_create('task',{checklist:checklistID},{name:tasks[start]}).done(function (task) {
 			data[start] = task;
 			start++;
@@ -272,7 +279,7 @@ define(function (require, exports, module) {
 		var result = $.Deferred();
 		var setStr = '?';
 		for (var key in set) {
-			setStr += key+'='+set[key]+'&';
+			setStr += key+'='+encodeURIComponent(set[key])+'&';
 		}
 		var sendType;
 		switch (type) {
@@ -313,7 +320,7 @@ define(function (require, exports, module) {
 		var result = $.Deferred();
 		var editStr = '?';
 		for (var key in edit) {
-			editStr += key+'='+edit[key]+'&';
+			editStr += key+'='+encodeURIComponent(edit[key])+'&';
 		}
 		var sendType;
 		switch (type) {
@@ -342,7 +349,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log('url: '+url);
+
 		$.ajax({
 			url:url,
 			type: sendType
@@ -399,8 +406,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log(url);
-		console.log(sendType);
+
 		$.ajax({
 			url:url,
 			type: sendType
@@ -425,7 +431,7 @@ define(function (require, exports, module) {
 		var result = $.Deferred();
 		var optStr = '';
 		for (var key in options) {
-			optStr += key+'='+options[key]+'&';
+			optStr += key+'='+encodeURIComponent(options[key])+'&';
 		}
 		var sendType;
 		switch (type) {
@@ -442,8 +448,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
-		console.log(url);
-		console.log(sendType);
+
 		$.ajax({
 			url:url,
 			type: sendType
@@ -476,12 +481,6 @@ define(function (require, exports, module) {
 				result.reject();
 			}
 		});
-		return result.promise();
-	}
-
-	function _performSync(tasks) {
-		var result = $.Deferred();
-		result.resolve('Sync was performed');
 		return result.promise();
 	}
 
@@ -540,7 +539,7 @@ define(function (require, exports, module) {
 		return result;
 	}
 
-
+	exports.getBoardMembers = getBoardMembers;
 	exports._get = _get;
 	exports._create = _create;
 	exports._createTasks = _createTasks;
@@ -548,7 +547,6 @@ define(function (require, exports, module) {
 	exports._edit = _edit;
 	exports._delete = _delete;
 	exports._move = _move;
-	exports._performSync			= _performSync;
 	exports._addNewMembers			= _addNewMembers;
 	exports._deleteMember			= _deleteMember;
 	exports._deleteComment			= _deleteComment;
