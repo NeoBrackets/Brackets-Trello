@@ -15,6 +15,8 @@ define(function (require, exports, module) {
 		KeyEvent					= brackets.getModule('utils/KeyEvent'),
 		Dialogs						= brackets.getModule('widgets/Dialogs'),
 		Menus						= brackets.getModule('command/Menus'),
+		ProjectManager          	= brackets.getModule("project/ProjectManager"),
+		FileUtils 					= brackets.getModule("file/FileUtils"),
 		Parser		              	= require('modules/parser'),
 		Trello						= require('Trello'),
 		strings						= require('i18n!nls/strings'),
@@ -1334,7 +1336,8 @@ define(function (require, exports, module) {
 
     function displayTrelloComments(newComments) {
 		cache.comments = newComments;
-
+		
+		
         var compliedChangesList = null;
 		trelloCommentCards = {};
 
@@ -1378,7 +1381,7 @@ define(function (require, exports, module) {
             // render
             if (groupComments.length > 0) {
                 commentHtml = Mustache.render(partTemplates.trelloComments, {
-                    comments: groupComments
+                    files: sortByFilename(groupComments)
                 });
 				// are there normal cards in this list ?
 				if ($(listElem).closest('.list-item').find('.cards').children().first().length > 0) {
@@ -1395,9 +1398,40 @@ define(function (require, exports, module) {
         $('.tab-lists .lists #changes-list', $panel).remove();
         compliedChangesList = Mustache.render(_combineTemplates(changesListTemplate), {
             count: newComments.length,
-            comments: newComments
+            files: sortByFilename(newComments)
         });
         $(compliedChangesList).insertBefore($('.tab-lists .lists', $panel).children().first());
+		
+		
+		function sortByFilename(comments) {
+			comments = comments.sort(function (a,b) {
+				if (a._filePath > b._filePath) return 1;
+				return -1;
+			});		
+			var files 			= [];
+			var lastFilePath 	= comments[0]._filePath;
+			var commentsByFile 	= [comments[0]];
+			for (var i = 1; i < comments.length; i++) {
+				if (comments[i]._filePath != lastFilePath) {
+					files.push({file: relativePath(lastFilePath), comments: commentsByFile});
+					commentsByFile = [comments[i]];
+					lastFilePath = comments[i]._filePath;
+				} else {
+					commentsByFile.push(comments[i]);	
+				}
+			}
+			files.push({file: relativePath(lastFilePath), comments: commentsByFile});
+			return files;
+		}
+		
+		function relativePath(path) {
+			var basePath 			= ProjectManager.getProjectRoot()._path;
+			var relativeFilename 	= FileUtils.getRelativeFilename(basePath,path);
+			if (!relativeFilename) {
+				relativeFilename = path;
+			}	
+			return relativeFilename;
+		}
     }
 
 	/**
