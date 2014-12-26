@@ -121,7 +121,7 @@ define(function (require, exports, module) {
 									newComment.avatarHash 	= data.actions[t].memberCreator.avatarHash;
 									newComment.fullName 	= data.actions[t].memberCreator.fullName;
 									newComment.username 	= data.actions[t].memberCreator.username;
-									newComment.memberId	= data.actions[t].memberCreator.id;
+									newComment.memberId		= data.actions[t].memberCreator.id;
 									newComment.comment 		= data.actions[t].data.text;
 									data.comments.push(newComment);
 								}
