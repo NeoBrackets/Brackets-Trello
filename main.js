@@ -192,17 +192,19 @@ define(function (require, exports, module) {
 				cache.data = data;
 				switch(currentTab) {
 					case "boards":
-						$('.tab-boards', $panel).html(Mustache.render(boardsTemplate, data));
+						$('.tab-boards', $panel).html(Mustache.renderTemplate(boardsTemplate, data));
 						break;
 					case "lists":
 						var combinedTemplate = _combineTemplates(listsTemplate);
-						$('.tab-lists', $panel).html(Mustache.render(combinedTemplate, data));
+						var combinedData = $.merge(data,{strings: strings});
+						console.log(combinedData);
+						$('.tab-lists', $panel).html(Mustache.renderTemplate(combinedTemplate, combinedData));
 						displayTrelloComments(cache.comments);
-						_expandLists();
+						_expandLists();combinedData
 						break;
 					case "tasks":
 						var combinedTemplate = _combineTemplates(tasksTemplate);
-						$('.tab-tasks', $panel).html(Mustache.render(combinedTemplate, data));
+						$('.tab-tasks', $panel).html(Mustache.renderTemplate(combinedTemplate, data));
 						_taskChecksAndAdmin(data);
 						break;
 				}
@@ -282,7 +284,7 @@ define(function (require, exports, module) {
 						data.totalCards = 0;
 						var combinedTemplate = _combineTemplates(partTemplates.lists);
 						$('.tab-lists', $panel).children('.lists').children('.cmd-new-list').before(
-							Mustache.render(combinedTemplate, {lists:data})
+							Mustache.renderTemplate(combinedTemplate, {lists:data})
 						);
 					})
 				.fail(_displayError);
@@ -312,7 +314,7 @@ define(function (require, exports, module) {
 						data.taskCount = '';
 						var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
 						$('.tab-lists', $panel).children('.lists').children('#'+data.idList).children('.cards').append(
-							Mustache.render(combinedTemplate, {cards:data})
+							Mustache.renderTemplate(combinedTemplate, {cards:data})
 						);
 					})
 				.fail(_displayError);
@@ -346,7 +348,7 @@ define(function (require, exports, module) {
 					var combinedTemplate = _combineTemplates(partTemplates.checklists);
 					// add the new task
 					$('.tab-tasks', $panel).children('.checklists').children('.cmd-new-checklist').before(
-						Mustache.render(combinedTemplate, {checklists:data.checklist})
+						Mustache.renderTemplate(combinedTemplate, {checklists:data.checklist})
 					);
 					for (var t = 0; t < tasks.length; t++) {
 						var task = data.tasks[t];
@@ -354,7 +356,7 @@ define(function (require, exports, module) {
 
 						// add the new task
 						$('.tab-tasks', $panel).children('.checklists').children('#'+_prefs.get('selected-checklist')).children('.tasks').append(
-							Mustache.render(combinedTemplate, {checkItems:task})
+							Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 						);
 					}
 				}).fail(_displayError);
@@ -392,7 +394,7 @@ define(function (require, exports, module) {
 							var combinedTemplate = _combineTemplates(partTemplates.checkitems);
 							// add the new task
 							$('.tab-tasks', $panel).children('.checklists').children('#'+_prefs.get('selected-checklist')).children('.tasks').append(
-								Mustache.render(combinedTemplate, {checkItems:task})
+								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 							);
 						}
 					})
@@ -424,7 +426,7 @@ define(function (require, exports, module) {
 				}
 
 				_displaySpinner(false);
-				var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newMembersTemplate, { members: members, strings: strings })),
+				var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newMembersTemplate, { members: members, strings: strings })),
 					$dialog = dialog.getElement();
 
 				dialog.done(function(id) {
@@ -448,7 +450,7 @@ define(function (require, exports, module) {
 								}
 							}
 							$('.tab-tasks', $panel).children('.members').children('h5').after(
-								Mustache.render(combinedTemplate, {members:showNewMembers})
+								Mustache.renderTemplate(combinedTemplate, {members:showNewMembers})
 							);
 						}).fail(_displayError);
 					}
@@ -616,7 +618,7 @@ define(function (require, exports, module) {
 	function _openDeleteBoardDialog(e) {
 		e.stopPropagation();
 		var boardId = $(this).data('board-id');
-		Dialogs.showModalDialogUsingTemplate(Mustache.render(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.BOARDS)))
+		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.BOARDS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('board',{board:boardId}).done(function(data) {
@@ -630,7 +632,7 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var thisEle = $(this);
 		var listId = thisEle.data('list-id');
-		Dialogs.showModalDialogUsingTemplate(Mustache.render(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.LISTS)))
+		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.LISTS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('list',{list:listId}).done(function(data) {
@@ -642,7 +644,7 @@ define(function (require, exports, module) {
 
 	function _openDeleteCardDialog(e) {
 		e.stopPropagation();
-		Dialogs.showModalDialogUsingTemplate(Mustache.render(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CARDS)))
+		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CARDS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('card',{card:_prefs.get('selected-card')}).done(function(data) {
@@ -656,7 +658,7 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var thisEle = $(this);
 		var checklistId = thisEle.data('checklist-id');
-		Dialogs.showModalDialogUsingTemplate(Mustache.render(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CHECKLISTS)))
+		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CHECKLISTS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('checklist',{checklist:checklistId}).done(function(data) {
@@ -671,7 +673,7 @@ define(function (require, exports, module) {
 		var thisEle = $(this);
 		var checklistId = thisEle.parent('.task-item').parent('.tasks').parent('.checklist-item').attr('id');
 		var taskId = thisEle.data('task-id');
-		Dialogs.showModalDialogUsingTemplate(Mustache.render(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.TASKS)))
+		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.TASKS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('checkItem',{checklist:checklistId,checkItem:taskId}).done(function(data) {
@@ -721,7 +723,7 @@ define(function (require, exports, module) {
 
 						var combinedTemplate = _combineTemplates(partTemplates.comments);
 						$('.tab-tasks', $panel).children('.comments').children('h5').after(
-							Mustache.render(combinedTemplate, {comments:commentObj})
+							Mustache.renderTemplate(combinedTemplate, {comments:commentObj})
 						);
 						// you can always delete/edit your own card
 						$('#'+commentObj.id).find('.card-comment-body h5')
@@ -755,7 +757,7 @@ define(function (require, exports, module) {
 	function _openDeleteCommentDialog() {
 		var cardId = _prefs.get("selected-card");
 		var commentId = $(this).data('comment-id');
-		Dialogs.showModalDialogUsingTemplate($(Mustache.render(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.COMMENT))))
+		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.COMMENT))))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('comment',{comment:commentId,card:cardId}).done(function(data) {
@@ -770,7 +772,7 @@ define(function (require, exports, module) {
 		e.preventDefault();
 		var cardId 		= _prefs.get('selected-card');
 		var memberId 	= $(this).data('member-id');
-		Dialogs.showModalDialogUsingTemplate($(Mustache.render(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.MEMBER))))
+		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.MEMBER))))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('cardMember',{card:cardId,member:memberId}).done(function(data) {
@@ -1188,7 +1190,7 @@ define(function (require, exports, module) {
 					ids: {},
 					settings: {fields:["id","name"]}
 			};
-			$('.tab-boards', $panel).empty().show().append(Mustache.render(boardsTemplate, data));
+			$('.tab-boards', $panel).empty().show().append(Mustache.renderTemplate(boardsTemplate, data));
 		})
 		.fail(_displayError);
 	}
@@ -1218,7 +1220,7 @@ define(function (require, exports, module) {
 			activeUserId = data.memberRole.idMember;
 			activeUserRole = data.memberRole.memberType;
 
-			var combinedTemplate = _combineTemplates(listsTemplate);
+			var combinedTemplate = _combineTemplates(listsTemplate);			
 			cache  	= {
 				data: data,
 				ids:{board:boardId},
@@ -1226,7 +1228,7 @@ define(function (require, exports, module) {
 						  cards:["open"],card_fields:["name","badges"],members:["all"]
 						 }
 			};
-			$('.tab-lists', $panel).empty().show().append(Mustache.render(combinedTemplate, data));
+			$('.tab-lists', $panel).empty().show().append(Mustache.renderTemplate(combinedTemplate, data));
 		})
 		.fail(_displayError)
 		.always(function(){
@@ -1260,9 +1262,9 @@ define(function (require, exports, module) {
 					data: data,
 					ids: {card:cardId},
 					settings:{members:[true],actions:['commentCard'],
-					 member_fields:["avatarHash","username","fullName"]}
+					member_fields:["avatarHash","username","fullName"]}
 			};
-			$('.tab-tasks', $panel).empty().show().append(Mustache.render(combinedTemplate, data));
+			$('.tab-tasks', $panel).empty().show().append(Mustache.renderTemplate(combinedTemplate, data));
 
 			// set admin panel and checkmarks on tasks tab
 			_taskChecksAndAdmin(data);
@@ -1289,13 +1291,14 @@ define(function (require, exports, module) {
 			});
 		});
 
-		// insert comment edit/delete if it's allowed
+		// delete comment edit/delete if it isn't allowed
 		if (data.comments && data.comments.length >= 1) {
 			data.comments.forEach(function(comment) {
-				if (activeUserRole === "admin" || activeUserId === comment.memberId) {
-					$('#'+comment.id).find('.card-comment-body h5')
-						.append($('<i class="btn-cmd btn-edit cmd-edit-comment" data-comment-id="'+comment.id+'" />'))
-						.append($('<i class="btn-cmd btn-delete cmd-delete-comment" data-comment-id="'+comment.id+'" />'));
+				if (activeUserId !== comment.memberId) {
+					$('#'+comment.id).find('.card-comment-body h5').children('.cmd-edit-comment').remove();
+				}
+				if (activeUserRole !== "admin" && activeUserId !== comment.memberId) {
+					$('#'+comment.id).find('.card-comment-body h5').children('.cmd-delete-comment').remove();
 				}
 			});
 		}
@@ -1396,7 +1399,7 @@ define(function (require, exports, module) {
 
         // remove older Changes List.
         $('.tab-lists .lists #changes-list', $panel).remove();
-        compliedChangesList = Mustache.render(_combineTemplates(changesListTemplate), {
+        compliedChangesList = Mustache.renderTemplate(_combineTemplates(changesListTemplate), {
             count: newComments.length,
             files: sortByFilename(newComments)
         });
@@ -1534,7 +1537,7 @@ define(function (require, exports, module) {
 		data.taskCount = '';
 		var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
 		$listItem.children('.cards').append(
-			Mustache.render(combinedTemplate, {cards:data})
+			Mustache.renderTemplate(combinedTemplate, {cards:data})
 		);
         
 		// update the counters
@@ -1625,6 +1628,17 @@ define(function (require, exports, module) {
 			return _combineTemplates(partTemplates[p1]);
 		});
 	}
+	
+	/**
+	 * Render a template with Mustache.render but include the language strings
+	 * @param {String}       template template
+	 * @param {Array|Object} data     data to render
+	 */
+	Mustache.renderTemplate = function(template, data) {
+		data.strings = strings;
+		console.log(data);
+		return Mustache.render(template,data);
+	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////     Prototypes    //////////////////////////////////
@@ -1666,7 +1680,7 @@ define(function (require, exports, module) {
 			var languageId 		= editor.getLanguageForSelection().getId();
 			var selectionPos 	= editor.getSelection(true);
 			var selection 		= editor.document.getRange(selectionPos.start,selectionPos.end,true);
-			var comments = ParseUtils.parseText(selection, ['idea', 'todo', 'doing', 'done'], languageId);
+			var comments 		= ParseUtils.parseText(selection, ['idea', 'todo', 'doing', 'done'], languageId);
 		}
 	}
 

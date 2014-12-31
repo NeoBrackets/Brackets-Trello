@@ -41,5 +41,24 @@ define({
 	MSG_DELETE_CHECKLIST:	'Are you sure you want to delete this checklist?',
 	MSG_DELETE_COMMENT:		'Are you sure you want to delete this comment?',
 	MSG_DELETE_MEMBER:		'Are you sure you want to remove this member?',
-	BTN_YES:				'Yes'
+	BTN_YES:				'Yes',
+	/////////////////////////////////////////////////////////////////////////
+	///////////////////// TOOLTIPS 	/////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////
+	EDIT_BOARD_NAME:		'Edit board name',
+	DELETE_BOARD:			'Delete board',
+	EDIT_LIST_NAME:			'Edit list name',
+	DELETE_LIST:			'Delete list',
+	PUSH_COMMENT:			'Push comment to Trello',
+	PUSH_ALL_COMMENTS:		'Push all list comments to Trello',
+	EDIT_CARD_NAME:			'Edit card name',
+	DELETE_CARD:			'Delete card',
+	EDIT_CARD_DESC:			'Edit card description',
+	EDIT_CHECKLIST_NAME:	'Edit checklist name',
+	DELTE_CKECKLIST:		'Delete checklist',
+	HIDE_CHECKED:			'Hide checked items',
+	ADD_COMMENT:			'Add card comment',
+	EDIT_COMMENT:			'Edit card comment',
+	DELETE_COMMENT:			'Delete card comment',
+	DELETE_MEMBER:			'Delete member'
 });
