@@ -10,14 +10,14 @@
 </p>
 <div class="checklists">
 	{{> checklists.html}}
-	<div class="cmd cmd-new-checklist">Add New Checklist</div>
+	<div class="cmd cmd-new-checklist">{{strings.BTN_ADD_NEW_CHECKLIST}}</div>
 </div>
 <div class="card-comments">
-	<h5 class="cmd-hide-comments">Comments <i title="{{strings.ADD_COMMENT}}" class="btn-cmd btn-add cmd-add-comment"/></h5>
+	<h5 class="cmd-hide-comments">{{strings.LBL_COMMENTS}} <i title="{{strings.BTN_ADD_COMMENT}}" class="btn-cmd btn-add cmd-add-comment"/></h5>
 	{{> comments.html}}
 </div>
 <div class="members">
-	<h5>Members:</h5>
+	<h5>{{strings.LBL_MEMBERS}}:</h5>
 	{{> members.html}}
-	<div class="cmd cmd-new-member">Add New Members</div>
+	<div class="cmd cmd-new-member">{{strings.BTN_ADD_NEW_MEMEBERS}}</div>
 </div>

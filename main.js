@@ -118,7 +118,7 @@ define(function (require, exports, module) {
 	 * Open Preferences dialog and change preferences
 	 */
 	function _openPreferencesDialog() {
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(prefDialogHTML, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(prefDialogHTML)),
 			$dialog	= dialog.getElement(),
 			tempPrefs = {};
 
@@ -227,7 +227,7 @@ define(function (require, exports, module) {
 	 * Open New Board Dialog
 	 */
 	function _openNewBoardDialog() {
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newBoardHTML, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newBoardHTML)),
 			$dialog = dialog.getElement();
 		$dialog.find('.board-name').focus();
 		dialog.done(function(id) {
@@ -272,7 +272,7 @@ define(function (require, exports, module) {
 	 */
 	function _openNewListDialog() {
 		var boardId = _prefs.get('selected-board');
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newListHTML, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newListHTML)),
 			$dialog = dialog.getElement();
 		$dialog.find('.list-name').focus();
 		dialog.done(function(id) {
@@ -296,7 +296,7 @@ define(function (require, exports, module) {
 	 * Open New Card Dialog
 	 */
 	function _openNewCardDialog() {
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newCardHTML, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newCardHTML)),
 			$dialog = dialog.getElement();
 		$dialog.find('.card-name').focus();
 		$dialog.keypress(function(e) {
@@ -328,11 +328,11 @@ define(function (require, exports, module) {
 	function _openNewChecklistDialog() {
 		var boardId   = _prefs.get("selected-board");
 		var cardId   = _prefs.get("selected-card");
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(checklistTemplate, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(checklistTemplate)),
 			$dialog = dialog.getElement(), name, tasks = [];
 		$dialog.find('.checklist-name').focus();
 		$dialog.find('.btn-add-task').click(function() {
-			$dialog.find('.form-horizontal').append($(Mustache.render(newTaskTemplate, strings)));
+			$dialog.find('.form-horizontal').append($(Mustache.renderTemplate(newTaskTemplate)));
 		});
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -368,12 +368,12 @@ define(function (require, exports, module) {
 	 * Open New Tasks Dialog
 	 */
 	function _openNewTasksDialog() {
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(newTasksHTML, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newTasksHTML)),
 			$dialog = dialog.getElement(),
 			tasks = [];
 		$dialog.find('.task-name:first-child').focus();
 		$dialog.find('.btn-add-task').click(function() {
-			$dialog.find('.form-horizontal').append($(Mustache.render(newTaskTemplate, strings)));
+			$dialog.find('.form-horizontal').append($(Mustache.renderTemplate(newTaskTemplate)));
 		});
 		$dialog.find('.task-name:last-child').focus();
 
@@ -462,7 +462,7 @@ define(function (require, exports, module) {
 
 	function _openEditBoardNameDialog() {
 		var boardId   = _prefs.get("selected-board");
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(editBoardNameTemplate, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editBoardNameTemplate)),
 			$dialog = dialog.getElement();
 			$dialog.find('.board-name').val($(this).parent('h4').text().trim()).focus();
 			dialog.done(function(id) {
@@ -483,7 +483,7 @@ define(function (require, exports, module) {
 
 	function _openEditListNameDialog(e) {
 		e.stopPropagation();
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(editListNameTemplate, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editListNameTemplate)),
 			$dialog = dialog.getElement();
 		$dialog.find('.list-name').val($(this).siblings('a').text()).focus();
 		var listId = $(this).data('list-id');
@@ -503,7 +503,7 @@ define(function (require, exports, module) {
 	}
 
 	function _openEditCardNameDialog() {
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(editCardNameTemplate, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editCardNameTemplate)),
 			$dialog = dialog.getElement();
 
 		$dialog.find('.card-name').val($(this).parent('h5').text().trim()).focus();
@@ -522,7 +522,7 @@ define(function (require, exports, module) {
 	}
 
 	function _openEditCardDescDialog() {
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(editCardDescTemplate, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editCardDescTemplate)),
 			$dialog = dialog.getElement();
 
 		$dialog.find('.card-desc').val($(this).parent('p').text().trim()).focus();
@@ -542,7 +542,7 @@ define(function (require, exports, module) {
 
 	function _openEditChecklistDialog(e) {
 		e.stopPropagation();
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(editChecklistNameTemplate, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editChecklistNameTemplate)),
 			$dialog = dialog.getElement();
 		$dialog.find('.checklist-name').val($(this).parent('h5').text().trim()).focus();
 		var checklistId = $(this).data('checklist-id');
@@ -559,7 +559,7 @@ define(function (require, exports, module) {
 
 	function _openEditTaskDialog(e) {
 		e.stopPropagation();
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.render(editTaskNameTemplate, strings)),
+		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editTaskNameTemplate)),
 			$dialog = dialog.getElement();
 		var cardId = $('.card-name', $panel).attr('id');
 		var checklistId = $(this).parent('.task-item').parent('.tasks').parent('.checklist-item').attr('id');
@@ -579,10 +579,7 @@ define(function (require, exports, module) {
 	}
 
 	function _getOptions(type) {
-		var options = {
-			YES: strings.BTN_YES,
-			CANCEL: strings.BTN_CANCEL
-		}
+		var options = {};
 		switch (type) {
 			case ITEM_TYPE.BOARDS:
 				options.MESSAGE = strings.MSG_DELETE_BOARD;
@@ -707,7 +704,7 @@ define(function (require, exports, module) {
 	function _openAddCommentDialog(e) {
 		e.stopPropagation();
 		var cardId = _prefs.get("selected-card");
-		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.render(newCommentTemplate, strings))),
+		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(newCommentTemplate))),
 			$dialog = dialog.getElement();
 		$dialog.find('.card-comment-text').focus();
 		dialog.done(function(id) {
@@ -736,7 +733,7 @@ define(function (require, exports, module) {
 	}
 
 	function _openEditCommentDialog() {
-		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.render(editCommentsTemplate, strings))),
+		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(editCommentsTemplate))),
 			$dialog = dialog.getElement();
 		$dialog.find('.card-comment-text').val($(this).parent('h5').siblings('p').html()).focus();
 		var commentId = $(this).data('comment-id');
@@ -1383,7 +1380,7 @@ define(function (require, exports, module) {
             newComments = otherComments;
             // render
             if (groupComments.length > 0) {
-                commentHtml = Mustache.render(partTemplates.trelloComments, {
+                commentHtml = Mustache.renderTemplate(partTemplates.trelloComments, {
                     files: sortByFilename(groupComments)
                 });
 				// are there normal cards in this list ?
@@ -1635,6 +1632,7 @@ define(function (require, exports, module) {
 	 * @param {Array|Object} data     data to render
 	 */
 	Mustache.renderTemplate = function(template, data) {
+		data = data || {};
 		data.strings = strings;
 		console.log(data);
 		return Mustache.render(template,data);
@@ -1690,7 +1688,7 @@ define(function (require, exports, module) {
 	function _toggleVisibility() {
 		if (!isVisible && !realVisibility) {
 			realVisibility = true;
-			$panel = $(Mustache.render(mainPanel, strings)).width(_prefs.get('width'));
+			$panel = $(Mustache.renderTemplate(mainPanel)).width(_prefs.get('width'));
 			_panelEventController($panel);
 			$('#editor-holder').append($panel);
 			CommandManager.get(_ExtensionID).setChecked(true);
