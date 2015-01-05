@@ -204,14 +204,20 @@
 #brackets-trello-new-card .card-desc {
 	resize: vertical;
 }
-#brackets-trello-new-board .board-name,
-#brackets-trello-new-list .list-name,
+
 #brackets-trello-new-card .card-name,
 #brackets-trello-new-card .card-desc,
 #brackets-trello-new-checklist .checklist-name,
 #brackets-trello-edit-card-name .card-name {
 	width: 300px;
 }
+
+#brackets-trello-new-board .board-name,
+#brackets-trello-edit-board-name .board-name,
+#brackets-trello-edit-card-name .card-name,
+#brackets-trello-edit-checklist-name .checklist-name,
+#brackets-trello-new-list .list-name,
+#brackets-trello-edit-list-name .list-name,
 #brackets-trello-edit-task-name .task-name,
 #brackets-trello-new-tasks .task-name {
 	width: 555px;
