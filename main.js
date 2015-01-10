@@ -82,10 +82,9 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-board-name', 'string', '');
 	_prefs.definePreference('selected-list', 'string', '');
 	_prefs.definePreference('selected-list-name', 'string', '');
-	_prefs.definePreference('selected-checklist', 'string', '');
 
 	// Prefs that will be saved in .brackets.json
-	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-checklist'];
+	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name'];
 
 	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
 
@@ -340,7 +339,6 @@ define(function (require, exports, module) {
 				});
 				Trello._create('checklist',{board:boardId,card:cardId},{name:name,tasks:tasks}).done( function(data) {
 
-					_savePrefs('selected-checklist',data.checklist.id);
 					var combinedTemplate = _combineTemplates(partTemplates.checklists);
 					// add the new task
 					$checklists.children('.cmd-new-checklist').before(
@@ -365,11 +363,12 @@ define(function (require, exports, module) {
 	 * Open New Tasks Dialog
 	 */
 	function _openNewTasksDialog() {
+		var $checklist = $(this).closest('.checklist-item');
+	
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newTasksHTML)),
 			$dialog = dialog.getElement(),
 			tasks = [];
 		
-		var $checklist = $(this).closest('.checklist-item');		
 		$dialog.find('.task-name:first-child').focus();
 		$dialog.find('.btn-add-task').click(function() {
 			$dialog.find('.form-horizontal').append($(Mustache.renderTemplate(newTaskTemplate)));
@@ -384,9 +383,8 @@ define(function (require, exports, module) {
 						tasks.push($(this).val());
 					}
 				})
-				var selectedChecklist = _prefs.get('selected-checklist');
-				console.log('selected-checklist: '+selectedChecklist);
-				Trello._createTasks([],selectedChecklist,tasks,0,$dialog.find('.task-name').length)
+				
+				Trello._createTasks([],$checklist.attr('id'),tasks,0,$dialog.find('.task-name').length)
 				.done(function(data) {
 					
 						for (var t = 0; t < data.length; t++) {
@@ -1048,10 +1046,8 @@ define(function (require, exports, module) {
 			_savePrefs('selected-list', $(this).data('list-id'));
 			_openNewCardDialog();
 		});
-		$panel.on('click', '.cmd-new-tasks', function() {
-			_savePrefs('selected-checklist', $(this).data('checklist-id'));
-			_openNewTasksDialog();
-		});
+		$panel.on('click', '.cmd-new-tasks', _openNewTasksDialog);
+		
 		$panel.on('click', '.cmd-new-checklist', _openNewChecklistDialog);
 		$panel.on('click', '.cmd-new-member', _openNewMemberDialog);
 
