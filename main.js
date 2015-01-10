@@ -938,18 +938,18 @@ define(function (require, exports, module) {
 		});
 
 		// List Name
-		$panel.on('click', '.list-item', function() {
-			_savePrefs('selected-list', $(this).attr('id'));
-			_savePrefs('selected-list-name', $('h5 a', this).text());
+		$panel.on('click', '.list-item .list-name', function() {
+			_savePrefs('selected-list', $(this).data('list-id'));
+			_savePrefs('selected-list-name', $(this).text());
 			_setNewButtonActive(ITEM_TYPE.CARDS);
 
-			var $cards = $(this).find('.cards, .cmd');
+			var $cards = $(this).parents('.list-item').find('.cards, .cmd');
 			if ($cards.css('display') === 'none') {
-				_expandedLists[$(this).attr('id')] = true;
+				_expandedLists[$(this).data('list-id')] = true;
 				$cards.show();
 			}
 			else if ($cards.css('display') === 'block') {
-				_expandedLists[$(this).attr('id')] = false;
+				_expandedLists[$(this).data('list-id')] = false;
 				$cards.hide();
 			}
 		});
@@ -957,7 +957,6 @@ define(function (require, exports, module) {
 		// Card Name
 		$panel.on('click', '.card-item .card-name', function(e) {
 			e.stopPropagation();
-			console.log('click on card name');
 			var cardId 	  	= $(this).data("id");
 			var $listItem 	= $(this).parents('.card-item').parents('.list-item');
             _savePrefs('selected-list', $listItem.attr('id'));
@@ -1199,7 +1198,7 @@ define(function (require, exports, module) {
 	/**
 	 * Display Users' Lists
 	 */
-	function _displayLists(visible) {
+	function _displayLists(visible) {	
 		var boardName = _prefs.get("selected-board-name");
 		var boardId   = _prefs.get("selected-board");
 
@@ -1212,7 +1211,8 @@ define(function (require, exports, module) {
 		}*/
 
 		_displaySpinner(true);
-		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","badges"],members:["all"]}).done(function(data) {
+		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","badges"],members:["all"]})
+		.done(function(data) {
 			_displaySpinner(false);
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_setButtonActive($panel.find('.btn-lists'));
