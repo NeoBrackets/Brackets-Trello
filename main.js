@@ -170,7 +170,12 @@ define(function (require, exports, module) {
 		var listId  	= _prefs.get("selected-list");
 		var boardName 	= _prefs.get("selected-board-name");
 		var listName  	= _prefs.get("selected-list-name");
-
+				
+		cache.ids = {
+			"board": boardId,
+			"list":	listId
+		}
+		
 		// current tab
 		var currentTab = $panel.find('.btn-boards').hasClass('active') ? 'boards' : false;
 		if (!currentTab) currentTab = $panel.find('.btn-lists').hasClass('active') ? 'lists' : 'tasks';
@@ -178,14 +183,13 @@ define(function (require, exports, module) {
 		if ((!cache.hasOwnProperty("ids") || $.isEmptyObject(cache.ids)) && currentTab != "boards")
 			return;
 
-		Trello._get(currentTab,cache.ids,cache.settings)
+		console.log('cache: ', cache);
+		console.log('initSync: ', [currentTab,cache.ids,cache[currentTab+"_settings"]]);
+		Trello._get(currentTab,cache.ids,cache[currentTab+"_settings"])
 		.done(function(data) {
 			if (currentTab == "lists") {
 				data.name = boardName;
 				data.id   = boardId;
-			} else if (currentTab == "tasks") {
-				data.boardName = boardName;
-				data.listName = listName;
 			}
 			if (!compareObjects(cache.data,data)) {
 				cache.data = data;
@@ -195,11 +199,10 @@ define(function (require, exports, module) {
 						break;
 					case "lists":
 						var combinedTemplate = _combineTemplates(listsTemplate);
-						var combinedData = $.merge(data,{strings: strings});
-						console.log(combinedData);
-						$('.tab-lists', $panel).html(Mustache.renderTemplate(combinedTemplate, combinedData));
+						console.log('data: ',data);
+						$('.tab-lists', $panel).html(Mustache.renderTemplate(combinedTemplate, data));
 						displayTrelloComments(cache.comments);
-						_expandLists();combinedData
+						_expandLists();
 						break;
 				}
 			}
@@ -958,11 +961,13 @@ define(function (require, exports, module) {
 				_expandedLists[$(this).data('list-id')] = false;
 				$cards.hide();
 			}
+			console.log('expandedLists: ',_expandedLists);
 		});
 
 		// Card Name
 		$panel.on('click', '.card-item .card-name', function(e) {
 			e.stopPropagation();
+			var $card 		= $(this).parents('.card-item');
 			var cardId 	  	= $(this).data("id");
 			var $listItem 	= $(this).parents('.card-item').parents('.list-item');
             _savePrefs('selected-list', $listItem.attr('id'));
@@ -980,16 +985,16 @@ define(function (require, exports, module) {
 						true );
 				});
 			} else {
-				_displayTasks(cardId);
+				_displayTasks($card);
 			}
 		});
 
 		// Task Name
 		$panel.on('change', '.task-item input', function(e) {
-			var checkListId = $(this).parent().parent('.tasks').parent('.checklist-item').attr("id");
-			var checkItemId = $(this).attr("id");
 			var cardId   	= $(this).closest('.card-item').attr('id');
-			_changeTaskState(cardId,checkListId,checkItemId);
+			var checkListId = $(this).parent().parent('.tasks').parent('.checklist-item').attr("id");
+			var $checkItem  = $(this);
+			_changeTaskState(cardId,checkListId,$checkItem);
 		});
 
 		// Changes List comment
@@ -1183,11 +1188,11 @@ define(function (require, exports, module) {
 			_displaySpinner(false);
 			_setNewButtonActive(ITEM_TYPE.BOARDS);
 			_setButtonActive($panel.find('.btn-boards'));
-			cache 	= {
+			cache 	=$.extend({},cache,{
 					data: data,
 					ids: {},
-					settings: {fields:["id","name"]}
-			};
+					boards_settings: {fields:["id","name"]}
+			});
 			$('.tab-boards', $panel).empty().show().append(Mustache.renderTemplate(boardsTemplate, data));
 		})
 		.fail(_displayError);
@@ -1209,6 +1214,7 @@ define(function (require, exports, module) {
 		}*/
 
 		_displaySpinner(true);
+		console.log('boardId: '+boardId);
 		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","badges"],members:["all"]})
 		.done(function(data) {
 			_displaySpinner(false);
@@ -1220,13 +1226,15 @@ define(function (require, exports, module) {
 			activeUserRole = data.memberRole.memberType;
 
 			var combinedTemplate = _combineTemplates(listsTemplate);			
-			cache  	= {
+			cache  	= $.extend({},cache,{
 				data: data,
 				ids:{board:boardId},
-				settings:{fields:["id","name"],
-						  cards:["open"],card_fields:["name","badges"],members:["all"]
-						 }
-			};
+				lists_settings:
+					{
+						fields:["id","name"],
+						cards:["open"],card_fields:["name","badges"],members:["all"]
+					}
+			});
 			$('.tab-lists', $panel).empty().show().append(Mustache.renderTemplate(combinedTemplate, data));
 		})
 		.fail(_displayError)
@@ -1238,15 +1246,16 @@ define(function (require, exports, module) {
 
 	/**
 	 * Display Tasks Tab (all about a special card)
+	 * @param {jQuery} $card card object
 	 */
-	function _displayTasks(cardId) {
+	function _displayTasks($card) {
 		console.log('display tasks');
 		
 		var boardName 	= _prefs.get("selected-board-name");
 		var listName 	= _prefs.get("selected-list-name");
 		
 		// check if the current card is alread expanded
-		var $card 		 = $panel.find("#"+cardId);
+		var cardId 		 = $card.attr('id');
 		var $cardVerbose = $card.children(".card-verbose");
 		if ($cardVerbose.children(".card-desc-container").length !== 0) {
 			$cardVerbose.html('');		
@@ -1263,17 +1272,17 @@ define(function (require, exports, module) {
 			_displaySpinner(false);
 
 			var combinedTemplate = _combineTemplates(partTemplates.inlineCards);
-			cache 	= {
+			cache 	=$.extend({},cache,{
 					data: data,
 					ids: {card:cardId},
-					settings:{members:[true],actions:['commentCard'],
+					cards_settings:{members:[true],actions:['commentCard'],
 					member_fields:["avatarHash","username","fullName"]}
-			};
+			});
 			$cardVerbose.html(Mustache.renderTemplate(combinedTemplate, data));
 			$card.addClass('card-active');
 			
 			// set admin panel and checkmarks on tasks tab
-			_taskChecksAndAdmin(data);
+			_taskChecksAndAdmin($card,data);
 			$card.find('.members').show();
 
 		})
@@ -1284,28 +1293,51 @@ define(function (require, exports, module) {
 	 * Expand all lists that were open using _expandedLists
 	 */
 	function _expandLists() {
-		$.each(_expandedLists, function(index,value) {
-			if (value)
-				$panel.find(".lists").find("#"+index).trigger("click");
+		console.log('expand: ',_expandedLists);
+		$panel.find(".lists").children('.list-item').each(function(index) {
+			console.log('list-id: ',$(this).data('list-id'));
+			if (_expandedLists[$(this).data('list-id')]) {
+				$(this).children('.list-name').trigger("click");
+			}
 		});
 	}
 
-	function _taskChecksAndAdmin(data) {
+	function _taskChecksAndAdmin($card,data) {
 		// set checkmarks
+		var dataChecklists = {};
 		$.each(data.checklists,function(checklistIndex,checklist) {
+			dataChecklists[checklist.id] = [];
 			$.each(checklist.checkItems,function(checkItemIndex,checkItem) {
-				$('#' + checkItem.id).prop('checked',(checkItem.state === "complete") ? true : false);
+				dataChecklists[checklist.id][checkItem.id] = checkItem.state; 
 			});
 		});
-
+		
+		$card.find('.checklist-item').each(function(indexCh) {
+			var $checklist  = $(this);
+			var checklistId = $checklist.data("checklist-id");
+			$checklist.find('.task-item').each(function(indexChI) {
+				var checkitemId = $(this).data("checkitem-id");
+				var itemState	= dataChecklists[checklistId][checkitemId];
+				$(this).children('.task-state').prop('checked',(itemState === "complete") ? true : false);
+			});
+		});
+		
+		
+		var dataComments = {};
+		$.each(data.comments,function(commentIndex,comment) {
+			dataComments[comment.id] = comment;
+		});
+		
 		// delete comment edit/delete if it isn't allowed
 		if (data.comments && data.comments.length >= 1) {
-			data.comments.forEach(function(comment) {
+			$card.find('.card-comment-item').each(function(indexCo) {
+				var commentId 	= $(this).data("card-comment-id");
+				var comment 	= dataComments[commentId];
 				if (activeUserId !== comment.memberId) {
-					$('#'+comment.id).find('.card-comment-body h5').children('.cmd-edit-comment').remove();
+					$(this).find('.card-comment-body h5').children('.cmd-edit-comment').remove();
 				}
 				if (activeUserRole !== "admin" && activeUserId !== comment.memberId) {
-					$('#'+comment.id).find('.card-comment-body h5').children('.cmd-delete-comment').remove();
+					$(this).find('.card-comment-body h5').children('.cmd-delete-comment').remove();
 				}
 			});
 		}
@@ -1615,9 +1647,9 @@ define(function (require, exports, module) {
 	////////////////////////////////////// CHANGE ///////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
 
-	function _changeTaskState(cardId,checkListId,checkItemId) {
-	 	Trello._change('taskstate',{card:cardId,checklist:checkListId,checkitem:checkItemId},
-						{value:[$("#"+checkItemId).is(':checked') ? true: false]});
+	function _changeTaskState(cardId,checkListId,$checkItem) {
+	 	Trello._change('taskstate',{card:cardId,checklist:checkListId,checkitem:$checkItem.attr('id')},
+						{value:[$checkItem.is(':checked') ? true: false]});
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
