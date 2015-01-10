@@ -82,11 +82,10 @@ define(function (require, exports, module) {
 	_prefs.definePreference('selected-board-name', 'string', '');
 	_prefs.definePreference('selected-list', 'string', '');
 	_prefs.definePreference('selected-list-name', 'string', '');
-	_prefs.definePreference('selected-card', 'string', '');
 	_prefs.definePreference('selected-checklist', 'string', '');
 
 	// Prefs that will be saved in .brackets.json
-	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-card', 'selected-checklist'];
+	var _projectPrefs = ['selected-board', 'selected-board-name', 'selected-list', 'selected-list-name', 'selected-checklist'];
 
 	var realVisibility, isVisible, isMenuVisible, autoSyncIntervalId, $icon, $panel;
 
@@ -202,11 +201,6 @@ define(function (require, exports, module) {
 						$('.tab-lists', $panel).html(Mustache.renderTemplate(combinedTemplate, combinedData));
 						displayTrelloComments(cache.comments);
 						_expandLists();combinedData
-						break;
-					case "tasks":
-						var combinedTemplate = _combineTemplates(tasksTemplate);
-						$('.tab-tasks', $panel).html(Mustache.renderTemplate(combinedTemplate, data));
-						_taskChecksAndAdmin(data);
 						break;
 				}
 			}
@@ -327,10 +321,11 @@ define(function (require, exports, module) {
 	 * New Checklist Dialog
 	 */
 	function _openNewChecklistDialog() {
-		var boardId   = _prefs.get("selected-board");
-		var cardId   = _prefs.get("selected-card");
-		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(checklistTemplate)),
-			$dialog = dialog.getElement(), name, tasks = [];
+		var boardId 	= _prefs.get("selected-board");
+		var cardId  	= $(this).closest('.card-item').attr('id');
+		var $checklists = $(this).closest('.checklists');
+		var dialog 		= Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(checklistTemplate)),
+			$dialog 	= dialog.getElement(), name, tasks = [];
 		$dialog.find('.checklist-name').focus();
 		$dialog.find('.btn-add-task').click(function() {
 			$dialog.find('.form-horizontal').append($(Mustache.renderTemplate(newTaskTemplate)));
@@ -348,15 +343,16 @@ define(function (require, exports, module) {
 					_savePrefs('selected-checklist',data.checklist.id);
 					var combinedTemplate = _combineTemplates(partTemplates.checklists);
 					// add the new task
-					$('.tab-tasks', $panel).children('.checklists').children('.cmd-new-checklist').before(
+					$checklists.children('.cmd-new-checklist').before(
 						Mustache.renderTemplate(combinedTemplate, {checklists:data.checklist})
 					);
+									
 					for (var t = 0; t < tasks.length; t++) {
 						var task = data.tasks[t];
 						var combinedTemplate = _combineTemplates(partTemplates.checkitems);
 
 						// add the new task
-						$('.tab-tasks', $panel).children('.checklists').children('#'+_prefs.get('selected-checklist')).children('.tasks').append(
+						$checklists.find('.checklist-item').last().children('.tasks').append(
 							Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 						);
 					}
@@ -372,6 +368,8 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newTasksHTML)),
 			$dialog = dialog.getElement(),
 			tasks = [];
+		
+		var $checklist = $(this).closest('.checklist-item');		
 		$dialog.find('.task-name:first-child').focus();
 		$dialog.find('.btn-add-task').click(function() {
 			$dialog.find('.form-horizontal').append($(Mustache.renderTemplate(newTaskTemplate)));
@@ -386,15 +384,16 @@ define(function (require, exports, module) {
 						tasks.push($(this).val());
 					}
 				})
-
-				Trello._createTasks([],_prefs.get('selected-checklist'),tasks,0,$dialog.find('.task-name').length)
+				var selectedChecklist = _prefs.get('selected-checklist');
+				console.log('selected-checklist: '+selectedChecklist);
+				Trello._createTasks([],selectedChecklist,tasks,0,$dialog.find('.task-name').length)
 				.done(function(data) {
 					
 						for (var t = 0; t < data.length; t++) {
 							var task = data[t];
 							var combinedTemplate = _combineTemplates(partTemplates.checkitems);
 							// add the new task
-							$('.tab-tasks', $panel).children('.checklists').children('#'+_prefs.get('selected-checklist')).children('.tasks').append(
+							$checklist.children('.tasks').append(
 								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 							);
 						}
@@ -407,8 +406,9 @@ define(function (require, exports, module) {
 	function _openNewMemberDialog() {
 		_displaySpinner(true);
 		var usernames = {};
+		var $members  = $(this).closest('.members');
 		var boardId   = _prefs.get("selected-board");
-		var cardId   = _prefs.get("selected-card");
+		var cardId    = $(this).closest('.card-item').attr('id');
 		Trello._get('boardMembers',{board:boardId},{}).done(function(boardMembers) {
 			Trello._get('cardMembers',{card:cardId},{}).done(function(cardMembers) {
 				// difference between boardMembers and cardMembers
@@ -450,7 +450,7 @@ define(function (require, exports, module) {
 									}
 								}
 							}
-							$('.tab-tasks', $panel).children('.members').children('h5').after(
+							$members.children('h5').after(
 								Mustache.renderTemplate(combinedTemplate, {members:showNewMembers})
 							);
 						}).fail(_displayError);
@@ -507,7 +507,8 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editCardNameTemplate)),
 			$dialog = dialog.getElement();
 
-		$dialog.find('.card-name').val($(this).parent('h5').text().trim()).focus();
+		var $cardName = $(this).parent('.card-item').children('.card-name');
+		$dialog.find('.card-name').val($cardName.text().trim()).focus();
 		var cardId = $(this).data('card-id');
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -515,7 +516,7 @@ define(function (require, exports, module) {
 				if (name.length >= 1) {
 					Trello._edit('card',{card:cardId},{name:name}).done( function(data) {
 							// we need to change the name inside the ui as well
-							$('.card-name', $panel).children('#card-name').text(name);
+							$cardName.text(name);
 						}).fail(_displayError);
 				}
 			}
@@ -526,7 +527,12 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editCardDescTemplate)),
 			$dialog = dialog.getElement();
 
-		$dialog.find('.card-desc').val($(this).parent('p').text().trim()).focus();
+		var $cardDesc = $(this).parent('p').children('.card-desc');
+		// check if the description is the default value 
+		if ($cardDesc.children('.default').length === 0) {
+			$dialog.find('.card-desc').val($cardDesc.text().trim()).focus();
+		}
+		
 		var cardId = $(this).data('card-id');
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -534,7 +540,7 @@ define(function (require, exports, module) {
 				if (desc.length >= 1) {
 					Trello._edit('card',{card:cardId},{desc:desc}).done(function(data) {
 							// we need to change the desc inside the ui as well
-							$('.card-desc', $panel).children('#card-desc').text(desc);
+							$cardDesc.text(desc);
 						}).fail(_displayError);
 				}
 			}
@@ -562,8 +568,8 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editTaskNameTemplate)),
 			$dialog = dialog.getElement();
-		var cardId = $('.card-name', $panel).attr('id');
-		var checklistId = $(this).parent('.task-item').parent('.tasks').parent('.checklist-item').attr('id');
+		var cardId =  $(this).closest('.card-item').attr('id');
+		var checklistId = $(this).closest('.checklist-item').attr('id');
 		var checkitemId = $(this).data('task-id');
 
 		$dialog.find('.task-name').val($(this).siblings('label').text().trim()).focus();
@@ -642,10 +648,11 @@ define(function (require, exports, module) {
 
 	function _openDeleteCardDialog(e) {
 		e.stopPropagation();
+		var cardId   = $(this).closest('.card-item').attr('id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CARDS)))
 			.done(function(id) {
 				if (id === 'yes') {
-					Trello._delete('card',{card:_prefs.get('selected-card')}).done(function(data) {
+					Trello._delete('card',{card:cardId}).done(function(data) {
 						_displayLists();
 					}).fail(_displayError);
 				}
@@ -704,7 +711,8 @@ define(function (require, exports, module) {
 
 	function _openAddCommentDialog(e) {
 		e.stopPropagation();
-		var cardId = _prefs.get("selected-card");
+		var $comments = $(this).closest('.card-comments');
+		var cardId = $(this).closest('.card-item').attr('id');
 		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(newCommentTemplate))),
 			$dialog = dialog.getElement();
 		$dialog.find('.card-comment-text').focus();
@@ -720,7 +728,7 @@ define(function (require, exports, module) {
 						commentObj.comment = data.data.text;
 
 						var combinedTemplate = _combineTemplates(partTemplates.comments);
-						$('.tab-tasks', $panel).children('.comments').children('h5').after(
+						$comments.children('h5').after(
 							Mustache.renderTemplate(combinedTemplate, {comments:commentObj})
 						);
 						// you can always delete/edit your own card
@@ -737,15 +745,15 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(editCommentsTemplate))),
 			$dialog = dialog.getElement();
 		$dialog.find('.card-comment-text').val($(this).parent('h5').siblings('p').html()).focus();
-		var commentId = $(this).data('comment-id');
-		var cardId = _prefs.get("selected-card");
+		var $commentHtml= $(this).closest('.card-comment-body').find('.card-comment');
+		var commentId 	= $(this).data('comment-id');
+		var cardId   	= $(this).closest('.card-item').attr('id');
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var commentText = $dialog.find('.card-comment-text').val();
 				Trello._edit('comment',{card:cardId,comment:commentId},{text:commentText})
 					.done(function(data) {
-						$('.tab-tasks', $panel)
-						.children('.comments').children('#'+commentId).children('.card-comment-body').children('.comment').html(commentText);
+						$commentHtml.html(commentText);
 					})
 					.fail(_displayError);
 			}
@@ -753,14 +761,14 @@ define(function (require, exports, module) {
 	}
 
 	function _openDeleteCommentDialog() {
-		var cardId = _prefs.get("selected-card");
+		var $comment = $(this).closest('.card-comment-item');
+		var cardId = $(this).closest('.card-item').attr('id');
 		var commentId = $(this).data('comment-id');
 		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.COMMENT))))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('comment',{comment:commentId,card:cardId}).done(function(data) {
-						$('.tab-tasks', $panel)
-						.children('.comments').children('#'+commentId).remove();
+						$comment.remove();
 					}).fail(_displayError);
 				}
 			});
@@ -768,13 +776,14 @@ define(function (require, exports, module) {
 
 	function _openDeleteMemberDialog(e) {
 		e.preventDefault();
-		var cardId 		= _prefs.get('selected-card');
+		var $member 	= $(this).closest('.member-item');
+		var cardId   	= $(this).closest('.card-item').attr('id');
 		var memberId 	= $(this).data('member-id');
 		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.MEMBER))))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('cardMember',{card:cardId,member:memberId}).done(function(data) {
-						$('.tab-tasks', $panel).children('.members').children('#'+memberId).remove();
+						$member.remove();
 					}).fail(_displayError);
 				}
 			});
@@ -926,7 +935,6 @@ define(function (require, exports, module) {
 		// Button Actions
 		$('.btn-boards', $panel).click(_displayBoards);
 		$('.btn-lists', $panel).click(_displayLists);
-		$('.btn-tasks', $panel).click(_displayTasks);
 
 		// Trello Content Listeners
 		// Board Name
@@ -961,7 +969,6 @@ define(function (require, exports, module) {
 			var $listItem 	= $(this).parents('.card-item').parents('.list-item');
             _savePrefs('selected-list', $listItem.attr('id'));
             _savePrefs('selected-list-name', $listItem.find('h5 a').html());
-			_savePrefs('selected-card', cardId);
 
 			if (e.shiftKey && cardId in trelloCommentCards) {
 				// Open file and locate to comment in editor.
@@ -975,7 +982,7 @@ define(function (require, exports, module) {
 						true );
 				});
 			} else {
-				_displayTasks();
+				_displayTasks(cardId);
 			}
 		});
 
@@ -983,7 +990,8 @@ define(function (require, exports, module) {
 		$panel.on('change', '.task-item input', function(e) {
 			var checkListId = $(this).parent().parent('.tasks').parent('.checklist-item').attr("id");
 			var checkItemId = $(this).attr("id");
-			_changeTaskState(checkListId,checkItemId);
+			var cardId   	= $(this).closest('.card-item').attr('id');
+			_changeTaskState(cardId,checkListId,checkItemId);
 		});
 
 		// Changes List comment
@@ -1167,12 +1175,6 @@ define(function (require, exports, module) {
 				$('.new-items .cmd-new-list', $panel).show();
 				$('.new-items .cmd-new-card', $panel).show();
 				break;
-
-			case ITEM_TYPE.TASKS:
-				if (_prefs.get('selected-card')) {
-					$('.new-items .cmd-new-tasks', $panel).show();
-				}
-				break;
 		}
 	}
 
@@ -1241,12 +1243,11 @@ define(function (require, exports, module) {
 	/**
 	 * Display Tasks Tab (all about a special card)
 	 */
-	function _displayTasks() {
+	function _displayTasks(cardId) {
 		console.log('display tasks');
 		
 		var boardName 	= _prefs.get("selected-board-name");
 		var listName 	= _prefs.get("selected-list-name");
-		var cardId 		= _prefs.get("selected-card");
 		
 		// check if the current card is alread expanded
 		var $card 		 = $panel.find("#"+cardId);
@@ -1277,6 +1278,7 @@ define(function (require, exports, module) {
 			
 			// set admin panel and checkmarks on tasks tab
 			_taskChecksAndAdmin(data);
+			$card.find('.members').show();
 
 		})
 		.fail(_displayError);
@@ -1311,7 +1313,7 @@ define(function (require, exports, module) {
 				}
 			});
 		}
-//		$('.tab-tasks .members', $panel).show();
+		
 	}
 
 	/**
@@ -1617,8 +1619,8 @@ define(function (require, exports, module) {
 	////////////////////////////////////// CHANGE ///////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
 
-	function _changeTaskState(checkListId,checkItemId) {
-	 	Trello._change('taskstate',{card:_prefs.get('selected-card'),checklist:checkListId,checkitem:checkItemId},
+	function _changeTaskState(cardId,checkListId,checkItemId) {
+	 	Trello._change('taskstate',{card:cardId,checklist:checkListId,checkitem:checkItemId},
 						{value:[$("#"+checkItemId).is(':checked') ? true: false]});
 	}
 

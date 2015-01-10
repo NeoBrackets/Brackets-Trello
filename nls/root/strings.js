@@ -57,7 +57,7 @@ define({
 	TITLE_CREATE_NEW_BOARD: 'Create New Board',
 	TITLE_CONFIRM:			'Confirmation',
 	TITLE_EDIT_BOARD_NAME: 	'Edit Board Name',
-	TITLE_EIDT_CARD_DESC:	'Edit Card Description',
+	TITLE_EDIT_CARD_DESC:	'Edit Card Description',
 	TITLE_CREATE_NEW_TASKS: 'Create New Tasks',
 	TITLE_EDIT_CARD_NAME:	'Edit Card Name',
 	TITLE_EDIT_CHECKLIST_NAME:	'Edit Checklist Name',
