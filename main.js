@@ -54,6 +54,7 @@ define(function (require, exports, module) {
 	partTemplates.comments			= require('text!html/templates/parts/comments.html');
 	partTemplates.members			= require('text!html/templates/parts/members.html');
 	partTemplates.trelloComments	= require('text!html/templates/parts/trelloComments.html');
+	partTemplates.inlineCards		= require('text!html/templates/parts/inlineCards.html');
 
 	var trelloCommentCards = {};
 	var cache = {};
@@ -954,15 +955,18 @@ define(function (require, exports, module) {
 		});
 
 		// Card Name
-		$panel.on('click', '.card-item', function(e) {
+		$panel.on('click', '.card-item .card-name', function(e) {
 			e.stopPropagation();
-            _savePrefs('selected-list', $(this).parents('.list-item').attr('id'));
-            _savePrefs('selected-list-name', $(this).parents('.list-item').find('h5 a').html());
-			_savePrefs('selected-card', $(this).attr('id'));
+			console.log('click on card name');
+			var cardId 	  	= $(this).data("id");
+			var $listItem 	= $(this).parents('.card-item').parents('.list-item');
+            _savePrefs('selected-list', $listItem.attr('id'));
+            _savePrefs('selected-list-name', $listItem.find('h5 a').html());
+			_savePrefs('selected-card', cardId);
 
-			if (e.shiftKey && $(this).attr('id') in trelloCommentCards) {
+			if (e.shiftKey && cardId in trelloCommentCards) {
 				// Open file and locate to comment in editor.
-				var comment = trelloCommentCards[$(this).attr('id')];
+				var comment = trelloCommentCards[cardId];
 				CommandManager.execute( Commands.FILE_OPEN, { fullPath: comment._filePath } ).done( function() {
 					// Set focus on editor.
 					MainViewManager.focusActivePane();
@@ -1238,31 +1242,39 @@ define(function (require, exports, module) {
 	 * Display Tasks Tab (all about a special card)
 	 */
 	function _displayTasks() {
-		var boardName = _prefs.get("selected-board-name");
-		var listName = _prefs.get("selected-list-name");
-		var cardId = _prefs.get("selected-card");
+		console.log('display tasks');
+		
+		var boardName 	= _prefs.get("selected-board-name");
+		var listName 	= _prefs.get("selected-list-name");
+		var cardId 		= _prefs.get("selected-card");
+		
+		// check if the current card is alread expanded
+		var $card 		 = $panel.find("#"+cardId);
+		var $cardVerbose = $card.children(".card-verbose");
+		if ($cardVerbose.children(".card-desc-container").length !== 0) {
+			$cardVerbose.html('');		
+			$card.removeClass('card-active');		
+			return;
+		}
+		
+		
 		_displaySpinner(true);
 		Trello._get('tasks',{card:cardId},
 					{members:[true],actions:['commentCard'],
 					 member_fields:["avatarHash","username","fullName"]}
 				   ).done(function(data) {
 			_displaySpinner(false);
-			_setNewButtonActive(ITEM_TYPE.TASKS);
-			_setButtonActive($panel.find('.btn-tasks'));
 
-			data.boardName = boardName;
-			data.listName = listName;
-
-
-			var combinedTemplate = _combineTemplates(tasksTemplate);
+			var combinedTemplate = _combineTemplates(partTemplates.inlineCards);
 			cache 	= {
 					data: data,
 					ids: {card:cardId},
 					settings:{members:[true],actions:['commentCard'],
 					member_fields:["avatarHash","username","fullName"]}
 			};
-			$('.tab-tasks', $panel).empty().show().append(Mustache.renderTemplate(combinedTemplate, data));
-
+			$cardVerbose.html(Mustache.renderTemplate(combinedTemplate, data));
+			$card.addClass('card-active');
+			
 			// set admin panel and checkmarks on tasks tab
 			_taskChecksAndAdmin(data);
 
@@ -1299,7 +1311,7 @@ define(function (require, exports, module) {
 				}
 			});
 		}
-		$('.tab-tasks .members', $panel).show();
+//		$('.tab-tasks .members', $panel).show();
 	}
 
 	/**
@@ -1634,7 +1646,6 @@ define(function (require, exports, module) {
 	Mustache.renderTemplate = function(template, data) {
 		data = data || {};
 		data.strings = strings;
-		console.log(data);
 		return Mustache.render(template,data);
 	}
 

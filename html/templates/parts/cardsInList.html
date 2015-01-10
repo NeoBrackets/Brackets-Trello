@@ -1,6 +1,11 @@
 {{#cards}}
 	<div class="card-item" id="{{id}}">
-		<a href="#">{{name}}</a>
+		<a class="card-name" data-id="{{id}}" href="#">{{name}}</a>
+		<i title="{{strings.DELETE_CARD}}" class="btn-cmd btn-delete cmd-delete-card" data-card-id="{{id}}" />
+		<i title="{{strings.EDIT_CARD_NAME}}" class="btn-cmd btn-edit cmd-edit-card-name" data-card-id="{{id}}" />
 		<span>{{taskCount}}</span>
+		<div class="card-verbose">
+			<!-- inlineCards.html -->
+		</div>
 	</div>
 {{/cards}}
