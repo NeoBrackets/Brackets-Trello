@@ -34,7 +34,6 @@ define(function (require, exports, module) {
 		boardsTemplate				= require('text!html/templates/boardsTemplate.html'),
 		listsTemplate				= require('text!html/templates/listsTemplate.html'),
 		checklistTemplate			= require('text!html/templates/newChecklist.html'),
-		tasksTemplate				= require('text!html/templates/tasksTemplate.html'),
 		editCardDescTemplate		= require('text!html/templates/editCardDesc.html'),
 		editCardNameTemplate		= require('text!html/templates/editCardName.html'),
 		editListNameTemplate		= require('text!html/templates/editListName.html'),
@@ -183,8 +182,6 @@ define(function (require, exports, module) {
 		if ((!cache.hasOwnProperty("ids") || $.isEmptyObject(cache.ids)) && currentTab != "boards")
 			return;
 
-		console.log('cache: ', cache);
-		console.log('initSync: ', [currentTab,cache.ids,cache[currentTab+"_settings"]]);
 		Trello._get(currentTab,cache.ids,cache[currentTab+"_settings"])
 		.done(function(data) {
 			if (currentTab == "lists") {
@@ -199,7 +196,6 @@ define(function (require, exports, module) {
 						break;
 					case "lists":
 						var combinedTemplate = _combineTemplates(listsTemplate);
-						console.log('data: ',data);
 						$('.tab-lists', $panel).html(Mustache.renderTemplate(combinedTemplate, data));
 						displayTrelloComments(cache.comments);
 						_expandLists();
@@ -300,6 +296,8 @@ define(function (require, exports, module) {
 			e.stopPropagation();
 		});
 
+		var $listItem = $(this).closest('.list-item');
+		
 		dialog.done(function(id) {
 			if (id === 'save') {
 				Trello._create('card',
@@ -307,10 +305,9 @@ define(function (require, exports, module) {
 							   {name:$dialog.find('.card-name').val(),desc:$dialog.find('.card-desc').val()}
 							  )
 				.done( function(data) {
-					
 						data.taskCount = '';
 						var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
-						$('.tab-lists', $panel).children('.lists').children('#'+data.idList).children('.cards').append(
+						$listItem.children('.cards').append(
 							Mustache.renderTemplate(combinedTemplate, {cards:data})
 						);
 					})
@@ -324,7 +321,7 @@ define(function (require, exports, module) {
 	 */
 	function _openNewChecklistDialog() {
 		var boardId 	= _prefs.get("selected-board");
-		var cardId  	= $(this).closest('.card-item').attr('id');
+		var cardId  	= $(this).closest('.card-item').data('card-id');
 		var $checklists = $(this).closest('.checklists');
 		var dialog 		= Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(checklistTemplate)),
 			$dialog 	= dialog.getElement(), name, tasks = [];
@@ -366,8 +363,9 @@ define(function (require, exports, module) {
 	 * Open New Tasks Dialog
 	 */
 	function _openNewTasksDialog() {
-		var $checklist = $(this).closest('.checklist-item');
-	
+		var $checklist 	= $(this).closest('.checklist-item');
+		var checklistId = $checklist.data('checklist-id');
+		
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newTasksHTML)),
 			$dialog = dialog.getElement(),
 			tasks = [];
@@ -387,7 +385,7 @@ define(function (require, exports, module) {
 					}
 				})
 				
-				Trello._createTasks([],$checklist.attr('id'),tasks,0,$dialog.find('.task-name').length)
+				Trello._createTasks([],checklistId,tasks,0,$dialog.find('.task-name').length)
 				.done(function(data) {
 					
 						for (var t = 0; t < data.length; t++) {
@@ -409,7 +407,7 @@ define(function (require, exports, module) {
 		var usernames = {};
 		var $members  = $(this).closest('.members');
 		var boardId   = _prefs.get("selected-board");
-		var cardId    = $(this).closest('.card-item').attr('id');
+		var cardId    = $(this).closest('.card-item').data('card-id');
 		Trello._get('boardMembers',{board:boardId},{}).done(function(boardMembers) {
 			Trello._get('cardMembers',{card:cardId},{}).done(function(cardMembers) {
 				// difference between boardMembers and cardMembers
@@ -488,14 +486,15 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editListNameTemplate)),
 			$dialog = dialog.getElement();
 		$dialog.find('.list-name').val($(this).siblings('a').text()).focus();
-		var listId = $(this).data('list-id');
+		var $listItem = $(this);
+		var listId 	  = $(this).data('list-id');
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var name = $dialog.find('.list-name').val();
 				if (name.length >= 1) {
 					Trello._edit('list',{list:listId},{name:name}).done( function(data) {
 							// we need to change the name inside the ui as well
-							$('.lists', $panel).children('#'+listId).children('.list-name').children('a').text(name);
+							$listItem.children('.list-name').children('a').text(name);
 							// new list name inside prefs
 							_savePrefs('selected-list-name',name);
 						}).fail(_displayError);
@@ -553,13 +552,14 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editChecklistNameTemplate)),
 			$dialog = dialog.getElement();
 		$dialog.find('.checklist-name').val($(this).parent('h5').text().trim()).focus();
+		var $checklist  = $(this);
 		var checklistId = $(this).data('checklist-id');
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var name = $dialog.find('.checklist-name').val();
 				Trello._edit('checklist',{checklist:checklistId},{name:name}).done(function(data) {
 							// we need to change the name inside the ui as well
-							$('.checklists', $panel).children('#'+checklistId).children('.checklist-name').children('#checklist-name').text(name);
+							$checklist.children('.checklist-name').children('#checklist-name').text(name);
 						}).fail(_displayError);
 			}
 		});
@@ -569,8 +569,9 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editTaskNameTemplate)),
 			$dialog = dialog.getElement();
-		var cardId =  $(this).closest('.card-item').attr('id');
-		var checklistId = $(this).closest('.checklist-item').attr('id');
+		var cardId =  $(this).closest('.card-item').data('card-id');
+		var $checklist  = $(this).closest('.checklist-item');
+		var checklistId = $(this).closest('.checklist-item').data('checklist-id');
 		var checkitemId = $(this).data('task-id');
 
 		$dialog.find('.task-name').val($(this).siblings('label').text().trim()).focus();
@@ -579,7 +580,7 @@ define(function (require, exports, module) {
 				var name = $dialog.find('.task-name').val();
 				Trello._edit('checkitem',{card:cardId,checklist:checklistId,checkitem:checkitemId},{value:name}).done(function(data) {
 							// we need to change the name inside the ui as well
-							$('.checklists', $panel).children('#'+checklistId).children('.tasks')
+							$checklist.children('.tasks')
 							.children('.task-item').children("label[for='"+checkitemId+"']").text(name);
 						}).fail(_displayError);
 			}
@@ -649,7 +650,7 @@ define(function (require, exports, module) {
 
 	function _openDeleteCardDialog(e) {
 		e.stopPropagation();
-		var cardId   = $(this).closest('.card-item').attr('id');
+		var cardId   = $(this).closest('.card-item').data('card-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CARDS)))
 			.done(function(id) {
 				if (id === 'yes') {
@@ -677,7 +678,7 @@ define(function (require, exports, module) {
 	function _openDeleteTaskDialog(e) {
 		e.stopPropagation();
 		var thisEle = $(this);
-		var checklistId = thisEle.parent('.task-item').parent('.tasks').parent('.checklist-item').attr('id');
+		var checklistId = thisEle.closest('.checklist-item').data('checkitem-id');
 		var taskId = thisEle.data('task-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.TASKS)))
 			.done(function(id) {
@@ -691,11 +692,12 @@ define(function (require, exports, module) {
 
 	function _toggleCheckedListItems(e) {
 		e.stopPropagation();
-		var parentId = $(this).parents('div').attr('id'),
-			$taskItems = $('#' + parentId).find('.task-item');
-
-		if (!_checkedTasksHidden[parentId]) {
-			_checkedTasksHidden[parentId] = true;
+		var $checklist = $(this).parents('div'),
+			$taskItems = $checklist.find('.task-item');
+		var checklistId = $checklist.data('checklist-id');
+		
+		if (!_checkedTasksHidden[checklistId]) {
+			_checkedTasksHidden[checklistId] = true;
 			$taskItems.each(function() {
 				var $this = $(this);
 				if ($this.find('input').attr('checked') === 'checked' || $this.find('input').prop('checked')) {
@@ -703,7 +705,7 @@ define(function (require, exports, module) {
 				}
 			});
 		} else {
-			_checkedTasksHidden[parentId] = false;
+			_checkedTasksHidden[checklistId] = false;
 			$taskItems.each(function() {
 				$(this).show();
 			});
@@ -713,7 +715,7 @@ define(function (require, exports, module) {
 	function _openAddCommentDialog(e) {
 		e.stopPropagation();
 		var $comments = $(this).closest('.card-comments');
-		var cardId = $(this).closest('.card-item').attr('id');
+		var cardId = $(this).closest('.card-item').data('card-id');
 		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(newCommentTemplate))),
 			$dialog = dialog.getElement();
 		$dialog.find('.card-comment-text').focus();
@@ -732,8 +734,9 @@ define(function (require, exports, module) {
 						$comments.children('h5').after(
 							Mustache.renderTemplate(combinedTemplate, {comments:commentObj})
 						);
+						var $comment = $comments.children('.card-comment-item').last();
 						// you can always delete/edit your own card
-						$('#'+commentObj.id).find('.card-comment-body h5')
+						$comment.find('.card-comment-body h5')
 							.append($('<i class="btn-cmd btn-edit cmd-edit-comment" data-comment-id="'+commentObj.id+'" />'))
 							.append($('<i class="btn-cmd btn-delete cmd-delete-comment" data-comment-id="'+commentObj.id+'" />'));
 					})
@@ -748,7 +751,7 @@ define(function (require, exports, module) {
 		$dialog.find('.card-comment-text').val($(this).parent('h5').siblings('p').html()).focus();
 		var $commentHtml= $(this).closest('.card-comment-body').find('.card-comment');
 		var commentId 	= $(this).data('comment-id');
-		var cardId   	= $(this).closest('.card-item').attr('id');
+		var cardId   	= $(this).closest('.card-item').data('card-id');
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var commentText = $dialog.find('.card-comment-text').val();
@@ -763,7 +766,7 @@ define(function (require, exports, module) {
 
 	function _openDeleteCommentDialog() {
 		var $comment = $(this).closest('.card-comment-item');
-		var cardId = $(this).closest('.card-item').attr('id');
+		var cardId = $(this).closest('.card-item').data('card-id');
 		var commentId = $(this).data('comment-id');
 		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.COMMENT))))
 			.done(function(id) {
@@ -778,7 +781,7 @@ define(function (require, exports, module) {
 	function _openDeleteMemberDialog(e) {
 		e.preventDefault();
 		var $member 	= $(this).closest('.member-item');
-		var cardId   	= $(this).closest('.card-item').attr('id');
+		var cardId   	= $(this).closest('.card-item').data('card-id');
 		var memberId 	= $(this).data('member-id');
 		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.MEMBER))))
 			.done(function(id) {
@@ -877,7 +880,7 @@ define(function (require, exports, module) {
                 }
 
                 if ( !$dropzone || (_isChangesList($dropzone) && !isComment) 
-                    || $fromList.attr('id') === $dropzone.attr('id') ) {
+                    || $fromList.data('list-id') === $dropzone.data('list-id') ) {
                     // trello card wouldn't be moved to changes list or none list, or src list equal to dest list
                     // note: this is a trick to stop click event after draging
                     var captureClickAfterDragFunc = function(e) {
@@ -905,9 +908,9 @@ define(function (require, exports, module) {
 
                 // sync card moving to trello
                 if (!isComment) { 
-                    fromListId = $fromList.attr('id');
-                    toListId = $toList.attr('id');
-                    cardId = $this.attr('id');
+                    fromListId = $fromList.data('list-id');
+                    toListId = $toList.data('list-id');
+                    cardId = $this.data('card-id');
                     if (fromListId !== toListId) {
                         Trello._move('card', { 
                             toList:toListId,
@@ -940,7 +943,7 @@ define(function (require, exports, module) {
 		// Trello Content Listeners
 		// Board Name
 		$panel.on('click', '.board-item', function () {
-			_savePrefs('selected-board', $(this).attr('id'));
+			_savePrefs('selected-board', $(this).data('board-id'));
 			_savePrefs('selected-board-name', $(this).children('h4').text());
 			_setNewButtonActive(ITEM_TYPE.LISTS);
 			_displayLists();
@@ -961,16 +964,15 @@ define(function (require, exports, module) {
 				_expandedLists[$(this).data('list-id')] = false;
 				$cards.hide();
 			}
-			console.log('expandedLists: ',_expandedLists);
 		});
 
 		// Card Name
 		$panel.on('click', '.card-item .card-name', function(e) {
 			e.stopPropagation();
 			var $card 		= $(this).parents('.card-item');
-			var cardId 	  	= $(this).data("id");
-			var $listItem 	= $(this).parents('.card-item').parents('.list-item');
-            _savePrefs('selected-list', $listItem.attr('id'));
+			var cardId 	  	= $card.data('card-id');
+			var $listItem 	= $card.closest('.list-item');
+            _savePrefs('selected-list', $listItem.data('list-id'));
             _savePrefs('selected-list-name', $listItem.find('h5 a').html());
 
 			if (e.shiftKey && cardId in trelloCommentCards) {
@@ -991,8 +993,8 @@ define(function (require, exports, module) {
 
 		// Task Name
 		$panel.on('change', '.task-item input', function(e) {
-			var cardId   	= $(this).closest('.card-item').attr('id');
-			var checkListId = $(this).parent().parent('.tasks').parent('.checklist-item').attr("id");
+			var cardId   	= $(this).closest('.card-item').data('card-id');
+			var checkListId = $(this).closest('.checklist-item').data("checklist-id");
 			var $checkItem  = $(this);
 			_changeTaskState(cardId,checkListId,$checkItem);
 		});
@@ -1017,13 +1019,14 @@ define(function (require, exports, module) {
         });
 
 		$panel.on('click', '.checklist-name', function() {
-			var $checklist = $(this).siblings('.tasks');
+			var $checklist 	= $(this).siblings('.tasks');
+			var checklistId = $checklist.data('checklist-id');
 			if ($checklist.css('display') === 'none') {
-				_expandedChecklists[$(this).attr('id')] = true;
+				_expandedChecklists[checklistId] = true;
 				$checklist.show();
 			}
 			else if($checklist.css('display') === 'block') {
-				_expandedChecklists[$(this).attr('id')] = false;
+				_expandedChecklists[checklistId] = false;
 				$checklist.hide();
 			}
 		});
@@ -1214,7 +1217,6 @@ define(function (require, exports, module) {
 		}*/
 
 		_displaySpinner(true);
-		console.log('boardId: '+boardId);
 		Trello._get('lists',{board:boardId},{fields:["id","name"],cards:["open"],card_fields:["name","badges"],members:["all"]})
 		.done(function(data) {
 			_displaySpinner(false);
@@ -1249,13 +1251,11 @@ define(function (require, exports, module) {
 	 * @param {jQuery} $card card object
 	 */
 	function _displayTasks($card) {
-		console.log('display tasks');
-		
 		var boardName 	= _prefs.get("selected-board-name");
 		var listName 	= _prefs.get("selected-list-name");
 		
 		// check if the current card is alread expanded
-		var cardId 		 = $card.attr('id');
+		var cardId 		 = $card.data('card-id');
 		var $cardVerbose = $card.children(".card-verbose");
 		if ($cardVerbose.children(".card-desc-container").length !== 0) {
 			$cardVerbose.html('');		
@@ -1293,9 +1293,7 @@ define(function (require, exports, module) {
 	 * Expand all lists that were open using _expandedLists
 	 */
 	function _expandLists() {
-		console.log('expand: ',_expandedLists);
 		$panel.find(".lists").children('.list-item').each(function(index) {
-			console.log('list-id: ',$(this).data('list-id'));
 			if (_expandedLists[$(this).data('list-id')]) {
 				$(this).children('.list-name').trigger("click");
 			}
@@ -1477,34 +1475,34 @@ define(function (require, exports, module) {
     }
 
 	/**
-	 * Push all comments of a special list into the remote trello list
+	 * Push one or all comments of a special list into the remote trello list
 	 * @param {Object} e click event
 	 */
 	function _pushComments(e) {
+		e.stopPropagation();
 		var $this = $(this),
 			isPushAllListComments = $this.hasClass('cmd-push-comments'),
-			listId = null,
+			$listItem= null,
 			comments = [],
 			fullPath = "",
 			cursorPos = -1;
 		
-		e.stopPropagation();
 		
 		if (isPushAllListComments) {
-			listId = $this.data('list-id');
+			$listItem = $this;
 			$this.closest('.list-item').find('.code-comment-item').each(function(i,ele) {
 				comments.push(_getCommentByEle(ele));
 			});
 		} else {
 			// only one comment in a list
-			listId = $this.closest('.list-item').attr("id");
+			$listItem = $this.closest('.list-item');
 			comments.push(_getCommentByEle($this.parent('.code-comment-item')));
 		}
 
 		fullPath = DocumentManager.getCurrentDocument().file._path;
 		cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
 		Trello.getBoardMembers(_prefs.get('selected-board')).done(function(members) {
-			_pushArrayToList(listId,comments,members).done(function() {
+			_pushArrayToList($listItem,comments,members).done(function() {
 				_jumpToFile(fullPath,cursorPos);
 			});
 		});
@@ -1524,16 +1522,17 @@ define(function (require, exports, module) {
 
 	/**
 	 * Push an array of trello comments to a list
-	 * @param   {String}        listId    id of the trello list
+	 * @param   {jQuery}        $listItem listItem
 	 * @param   {Comment|Array} comments  array of comment objects
 	 * @param   {Array}         members   array of all board members
 	 * @param   {Number}        [start=0] start to push with the start-th comment
 	 * @returns {Deferred}      empty resolve
 	 */
-	function _pushArrayToList(listId,comments,members,start) {
+	function _pushArrayToList($listItem,comments,members,start) {
 		if (typeof start === "undefined") start = 0;
 		var result = new $.Deferred();
 
+		var listId 	= $listItem.data('list-id');
 		var comment = _parseMembers(comments[start],members);
 		var set = {name:comment._content};
 
@@ -1545,10 +1544,10 @@ define(function (require, exports, module) {
 			// save that there is a new comment card
 			trelloCommentCards[data.id] = comment;
 
-			_pushCommentToListUI(listId,comment,data,0);
+			_pushCommentToListUI($listItem,comment,data,0);
 			_attachId2Comment(comment, data.id);
 			if (++start < comments.length) {
-				_pushArrayToList(listId,comments,members,start).done(function() {
+				_pushArrayToList($listItem,comments,members,start).done(function() {
 					result.resolve();
 				});
 			} else {
@@ -1561,14 +1560,12 @@ define(function (require, exports, module) {
 	/**
 	 * Push one comment to the UI
 	 * - delete the comment card and add it to the trello cards
-	 * @param {String} listId  id of the trello list
-	 * @param {Object} comment comment object that was pushed
-	 * @param {Object} data    card data
-	 * @param {Number} pos     the trello comment card is at position pos (needed for delete)
+	 * @param {jQuery} $listItem listItem
+	 * @param {Object} comment   comment object that was pushed
+	 * @param {Object} data      card data
+	 * @param {Number} pos       the trello comment card is at position pos (needed for delete)
 	 */
-	function _pushCommentToListUI(listId,comment,data,pos) {
-        var $listItem = $('.tab-lists', $panel).children('.lists').children('#'+listId);
-        
+	function _pushCommentToListUI($listItem,comment,data,pos) {
 		// delete the comment card...
 		$listItem.find('.cards').children('.code-comment-item:eq('+pos+')').remove();
 
@@ -1648,7 +1645,7 @@ define(function (require, exports, module) {
 	/////////////////////////////////////////////////////////////////////////////////////////
 
 	function _changeTaskState(cardId,checkListId,$checkItem) {
-	 	Trello._change('taskstate',{card:cardId,checklist:checkListId,checkitem:$checkItem.attr('id')},
+	 	Trello._change('taskstate',{card:cardId,checklist:checkListId,checkitem:$checkItem.data('checkitem-id')},
 						{value:[$checkItem.is(':checked') ? true: false]});
 	}
 
