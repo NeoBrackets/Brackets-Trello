@@ -191,6 +191,8 @@ define(function (require, exports, module) {
 			}
 			console.log('');
 			console.log('new difference');
+			console.log('cache data: ', cache.data);
+			console.log('data: ', data);
 			console.time('diff');
 			console.log('diff: ',difference(cache.data,data));
 			console.timeEnd('diff');
@@ -214,50 +216,90 @@ define(function (require, exports, module) {
 		});
 	}
 
-	function difference(template, override, cObjectKey) {
-		// Trello todo: @olek10 get new objects in override as well! [54b3a4418eb451f9593d303a]
-		cObjectKey = typeof cObjectKey === "undefined" ? "" : cObjectKey;
+	/**
+	 * Get the difference between the oldData and the newData
+	 * @param   {Object} oldData         old data object (latest trello cache)
+	 * @param   {Object} newData         new trello data
+	 * @param   {String} [cObjectKey=""] object key string concat "." (sth. like lists.cards)
+	 * @returns {Object} diff object
+	 */
+	function difference(oldData, newData, cObjectKey) {
+		cObjectKey 		 = (typeof cObjectKey === "undefined") ? "" : cObjectKey;
 		var ret = {};
-		var relevant = ["lists","lists.cards","lists.cards.name"];
-		if (!Array.isArray(template)) {
-			var tKeys  = Object.keys(template);
-			var oKeys  = Object.keys(override); 
+				
+		if (!Array.isArray(oldData)) {
+			var isObject= true;
+			var tKeys   = Object.keys(oldData);
+			var oKeys   = Object.keys(newData); 
 			var tLength = tKeys.length;
 			var oLength = oKeys.length;
+			var keys    = $.unique(tKeys.concat(oKeys));
+			var length  = keys.length;
 		} else {
-			var tLength = template.length;	
-			var oLength = override.length;	
-			var tKeys  = false;
-			var oKeys  = false;
-		}
-		for (var k = 0; k < tLength; k++) {
-			var name = !tKeys ? k : tKeys[k];
-			if (!tKeys) {
+			var isObject= false;
+			var tLength = oldData.length;	
+			var oLength = newData.length;	
+			var length 	= tLength > oLength ? tLength : oLength;
+		}		
+		// using oLength to get new lists,cards,etc
+		for (var k = 0; k < length; k++) {
+			var name 	= !isObject ? k : keys[k];
+			
+			if (!isObject) { // don't add array keys to cObjectKey
 				var newCObjectKey = cObjectKey;
 			} else {	
-				var newCObjectKey = cObjectKey === "" ? name : cObjectKey+"."+name;
+				var newCObjectKey = (cObjectKey === "") ? name : cObjectKey+"."+name;
 			}
-			if (relevant.indexOf(newCObjectKey) >= 0) {
-				if (override[name] && template[name] && ((!oKeys && name < oLength) || (Array.isArray(oKeys) && oKeys.indexOf(name) >= 0))) {
-					if ((typeof override[name] === 'object') && !Array.isArray(override[name])) {
-						var diff = difference(template[name], override[name], newCObjectKey);
+			if (isRelevant(newCObjectKey)) {
+				// entry exists in the oldData and the new version
+				if (newData[name] && oldData[name]) {
+					if ((typeof newData[name] === 'object') && !Array.isArray(newData[name])) {
+						var diff = difference(oldData[name], newData[name], newCObjectKey);
 						if (!$.isEmptyObject(diff)) {
 							ret[name] = diff;
 						}
-					} else if (Array.isArray(override[name])) {
-						var diff = difference(template[name], override[name], newCObjectKey);
+					} else if (Array.isArray(newData[name])) {
+						var diff = difference(oldData[name], newData[name], newCObjectKey);
 						if (!$.isEmptyObject(diff)) {
 							ret[name] = diff;
 						}
 					} else {
-						if (template[name] !== override[name]) {
-							ret[name] = override[name];	
+						if (oldData[name] !== newData[name]) {
+							ret[name] = {
+								"newV": newData[name], 	
+								"oldV": oldData[name], 	
+								"diffType": 'changed'
+							};
 						}
 					}
+				} else if (!oldData[name]) {
+					ret[name] = {
+								"newV": newData[name], 	
+								"diffType": 'added'
+							};
+				} else {
+					ret[name] = {
+								"oldV": oldData[name], 	
+								"diffType": 'deleted'
+							};
 				}
 			}
 		}
 		return ret;
+	}
+	
+	
+	function isRelevant(key) {
+		var relevant = ["lists","lists.id","lists.cards","lists.cards.id","lists.cards.name"];
+		// check for every relevant entry if it accepts key
+		for (var i = 0; i < relevant.length; i++) {
+			var rel 		= relevant[i];
+			var lastCharRel = rel.charAt(rel.length-1);
+			if (key === rel || (lastCharRel === "*" && key.indexOf(rel.substr(0,rel.length-2)) === 0)) {
+				return true;	
+			}
+		}
+		return false;
 	}
 
 	/**
