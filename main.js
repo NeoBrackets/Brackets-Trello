@@ -89,6 +89,7 @@ define(function (require, exports, module) {
 
 	// save the state of expanded list and checklists
 	var _expandedLists = {},
+		_expandedCards = {},
 		_expandedChecklists = {},
 		_checkedTasksHidden = {};
 
@@ -188,7 +189,13 @@ define(function (require, exports, module) {
 				data.name = boardName;
 				data.id   = boardId;
 			}
-			if (!compareObjects(cache.data,data)) {
+			console.log('');
+			console.log('new difference');
+			console.time('diff');
+			console.log('diff: ',difference(cache.data,data));
+			console.timeEnd('diff');
+			/**
+			if (!difference(cache.data,data)) {
 				cache.data = data;
 				switch(currentTab) {
 					case "boards":
@@ -199,21 +206,58 @@ define(function (require, exports, module) {
 						$('.tab-lists', $panel).html(Mustache.renderTemplate(combinedTemplate, data));
 						displayTrelloComments(cache.comments);
 						_expandLists();
+						_expandCards();
 						break;
 				}
 			}
+			*/
 		});
 	}
 
-	function compareObjects(x,y) {
-		var breakVar = false;
-		$.each(x, function(index, value) {
-			if (JSON.stringify(value) !== JSON.stringify(y[index]))
-				breakVar = true;
-				return;
-		});
-		if (breakVar) return false;
-		return true;
+	function difference(template, override, cObjectKey) {
+		// Trello todo: @olek10 get new objects in override as well! [54b3a4418eb451f9593d303a]
+		cObjectKey = typeof cObjectKey === "undefined" ? "" : cObjectKey;
+		var ret = {};
+		var relevant = ["lists","lists.cards","lists.cards.name"];
+		if (!Array.isArray(template)) {
+			var tKeys  = Object.keys(template);
+			var oKeys  = Object.keys(override); 
+			var tLength = tKeys.length;
+			var oLength = oKeys.length;
+		} else {
+			var tLength = template.length;	
+			var oLength = override.length;	
+			var tKeys  = false;
+			var oKeys  = false;
+		}
+		for (var k = 0; k < tLength; k++) {
+			var name = !tKeys ? k : tKeys[k];
+			if (!tKeys) {
+				var newCObjectKey = cObjectKey;
+			} else {	
+				var newCObjectKey = cObjectKey === "" ? name : cObjectKey+"."+name;
+			}
+			if (relevant.indexOf(newCObjectKey) >= 0) {
+				if (override[name] && template[name] && ((!oKeys && name < oLength) || (Array.isArray(oKeys) && oKeys.indexOf(name) >= 0))) {
+					if ((typeof override[name] === 'object') && !Array.isArray(override[name])) {
+						var diff = difference(template[name], override[name], newCObjectKey);
+						if (!$.isEmptyObject(diff)) {
+							ret[name] = diff;
+						}
+					} else if (Array.isArray(override[name])) {
+						var diff = difference(template[name], override[name], newCObjectKey);
+						if (!$.isEmptyObject(diff)) {
+							ret[name] = diff;
+						}
+					} else {
+						if (template[name] !== override[name]) {
+							ret[name] = override[name];	
+						}
+					}
+				}
+			}
+		}
+		return ret;
 	}
 
 	/**
@@ -987,7 +1031,7 @@ define(function (require, exports, module) {
 						true );
 				});
 			} else {
-				_displayTasks($card);
+				_displayCard($card);
 			}
 		});
 
@@ -1227,7 +1271,8 @@ define(function (require, exports, module) {
 			activeUserId = data.memberRole.idMember;
 			activeUserRole = data.memberRole.memberType;
 
-			var combinedTemplate = _combineTemplates(listsTemplate);			
+			var combinedTemplate = _combineTemplates(listsTemplate);	
+			console.log('list data: ', data);
 			cache  	= $.extend({},cache,{
 				data: data,
 				ids:{board:boardId},
@@ -1250,19 +1295,22 @@ define(function (require, exports, module) {
 	 * Display Tasks Tab (all about a special card)
 	 * @param {jQuery} $card card object
 	 */
-	function _displayTasks($card) {
+	function _displayCard($card) {
 		var boardName 	= _prefs.get("selected-board-name");
 		var listName 	= _prefs.get("selected-list-name");
 		
 		// check if the current card is alread expanded
 		var cardId 		 = $card.data('card-id');
 		var $cardVerbose = $card.children(".card-verbose");
+		
 		if ($cardVerbose.children(".card-desc-container").length !== 0) {
 			$cardVerbose.html('');		
-			$card.removeClass('card-active');		
+			$card.removeClass('card-active');	
+			_expandedCards[cardId] = false;
 			return;
 		}
-		
+		var listId 		= $card.closest('.list-item').data('list-id');
+		console.log('listId: ',listId);
 		
 		_displaySpinner(true);
 		Trello._get('tasks',{card:cardId},
@@ -1272,14 +1320,26 @@ define(function (require, exports, module) {
 			_displaySpinner(false);
 
 			var combinedTemplate = _combineTemplates(partTemplates.inlineCards);
-			cache 	=$.extend({},cache,{
-					data: data,
-					ids: {card:cardId},
-					cards_settings:{members:[true],actions:['commentCard'],
-					member_fields:["avatarHash","username","fullName"]}
-			});
+			
+			// fill the cache with the new card
+			for (var l = 0; l < cache.data.lists.length; l++) {
+				var list = cache.data.lists[l];
+				if (list.id === listId) {
+					console.log('correct list');
+					for (var c = 0; c < list.cards.length; c++) {
+						var card = list.cards[c];
+						if (card.id === cardId) {
+							cache.data.lists[l].cards[c] = $.extend({}, card, data);
+							break;
+						}
+					}
+				}
+			}
+			
 			$cardVerbose.html(Mustache.renderTemplate(combinedTemplate, data));
 			$card.addClass('card-active');
+			_expandedCards[cardId] = true;
+
 			
 			// set admin panel and checkmarks on tasks tab
 			_taskChecksAndAdmin($card,data);
@@ -1299,6 +1359,21 @@ define(function (require, exports, module) {
 			}
 		});
 	}
+	
+	/**
+	 * Expand all cards that were open using _expandedCards
+	 */
+	function _expandCards() {
+		$panel.find(".lists").children('.list-item').each(function(indexL) {
+			var $list = $(this);
+			$list.find('.card-item').each(function(indexC) {
+				if (_expandedCards[$(this).data('card-id')]) {
+					$(this).children('.card-name').trigger("click");
+				}
+			});
+		});
+	}
+	
 
 	function _taskChecksAndAdmin($card,data) {
 		// set checkmarks
