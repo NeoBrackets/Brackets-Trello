@@ -19,6 +19,7 @@ define(function (require, exports, module) {
 		FileUtils 					= brackets.getModule("file/FileUtils"),
 		Parser		              	= require('modules/parser'),
 		Trello						= require('Trello'),
+		Sync						= require('Sync'),
 		strings						= require('i18n!nls/strings'),
 		ParseUtils 					= require('modules/parseUtils');
 
@@ -45,19 +46,18 @@ define(function (require, exports, module) {
 		changesListTemplate 		= require('text!html/templates/changesListTemplate.html');
 
 
-	var partTemplates 				= {};
-	partTemplates.lists 			= require('text!html/templates/parts/lists.html');
-	partTemplates.cardsInList		= require('text!html/templates/parts/cardsInList.html');
-	partTemplates.checklists		= require('text!html/templates/parts/checklists.html');
-	partTemplates.checkitems		= require('text!html/templates/parts/checkitems.html');
-	partTemplates.comments			= require('text!html/templates/parts/comments.html');
-	partTemplates.members			= require('text!html/templates/parts/members.html');
-	partTemplates.trelloComments	= require('text!html/templates/parts/trelloComments.html');
-	partTemplates.inlineCards		= require('text!html/templates/parts/inlineCards.html');
+	var partTemplates 								= {};
+	partTemplates.lists 							= require('text!html/templates/parts/lists.html');
+	partTemplates.lists_cards						= require('text!html/templates/parts/lists_cards.html');
+	partTemplates.lists_cards_all					= require('text!html/templates/parts/lists_cards_all.html');
+	partTemplates.lists_cards_checklists			= require('text!html/templates/parts/lists_cards_checklists.html');
+	partTemplates.lists_cards_checklists_checkitems	= require('text!html/templates/parts/lists_cards_checklists_checkitems.html');
+	partTemplates.lists_cards_comments				= require('text!html/templates/parts/lists_cards_comments.html');
+	partTemplates.lists_cards_members				= require('text!html/templates/parts/lists_cards_members.html');
+	partTemplates.trelloComments					= require('text!html/templates/parts/trelloComments.html');
 
 	var trelloCommentCards = {};
 	var cache = {};
-
 
 	// Extension Info.
 	var _ExtensionID		= 'brackets-trello',
@@ -189,13 +189,12 @@ define(function (require, exports, module) {
 				data.name = boardName;
 				data.id   = boardId;
 			}
-			console.log('');
-			console.log('new difference');
-			console.log('cache data: ', cache.data);
-			console.log('data: ', data);
-			console.time('diff');
-			console.log('diff: ',difference(cache.data,data));
-			console.timeEnd('diff');
+				
+			Sync.init(cache.data,data,_expandedCards)
+			.done(function(diff) {
+				console.log('[main] diff: ',diff);
+			});
+			
 			/**
 			if (!difference(cache.data,data)) {
 				cache.data = data;
@@ -214,92 +213,6 @@ define(function (require, exports, module) {
 			}
 			*/
 		});
-	}
-
-	/**
-	 * Get the difference between the oldData and the newData
-	 * @param   {Object} oldData         old data object (latest trello cache)
-	 * @param   {Object} newData         new trello data
-	 * @param   {String} [cObjectKey=""] object key string concat "." (sth. like lists.cards)
-	 * @returns {Object} diff object
-	 */
-	function difference(oldData, newData, cObjectKey) {
-		cObjectKey 		 = (typeof cObjectKey === "undefined") ? "" : cObjectKey;
-		var ret = {};
-				
-		if (!Array.isArray(oldData)) {
-			var isObject= true;
-			var tKeys   = Object.keys(oldData);
-			var oKeys   = Object.keys(newData); 
-			var tLength = tKeys.length;
-			var oLength = oKeys.length;
-			var keys    = $.unique(tKeys.concat(oKeys));
-			var length  = keys.length;
-		} else {
-			var isObject= false;
-			var tLength = oldData.length;	
-			var oLength = newData.length;	
-			var length 	= tLength > oLength ? tLength : oLength;
-		}		
-		// using oLength to get new lists,cards,etc
-		for (var k = 0; k < length; k++) {
-			var name 	= !isObject ? k : keys[k];
-			
-			if (!isObject) { // don't add array keys to cObjectKey
-				var newCObjectKey = cObjectKey;
-			} else {	
-				var newCObjectKey = (cObjectKey === "") ? name : cObjectKey+"."+name;
-			}
-			if (isRelevant(newCObjectKey)) {
-				// entry exists in the oldData and the new version
-				if (newData[name] && oldData[name]) {
-					if ((typeof newData[name] === 'object') && !Array.isArray(newData[name])) {
-						var diff = difference(oldData[name], newData[name], newCObjectKey);
-						if (!$.isEmptyObject(diff)) {
-							ret[name] = diff;
-						}
-					} else if (Array.isArray(newData[name])) {
-						var diff = difference(oldData[name], newData[name], newCObjectKey);
-						if (!$.isEmptyObject(diff)) {
-							ret[name] = diff;
-						}
-					} else {
-						if (oldData[name] !== newData[name]) {
-							ret[name] = {
-								"newV": newData[name], 	
-								"oldV": oldData[name], 	
-								"diffType": 'changed'
-							};
-						}
-					}
-				} else if (!oldData[name]) {
-					ret[name] = {
-								"newV": newData[name], 	
-								"diffType": 'added'
-							};
-				} else {
-					ret[name] = {
-								"oldV": oldData[name], 	
-								"diffType": 'deleted'
-							};
-				}
-			}
-		}
-		return ret;
-	}
-	
-	
-	function isRelevant(key) {
-		var relevant = ["lists","lists.id","lists.cards","lists.cards.id","lists.cards.name"];
-		// check for every relevant entry if it accepts key
-		for (var i = 0; i < relevant.length; i++) {
-			var rel 		= relevant[i];
-			var lastCharRel = rel.charAt(rel.length-1);
-			if (key === rel || (lastCharRel === "*" && key.indexOf(rel.substr(0,rel.length-2)) === 0)) {
-				return true;	
-			}
-		}
-		return false;
 	}
 
 	/**
@@ -392,7 +305,7 @@ define(function (require, exports, module) {
 							  )
 				.done( function(data) {
 						data.taskCount = '';
-						var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
+						var combinedTemplate = _combineTemplates(partTemplates.lists_cards);
 						$listItem.children('.cards').append(
 							Mustache.renderTemplate(combinedTemplate, {cards:data})
 						);
@@ -425,7 +338,7 @@ define(function (require, exports, module) {
 				});
 				Trello._create('checklist',{board:boardId,card:cardId},{name:name,tasks:tasks}).done( function(data) {
 
-					var combinedTemplate = _combineTemplates(partTemplates.checklists);
+					var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists);
 					// add the new task
 					$checklists.children('.cmd-new-checklist').before(
 						Mustache.renderTemplate(combinedTemplate, {checklists:data.checklist})
@@ -433,7 +346,7 @@ define(function (require, exports, module) {
 									
 					for (var t = 0; t < tasks.length; t++) {
 						var task = data.tasks[t];
-						var combinedTemplate = _combineTemplates(partTemplates.checkitems);
+						var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkitems);
 
 						// add the new task
 						$checklists.find('.checklist-item').last().children('.tasks').append(
@@ -476,7 +389,7 @@ define(function (require, exports, module) {
 					
 						for (var t = 0; t < data.length; t++) {
 							var task = data[t];
-							var combinedTemplate = _combineTemplates(partTemplates.checkitems);
+							var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkitems);
 							// add the new task
 							$checklist.children('.tasks').append(
 								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
@@ -525,7 +438,7 @@ define(function (require, exports, module) {
 						});
 						Trello._addNewMembers(newMembers,cardId).done( function(data) { 
 							var showNewMembers = [];
-							var combinedTemplate = _combineTemplates(partTemplates.members);
+							var combinedTemplate = _combineTemplates(partTemplates.lists_cards_members);
 							for (var nm = 0; nm < data.idMembers.length; nm++) {
 								var found = false;
 								for (var m = 0; m < members.length; m++) {
@@ -816,7 +729,7 @@ define(function (require, exports, module) {
 						commentObj.avatarHash = data.memberCreator.avatarHash,
 						commentObj.comment = data.data.text;
 
-						var combinedTemplate = _combineTemplates(partTemplates.comments);
+						var combinedTemplate = _combineTemplates(partTemplates.lists_cards_comments);
 						$comments.children('h5').after(
 							Mustache.renderTemplate(combinedTemplate, {comments:commentObj})
 						);
@@ -1348,10 +1261,11 @@ define(function (require, exports, module) {
 		if ($cardVerbose.children(".card-desc-container").length !== 0) {
 			$cardVerbose.html('');		
 			$card.removeClass('card-active');	
-			_expandedCards[cardId] = false;
+			delete _expandedCards[cardId];
 			return;
 		}
-		var listId 		= $card.closest('.list-item').data('list-id');
+		var $list 		= $card.closest('.list-item');
+		var listId 		= $list.data('list-id');
 		console.log('listId: ',listId);
 		
 		_displaySpinner(true);
@@ -1360,27 +1274,23 @@ define(function (require, exports, module) {
 					 member_fields:["avatarHash","username","fullName"]}
 				   ).done(function(data) {
 			_displaySpinner(false);
-
-			var combinedTemplate = _combineTemplates(partTemplates.inlineCards);
+			
+			var combinedTemplate = _combineTemplates(partTemplates.lists_cards_all);
+			
+			
 			
 			// fill the cache with the new card
-			for (var l = 0; l < cache.data.lists.length; l++) {
-				var list = cache.data.lists[l];
-				if (list.id === listId) {
-					console.log('correct list');
-					for (var c = 0; c < list.cards.length; c++) {
-						var card = list.cards[c];
-						if (card.id === cardId) {
-							cache.data.lists[l].cards[c] = $.extend({}, card, data);
-							break;
-						}
-					}
-				}
-			}
+			var listIndex = $list.index()-1; // cause of the changes list
+			var cardIndex = $card.index();
+			console.log('listIndex: '+listIndex);
+			console.log('cardIndex: '+cardIndex);
+			cache.data.lists[listIndex].cards[cardIndex] = data;
+			console.log('cache: ',cache.data);
+			
 			
 			$cardVerbose.html(Mustache.renderTemplate(combinedTemplate, data));
 			$card.addClass('card-active');
-			_expandedCards[cardId] = true;
+			_expandedCards[cardId] = {listId: listId};
 
 			
 			// set admin panel and checkmarks on tasks tab
@@ -1409,7 +1319,7 @@ define(function (require, exports, module) {
 		$panel.find(".lists").children('.list-item').each(function(indexL) {
 			var $list = $(this);
 			$list.find('.card-item').each(function(indexC) {
-				if (_expandedCards[$(this).data('card-id')]) {
+				if (typeof _expandedCards[$(this).data('card-id')] === 'undefined') {
 					$(this).children('.card-name').trigger("click");
 				}
 			});
@@ -1688,7 +1598,7 @@ define(function (require, exports, module) {
 
 		// ... and add a correct card in the list
 		data.taskCount = '';
-		var combinedTemplate = _combineTemplates(partTemplates.cardsInList);
+		var combinedTemplate = _combineTemplates(partTemplates.lists_cards);
 		$listItem.children('.cards').append(
 			Mustache.renderTemplate(combinedTemplate, {cards:data})
 		);

@@ -31,7 +31,7 @@ define({
 	LBL_CARD_DESC:			'Card Description',
 	LBL_TASK_NAME:			'Task Name',
 	LBL_COMMENTS: 			'Comments',
-	LBL_MEMBERS: 			'Memebers',
+	LBL_MEMBERS: 			'Members',
 	LBL_CARD_DESC:			'Card Description',
 	LBL_CHECKLIST_NAME:		'Checklist Name',
 	LBL_COMMENT:			'Comment',
