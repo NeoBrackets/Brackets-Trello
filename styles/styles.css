@@ -354,3 +354,9 @@
 	background: #2a2b2c;	
 	padding: 5px;
 }
+
+#brackets-trello .card-verbose {
+	display: none;
+}
+
+

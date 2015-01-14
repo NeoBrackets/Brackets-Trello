@@ -193,28 +193,112 @@ define(function (require, exports, module) {
 			Sync.init(cache.data,data,_expandedCards)
 			.done(function(diff) {
 				console.log('[main] diff: ',diff);
+				
+				_diff2DOM(diff,data);				
 			});
-			
-			/**
-			if (!difference(cache.data,data)) {
-				cache.data = data;
-				switch(currentTab) {
-					case "boards":
-						$('.tab-boards', $panel).html(Mustache.renderTemplate(boardsTemplate, data));
-						break;
-					case "lists":
-						var combinedTemplate = _combineTemplates(listsTemplate);
-						$('.tab-lists', $panel).html(Mustache.renderTemplate(combinedTemplate, data));
-						displayTrelloComments(cache.comments);
-						_expandLists();
-						_expandCards();
-						break;
-				}
-			}
-			*/
 		});
 	}
 
+	function _diff2DOM(diff,data,cObjectKey,cIndexKeys) {
+		cObjectKey 	= (typeof cObjectKey === "undefined") ? "" : cObjectKey;
+		cIndexKeys 	= (typeof cIndexKeys === "undefined") ? [] : cIndexKeys;
+		var keys   	= Object.keys(diff);
+		var length  = keys.length;
+		
+		for (var k = 0; k < length; k++) {
+			var name 	= keys[k];
+			var newCObjectKey;
+			var newCIndexKeys = cIndexKeys;
+			var newData = data;
+			if (isNumeric(name)) { // don't add array keys to cObjectKey
+				newCObjectKey = cObjectKey;
+				newCIndexKeys[cObjectKey.split('_').last()] = name;
+				newData = data[name];
+			} else {	
+				if (cObjectKey === "") {
+					newCObjectKey = name;
+					newData = data[name];
+				} else {
+					newCObjectKey = cObjectKey+"_"+name;
+					newData = data[name];
+					if (!(newCObjectKey in partTemplates)) {
+						newCObjectKey = cObjectKey;	
+						newData = data;
+					}
+				}
+				newCIndexKeys = cIndexKeys;
+			}	
+					
+			if ("diffType" in diff[name]) {
+				_template2DOM(newCObjectKey,newCIndexKeys,newData);
+			} else if (typeof diff[name] === 'object') {
+				_diff2DOM(diff[name],newData,newCObjectKey,newCIndexKeys);	
+			}
+		}
+	}
+	
+	function _template2DOM(templateName,where,data) {
+		console.log('templateName: '+templateName);
+		console.log('where: ',where);
+		console.log('data: ',data);
+		
+		
+		var templateData = {};
+		templateData[templateName.split('_').last()] = [data];
+		var combinedTemplate = _combineTemplates(partTemplates[templateName]);
+		var templateHTML 	 = Mustache.renderTemplate(combinedTemplate,templateData);
+		if ("lists" in where) {
+			// +1 for the changes list
+			var $list = $('.tab-lists', $panel).find('.list-item:eq('+(parseInt(where.lists)+1)+')');
+			if ("cards" in where) {
+				var $card = $list.find('.card-item:eq('+where.cards+')');
+				if ("checklists" in where) {
+					var $checklist = (where.checklists == 0) ? $card.find('.'+templateName) : $card.find('.checklist-item:eq('+where.checklists+')');
+					if ("checkitems" in where) {
+						var $checkitem;
+						if (where.checkitems == 0) {
+							$checkitem = $checklist.find('.'+templateName); 
+						} else {
+							$checkitem = $checklist.find('.task-item:eq('+where.checkitems+')');
+						}
+						$checkitem.html(templateHTML);
+						return;
+					}
+					$checklist.html(templateHTML);
+					return;
+				}
+				if ("comments" in where) {
+					var $comment = (where.comments == 0) ? $card.find('.'+templateName) : $card.find('.card-comment-item:eq('+where.comments+')');
+					$comment.html(templateHTML);
+					return;
+				}
+				if ("members" in where) {
+					var $member = (where.members == 0) ? $card.find('.'+templateName) : $card.find('.members-item:eq('+where.members+')');
+					console.log($member);
+					$member.html(templateHTML);
+					return;
+				}
+				$card.html(templateHTML);
+				$card.find('.card-verbose').css('display','inline');
+				// set admin panel and checkmarks on tasks tab
+				_taskChecksAndAdmin($card,data);
+				$card.find('.members').show();
+				return;
+			} 
+			$list.html(templateHTML);
+		}
+	}
+	
+	if (!Array.prototype.last){
+		Array.prototype.last = function(){
+			return this[this.length - 1];
+		};
+	};
+	
+	function isNumeric ( obj ) {
+		return !$.isArray( obj ) && (obj - parseFloat( obj ) + 1) >= 0;
+	}
+	
 	/**
 	 * Open New Board Dialog
 	 */
@@ -1251,6 +1335,7 @@ define(function (require, exports, module) {
 	 * @param {jQuery} $card card object
 	 */
 	function _displayCard($card) {
+		console.log('displayCard');
 		var boardName 	= _prefs.get("selected-board-name");
 		var listName 	= _prefs.get("selected-list-name");
 		
@@ -1258,15 +1343,25 @@ define(function (require, exports, module) {
 		var cardId 		 = $card.data('card-id');
 		var $cardVerbose = $card.children(".card-verbose");
 		
-		if ($cardVerbose.children(".card-desc-container").length !== 0) {
-			$cardVerbose.html('');		
-			$card.removeClass('card-active');	
-			delete _expandedCards[cardId];
-			return;
-		}
 		var $list 		= $card.closest('.list-item');
 		var listId 		= $list.data('list-id');
 		console.log('listId: ',listId);
+		
+		var listIndex = $list.index()-1; // cause of the changes list
+		var cardIndex = $card.index();
+		
+		if ($cardVerbose.css("display") === 'inline') {
+			$cardVerbose.html('');	
+			$cardVerbose.css('display','none');	
+			$card.removeClass('card-active');	
+			delete _expandedCards[cardId];
+			// get id,name,taskCount of card
+			var cardName 	  = cache.data.lists[listIndex].cards[cardIndex].name;
+			var cardTaskCount = cache.data.lists[listIndex].cards[cardIndex].taskCount;
+			// reset the cache
+			cache.data.lists[listIndex].cards[cardIndex] = {id: cardId, name: cardName, taskCount: cardTaskCount};
+			return;
+		}
 		
 		_displaySpinner(true);
 		Trello._get('tasks',{card:cardId},
@@ -1280,15 +1375,18 @@ define(function (require, exports, module) {
 			
 			
 			// fill the cache with the new card
-			var listIndex = $list.index()-1; // cause of the changes list
-			var cardIndex = $card.index();
+			
 			console.log('listIndex: '+listIndex);
 			console.log('cardIndex: '+cardIndex);
+			var taskCount = cache.data.lists[listIndex].cards[cardIndex].taskCount;
 			cache.data.lists[listIndex].cards[cardIndex] = data;
+			cache.data.lists[listIndex].cards[cardIndex].taskCount = taskCount;
 			console.log('cache: ',cache.data);
 			
 			
 			$cardVerbose.html(Mustache.renderTemplate(combinedTemplate, data));
+			$cardVerbose.css('display','inline');
+			
 			$card.addClass('card-active');
 			_expandedCards[cardId] = {listId: listId};
 

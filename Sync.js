@@ -5,11 +5,13 @@ define(function (require, exports, module) {
 	
 	function init(cache,data,extraCards) {
 		var result = $.Deferred();
+		console.log('extraCards: ',extraCards);
 		addExtraCards(data,extraCards)
 		.done(function(newData) {
 			data = newData;
 		
-			console.log(data);
+			console.log('data: ',data);
+			console.log('cache: ',cache);
 			console.time('diff');
 			var diff = difference(cache,data);
 			console.log('diff: ',diff);
