@@ -1,5 +1,5 @@
-<div class="list-item" id="changes-list">
-    <h5><a href="#">{{strings.LIST_CHANGES}}</a><span class="code-comment-counter">{{count}}</span></h5>
+<div class="list-item" data-list-id="changes-list">
+    <h5><a class="list-name" data-list-id="changes-list"  href="#">{{strings.LIST_CHANGES}}&nbsp;&nbsp;</a><span class="code-comment-counter">{{count}}</span></h5>
     <div class="cards">
         {{> trelloComments.html}}
     </div>
