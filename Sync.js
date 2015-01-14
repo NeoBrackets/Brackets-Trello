@@ -6,6 +6,7 @@ define(function (require, exports, module) {
 	function init(cache,data,extraCards) {
 		var result = $.Deferred();
 		console.log('extraCards: ',extraCards);
+		
 		addExtraCards(data,extraCards)
 		.done(function(newData) {
 			data = newData;
@@ -25,6 +26,10 @@ define(function (require, exports, module) {
 		start = (typeof start === 'undefined') ? 0 : start;
 		var result = $.Deferred();
 		var objKeys = Object.keys(extraCards);
+		if (objKeys.length === 0) {
+			result.resolve(data);
+			return result.promise();
+		}
 		var cardId = objKeys[start];
 		var listId = extraCards[cardId].listId;
 		Trello._get('tasks',{card: cardId},
@@ -137,7 +142,8 @@ define(function (require, exports, module) {
 	function isRelevant(key) {
 		var relevant = [
 			"lists","lists.id","lists.cards","lists.cards.id","lists.cards.name","lists.cards.desc",
-			"lists.cards.checklists.*","lists.cards.comments.*","lists.cards.members.*"
+			"lists.cards.checklists.*","lists.cards.comments.*",
+			"lists.cards.members.id","lists.cards.members.avatarHash","lists.cards.members.fullName","lists.cards.members.username"
 		];
 		// check for every relevant entry if it accepts key
 		for (var i = 0; i < relevant.length; i++) {

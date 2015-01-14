@@ -277,9 +277,12 @@ define(function (require, exports, module) {
 				if ("checklists" in where) {
 					var $checklist = $card.find('.checklist-item:eq('+where.checklists+')');
 					if ("checkItems" in where) {
-						var $checkitem;
-						$checkitem = $checklist.find('.task-item:eq('+where.checkItems+')');
-						addHTML($checklist,$checkitem,templateName,templateHTML);
+						var $checkitem = $checklist.find('.task-item:eq('+where.checkItems+')');
+						$checkitem = addHTML($checklist,$checkitem,templateName,templateHTML);
+						if ($checkitem !== false) {
+							var boolCheck = (data.state === "complete") ? true : false;
+							$checkitem.children('input[type="checkbox"]')[0].checked = boolCheck;
+						}
 						return;
 					}
 					addHTML($card,$checklist,templateName,templateHTML);
@@ -306,16 +309,20 @@ define(function (require, exports, module) {
 		}
 		
 		function addHTML($parent,$ele,templateName,templateHTML) {
-			console.log('$ele: ',$ele);
 			if ($ele.length === 0) {
-				$parent.find('.'+templateName).append(templateHTML);
+				$ele = $(templateHTML).appendTo($parent.find('.'+templateName));
 			} else {
 				if (!templateHTML) {
 					$ele.remove();
+					$ele = false;
 				} else {
-					$ele.replaceWith(templateHTML);
+					var $newEle = $ele.after(templateHTML);
+					$ele.remove();
+					$ele = $newEle;
 				}
 			}	
+			console.log('addHTML result = ',$ele);
+			return $ele;
 		}
 	}
 	
@@ -476,8 +483,16 @@ define(function (require, exports, module) {
 	 * Open New Tasks Dialog
 	 */
 	function _openNewTasksDialog() {
+		// Trello bug: @olek10 it adds a undefined item [54b68f7573d5927274e9c289]
 		var $checklist 	= $(this).closest('.checklist-item');
 		var checklistId = $checklist.data('checklist-id');
+		
+		var $card 	= $checklist.closest('.card-item');
+		var $list 	= $card.closest('.list-item');
+		
+		var listIndex 		= $list.index()-1; // cause of the changes list
+		var cardIndex 		= $card.index();
+		var checklistIndex 	= $checklist.index();
 		
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newTasksHTML)),
 			$dialog = dialog.getElement(),
@@ -497,12 +512,18 @@ define(function (require, exports, module) {
 						tasks.push($(this).val());
 					}
 				})
+				console.log('tasks: ',tasks);
 				
 				Trello._createTasks([],checklistId,tasks,0,$dialog.find('.task-name').length)
 				.done(function(data) {
-					
+						console.log('data tasks: ',data);
 						for (var t = 0; t < data.length; t++) {
 							var task = data[t];
+							
+							var checkItemIndex = $checklist.children('.tasks').length; 
+							// add to the cache
+							cache.data.lists[listIndex].cards[cardIndex].checklists[checklistIndex].checkItems[checkItemIndex] = task;
+							
 							var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkItems);
 							// add the new task
 							$checklist.children('.tasks').append(
@@ -520,7 +541,13 @@ define(function (require, exports, module) {
 		var usernames = {};
 		var $members  = $(this).closest('.members');
 		var boardId   = _prefs.get("selected-board");
-		var cardId    = $(this).closest('.card-item').data('card-id');
+		var $card	  = $(this).closest('.card-item');
+		var cardId    = $card.data('card-id');	
+		var $list 	  = $card.closest('.list-item');
+		
+		var listIndex = $list.index()-1; // cause of the changes list
+		var cardIndex = $card.index();
+		
 		Trello._get('boardMembers',{board:boardId},{}).done(function(boardMembers) {
 			Trello._get('cardMembers',{card:cardId},{}).done(function(cardMembers) {
 				// difference between boardMembers and cardMembers
@@ -551,6 +578,8 @@ define(function (require, exports, module) {
 							}
 						});
 						Trello._addNewMembers(newMembers,cardId).done( function(data) { 
+							// startindex for memberIndex 
+							var startIndex = $members.find('member-item').length;
 							var showNewMembers = [];
 							var combinedTemplate = _combineTemplates(partTemplates.lists_cards_members);
 							for (var nm = 0; nm < data.idMembers.length; nm++) {
@@ -558,10 +587,15 @@ define(function (require, exports, module) {
 								for (var m = 0; m < members.length; m++) {
 									if (members[m].id == data.idMembers[nm]) {
 										showNewMembers.push(members[m]);
+										// add to the cache
+										cache.data.lists[listIndex].cards[cardIndex].members[startIndex+nm] = members[m];
 										break;
 									}
 								}
 							}
+							
+							
+							
 							$members.children('h5').after(
 								Mustache.renderTemplate(combinedTemplate, {members:showNewMembers})
 							);
