@@ -21,7 +21,8 @@ define(function (require, exports, module) {
 		Trello						= require('Trello'),
 		Sync						= require('Sync'),
 		strings						= require('i18n!nls/strings'),
-		ParseUtils 					= require('modules/parseUtils');
+		ParseUtils 					= require('modules/parseUtils'),
+		TrelloComment				= require('modules/objects/comment');
 
 	var mainPanel					= require('text!html/mainPanel.html'),
 		prefDialogHTML				= require('text!html/prefsDialog.html'),
@@ -974,22 +975,36 @@ define(function (require, exports, module) {
                     $(this).off('mousemove').off('mouseup');
                     return;
                 }
+				
+				// move card|comment to list
+				if (isComment && $dropzone.find('.card-item').length > 0) {
+					var tagName = $dropzone.find('.list-name a').text(),
+						oldComment = new TrelloComment(),
+						fullPath = DocumentManager.getCurrentDocument().file._path,
+						cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
 
-                // move card|comment to list
-                if (isComment && $dropzone.find('.card-item').length > 0) {
-                    $this.insertBefore($dropzone.find('.card-item').first());
-                } else {
-                    $dropzone.find('.cards').append($this);
-                }
-                $toList = $this.parents('.list-item');
+					// update comment tag and refresh lists
+					oldComment.filePath($this.data('file-path'));
+					oldComment.lineNumber(Number($this.data('line-number')));
+					oldComment.lineCh(Number($this.data('line-ch')));
+					oldComment.fullContent($this.data('full-content'));
+
+					// change comment tag
+					_changeCommentTagInFile(oldComment, tagName, function () {
+						_jumpToFile(fullPath, cursorPos);
+					});
+				} else {
+					$dropzone.find('.cards').append($this);
+				}
 
                 // update comment counter
+				$toList = $this.parents('.list-item');
                 _updateCodeCommentCounter($fromList);
                 _updateCardCounter($fromList);
                 _updateCodeCommentCounter($toList);
                 _updateCardCounter($toList);
 
-                // sync card moving to trello
+                // push card moving to trello
                 if (!isComment) { 
                     fromListId = $fromList.data('list-id');
                     toListId = $toList.data('list-id');
@@ -1727,6 +1742,39 @@ define(function (require, exports, module) {
 			} );
 			CommandManager.execute(Commands.FILE_SAVE, { fullPath: comment._filePath });
 		} );
+	}
+	
+	/**
+	 * change the tag of trello comment which is in file
+	 * @param{comment} comment, trello comment
+	 * @param{string} tagName
+	 * @param{function(){}} opt_callback, called after changing tag name
+	 */
+	function _changeCommentTagInFile(comment, tagName, opt_callback) {
+		CommandManager.execute(Commands.FILE_OPEN, {
+			fullPath: comment._filePath
+		}).done(function () {
+			// Set focus on editor.
+			MainViewManager.focusActivePane();
+			var document = EditorManager.getCurrentFullEditor().document;
+
+			var beginPos = comment._fullContent.search(new RegExp('trello', 'i')) + 'trello'.length;
+			var endPos = comment._fullContent.indexOf(':');
+			document.replaceRange(' ' + tagName, {
+				line: comment._lineNum - 1,
+				ch: comment._lineCh + beginPos
+			}, {
+				line: comment._lineNum - 1,
+				ch: comment._lineCh + endPos
+			});
+			CommandManager.execute(Commands.FILE_SAVE, {
+				fullPath: comment._filePath
+			}).done(function () {
+				if (opt_callback) {
+					opt_callback();
+				}
+			});
+		});
 	}
 
 	/**
