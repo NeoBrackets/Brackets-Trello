@@ -1006,25 +1006,24 @@ define(function (require, exports, module) {
                 }
 				
 				// move card|comment to list
-				if (isComment && $dropzone.find('.card-item').length > 0) {
-					var tagName = $dropzone.find('.list-name a').text(),
-						oldComment = new TrelloComment(),
-						fullPath = DocumentManager.getCurrentDocument().file._path,
-						cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
-
-					// update comment tag and refresh lists
-					oldComment.filePath($this.data('file-path'));
-					oldComment.lineNumber(Number($this.data('line-number')));
-					oldComment.lineCh(Number($this.data('line-ch')));
-					oldComment.fullContent($this.data('full-content'));
-
-					// change comment tag
-					_changeCommentTagInFile(oldComment, tagName, function () {
-						_jumpToFile(fullPath, cursorPos);
-					});
-				} else {
-					$dropzone.find('.cards').append($this);
+				var newTagName = '';
+				if ($dropzone.data('list-id').trim() !== 'changes-list') {
+					newTagName = $dropzone.find('.list-name a').text().trim();
 				}
+				var oldComment = new TrelloComment(),
+					fullPath = DocumentManager.getCurrentDocument().file._path,
+					cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
+
+				// update comment tag and refresh lists
+				oldComment.filePath($this.data('file-path'));
+				oldComment.lineNumber(Number($this.data('line-number')));
+				oldComment.lineCh(Number($this.data('line-ch')));
+				oldComment.fullContent($this.data('full-content'));
+
+				// change comment tag
+				_changeCommentTagInFile(oldComment, newTagName, function () {
+					_jumpToFile(fullPath, cursorPos);
+				});
 
                 // update comment counter
 				$toList = $this.parents('.list-item');
