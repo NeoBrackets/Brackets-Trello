@@ -118,7 +118,7 @@ define(function (require, exports, module) {
             lines = StringUtils.getLines(content),
             languageId = LanguageManager.getLanguageForPath(file.fullPath).getId();
 
-        trelloComments = ParseUtils.parseText(content, ['idea', 'todo', 'doing', 'done'], languageId);
+        trelloComments = ParseUtils.parseText(content, languageId);
 
         // add path and process line num
         trelloComments.forEach(function (comment) {
