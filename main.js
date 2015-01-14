@@ -1562,7 +1562,7 @@ define(function (require, exports, module) {
         });
 
         // remove older Changes List.
-        $('.tab-lists .lists #changes-list', $panel).remove();
+        $('.tab-lists .lists [data-list-id="changes-list"]', $panel).remove();
         compliedChangesList = Mustache.renderTemplate(_combineTemplates(changesListTemplate), {
             count: newComments.length,
             files: sortByFilename(newComments)
