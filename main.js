@@ -1517,6 +1517,8 @@ define(function (require, exports, module) {
 
         // remove older comment item
         $('.list-item .code-comment-item', $panel).remove();
+        // remove older file items
+        $('.list-item .code-comment-file-header', $panel).remove();
 
         // merge comment item to trello list
         $('.list-item h5 a', $panel).each(function(index, listElem){
