@@ -52,7 +52,7 @@ define(function (require, exports, module) {
 	partTemplates.lists_cards						= require('text!html/templates/parts/lists_cards.html');
 	partTemplates.lists_cards_all					= require('text!html/templates/parts/lists_cards_all.html');
 	partTemplates.lists_cards_checklists			= require('text!html/templates/parts/lists_cards_checklists.html');
-	partTemplates.lists_cards_checklists_checkitems	= require('text!html/templates/parts/lists_cards_checklists_checkitems.html');
+	partTemplates.lists_cards_checklists_checkItems	= require('text!html/templates/parts/lists_cards_checklists_checkItems.html');
 	partTemplates.lists_cards_comments				= require('text!html/templates/parts/lists_cards_comments.html');
 	partTemplates.lists_cards_members				= require('text!html/templates/parts/lists_cards_members.html');
 	partTemplates.trelloComments					= require('text!html/templates/parts/trelloComments.html');
@@ -190,29 +190,43 @@ define(function (require, exports, module) {
 				data.name = boardName;
 				data.id   = boardId;
 			}
-				
+	
+			
 			Sync.init(cache.data,data,_expandedCards)
 			.done(function(diff) {
 				console.log('[main] diff: ',diff);
+				// updata cache
+				cache.data = data;
 				
+				// change the DOM
 				_diff2DOM(diff,data);				
 			});
 		});
 	}
 
+	/**
+	 * Change the DOM with the new data (using only the diffs)
+	 * @param {Object} diff            changed,added,deleted diff object (between old cache and new data)
+	 * @param {Object} data            the new data
+	 * @param {String} [cObjectKey=""] concated object keys (concatinated with '_')
+	 * @param {Object} [cIndexKeys={}] object of indices for lists,cards...
+	 */
 	function _diff2DOM(diff,data,cObjectKey,cIndexKeys) {
 		cObjectKey 	= (typeof cObjectKey === "undefined") ? "" : cObjectKey;
-		cIndexKeys 	= (typeof cIndexKeys === "undefined") ? [] : cIndexKeys;
+		cIndexKeys 	= (typeof cIndexKeys === "undefined") ? {} : Object.create(cIndexKeys);
 		var keys   	= Object.keys(diff);
 		var length  = keys.length;
-		
+				
+		// iterate over all current keys in the highest diff level
 		for (var k = 0; k < length; k++) {
 			var name 	= keys[k];
 			var newCObjectKey;
 			var newCIndexKeys = cIndexKeys;
 			var newData = data;
+			// if the current key is numeric (is an array in new data)
 			if (isNumeric(name)) { // don't add array keys to cObjectKey
 				newCObjectKey = cObjectKey;
+				// add the last type (lists,cards,...) to the new index keys
 				newCIndexKeys[cObjectKey.split('_').last()] = name;
 				newData = data[name];
 			} else {	
@@ -221,10 +235,12 @@ define(function (require, exports, module) {
 					newData = data[name];
 				} else {
 					newCObjectKey = cObjectKey+"_"+name;
-					newData = data[name];
-					if (!(newCObjectKey in partTemplates)) {
+					// only add the new data if there is a tenplate for this level
+					if (!(name in data) || !(newCObjectKey in partTemplates)) {
 						newCObjectKey = cObjectKey;	
 						newData = data;
+					} else {
+						newData = data[name];	
 					}
 				}
 				newCIndexKeys = cIndexKeys;
@@ -232,54 +248,54 @@ define(function (require, exports, module) {
 					
 			if ("diffType" in diff[name]) {
 				_template2DOM(newCObjectKey,newCIndexKeys,newData);
+				break;
 			} else if (typeof diff[name] === 'object') {
 				_diff2DOM(diff[name],newData,newCObjectKey,newCIndexKeys);	
 			}
 		}
 	}
 	
+	/**
+	 * Change the DOM using a template name (inside partTemplates)
+	 * @param {String} templateName the templateName which must be a key of partTemplates
+	 * @param {Object} where        change the dom at this position (i.e {lists: 0}) change the first list (not Changes)
+	 * @param {Array}  data         new data for the dom
+	 */
 	function _template2DOM(templateName,where,data) {
-		console.log('templateName: '+templateName);
-		console.log('where: ',where);
-		console.log('data: ',data);
-		
-		
 		var templateData = {};
 		templateData[templateName.split('_').last()] = [data];
 		var combinedTemplate = _combineTemplates(partTemplates[templateName]);
 		var templateHTML 	 = Mustache.renderTemplate(combinedTemplate,templateData);
+		if (!data) {
+			templateHTML = false;
+		}
 		if ("lists" in where) {
 			// +1 for the changes list
 			var $list = $('.tab-lists', $panel).find('.list-item:eq('+(parseInt(where.lists)+1)+')');
 			if ("cards" in where) {
 				var $card = $list.find('.card-item:eq('+where.cards+')');
 				if ("checklists" in where) {
-					var $checklist = (where.checklists == 0) ? $card.find('.'+templateName) : $card.find('.checklist-item:eq('+where.checklists+')');
-					if ("checkitems" in where) {
+					var $checklist = $card.find('.checklist-item:eq('+where.checklists+')');
+					if ("checkItems" in where) {
 						var $checkitem;
-						if (where.checkitems == 0) {
-							$checkitem = $checklist.find('.'+templateName); 
-						} else {
-							$checkitem = $checklist.find('.task-item:eq('+where.checkitems+')');
-						}
-						$checkitem.html(templateHTML);
+						$checkitem = $checklist.find('.task-item:eq('+where.checkItems+')');
+						addHTML($checklist,$checkitem,templateName,templateHTML);
 						return;
 					}
-					$checklist.html(templateHTML);
+					addHTML($card,$checklist,templateName,templateHTML);
 					return;
 				}
 				if ("comments" in where) {
-					var $comment = (where.comments == 0) ? $card.find('.'+templateName) : $card.find('.card-comment-item:eq('+where.comments+')');
-					$comment.html(templateHTML);
+					var $comment = $card.find('.card-comment-item:eq('+where.comments+')');
+					addHTML($card,$comment,templateName,templateHTML);
 					return;
 				}
 				if ("members" in where) {
 					var $member = (where.members == 0) ? $card.find('.'+templateName) : $card.find('.members-item:eq('+where.members+')');
-					console.log($member);
-					$member.html(templateHTML);
+					addHTML($card,$member,templateName,templateHTML);
 					return;
 				}
-				$card.html(templateHTML);
+				addHTML($list,$card,templateName,templateHTML);
 				$card.find('.card-verbose').css('display','inline');
 				// set admin panel and checkmarks on tasks tab
 				_taskChecksAndAdmin($card,data);
@@ -287,6 +303,19 @@ define(function (require, exports, module) {
 				return;
 			} 
 			$list.html(templateHTML);
+		}
+		
+		function addHTML($parent,$ele,templateName,templateHTML) {
+			console.log('$ele: ',$ele);
+			if ($ele.length === 0) {
+				$parent.find('.'+templateName).append(templateHTML);
+			} else {
+				if (!templateHTML) {
+					$ele.remove();
+				} else {
+					$ele.replaceWith(templateHTML);
+				}
+			}	
 		}
 	}
 	
@@ -431,7 +460,7 @@ define(function (require, exports, module) {
 									
 					for (var t = 0; t < tasks.length; t++) {
 						var task = data.tasks[t];
-						var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkitems);
+						var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkItems);
 
 						// add the new task
 						$checklists.find('.checklist-item').last().children('.tasks').append(
@@ -474,7 +503,7 @@ define(function (require, exports, module) {
 					
 						for (var t = 0; t < data.length; t++) {
 							var task = data[t];
-							var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkitems);
+							var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkItems);
 							// add the new task
 							$checklist.children('.tasks').append(
 								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
@@ -762,7 +791,7 @@ define(function (require, exports, module) {
 	function _openDeleteTaskDialog(e) {
 		e.stopPropagation();
 		var thisEle = $(this);
-		var checklistId = thisEle.closest('.checklist-item').data('checkitem-id');
+		var checklistId = thisEle.closest('.checklist-item').data('checklist-id');
 		var taskId = thisEle.data('task-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.TASKS)))
 			.done(function(id) {
@@ -1382,7 +1411,8 @@ define(function (require, exports, module) {
 		Trello._get('tasks',{card:cardId},
 					{members:[true],actions:['commentCard'],
 					 member_fields:["avatarHash","username","fullName"]}
-				   ).done(function(data) {
+				   )
+		.done(function(data) {
 			_displaySpinner(false);
 			
 			var combinedTemplate = _combineTemplates(partTemplates.lists_cards_all);
@@ -1591,18 +1621,20 @@ define(function (require, exports, module) {
 				return -1;
 			});		
 			var files 			= [];
-			var lastFilePath 	= comments[0]._filePath;
-			var commentsByFile 	= [comments[0]];
-			for (var i = 1; i < comments.length; i++) {
-				if (comments[i]._filePath != lastFilePath) {
-					files.push({file: relativePath(lastFilePath), comments: commentsByFile});
-					commentsByFile = [comments[i]];
-					lastFilePath = comments[i]._filePath;
-				} else {
-					commentsByFile.push(comments[i]);	
+			if (comments.length !== 0) {
+				var lastFilePath 	= comments[0]._filePath;
+				var commentsByFile 	= [comments[0]];
+				for (var i = 1; i < comments.length; i++) {
+					if (comments[i]._filePath != lastFilePath) {
+						files.push({file: relativePath(lastFilePath), comments: commentsByFile});
+						commentsByFile = [comments[i]];
+						lastFilePath = comments[i]._filePath;
+					} else {
+						commentsByFile.push(comments[i]);	
+					}
 				}
+				files.push({file: relativePath(lastFilePath), comments: commentsByFile});
 			}
-			files.push({file: relativePath(lastFilePath), comments: commentsByFile});
 			return files;
 		}
 		

@@ -113,12 +113,12 @@ define(function (require, exports, module) {
 							};
 						}
 					}
-				} else if (!oldData[name]) {
+				} else if (newData[name] && !oldData[name]) {
 					ret[name] = {
 								"newV": newData[name], 	
 								"diffType": 'added'
 							};
-				} else {
+				} else if (!newData[name] && oldData[name]){
 					ret[name] = {
 								"oldV": oldData[name], 	
 								"diffType": 'deleted'
