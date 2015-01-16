@@ -97,6 +97,21 @@ define(function (require, exports, module) {
 	var activeUserRole = "user";
 	var activeUserId = '';
 
+	var logTypes = ['diffDom','openDialog'];
+	
+	function log(types,name,output) {
+		if (!logTypes) { return; }
+		if (arrayIntersect(logTypes,types).length >= 0) {
+			console.log('['+types[0]+','+types.last()+'] ',name,output);	
+		}
+	}
+	
+	function arrayIntersect(a,b) {
+		return $.grep(a, function(i) {
+			return $.inArray(i, b) > -1;
+		});
+	}
+	
 	/**
 	 * Save Preferences either in project or global
 	 *
@@ -262,6 +277,11 @@ define(function (require, exports, module) {
 	 * @param {Array}  data         new data for the dom
 	 */
 	function _template2DOM(templateName,where,data) {
+		log(['main','diff','diffDom','_template2DOM'],'templateName',templateName);
+		log(['main','diff','diffDom','_template2DOM'],'where',where);
+		log(['main','diff','diffDom','_template2DOM'],'data',data);
+		
+		
 		var templateData = {};
 		templateData[templateName.split('_').last()] = [data];
 		var combinedTemplate = _combineTemplates(partTemplates[templateName]);
@@ -277,7 +297,7 @@ define(function (require, exports, module) {
 				if ("checklists" in where) {
 					var $checklist = $card.find('.checklist-item:eq('+where.checklists+')');
 					if ("checkItems" in where) {
-						var $checkitem = $checklist.find('.task-item:eq('+where.checkItems+')');
+						var $checkitem = $checklist.find('.checkItem-item:eq('+where.checkItems+')');
 						$checkitem = addHTML($checklist,$checkitem,templateName,templateHTML);
 						if ($checkitem !== false) {
 							var boolCheck = (data.state === "complete") ? true : false;
@@ -305,12 +325,12 @@ define(function (require, exports, module) {
 				$card.find('.members').show();
 				return;
 			} 
-			$list.html(templateHTML);
+			addHTML($('.tab-lists', $panel),$list,templateName,templateHTML);
 		}
 		
 		function addHTML($parent,$ele,templateName,templateHTML) {
 			if ($ele.length === 0) {
-				$ele = $(templateHTML).appendTo($parent.find('.'+templateName));
+				$ele = $(templateHTML).appendTo($parent.find('.tmpl_'+templateName));
 			} else {
 				if (!templateHTML) {
 					$ele.remove();
@@ -453,8 +473,9 @@ define(function (require, exports, module) {
 			if (id === 'save') {
 				name = $dialog.find('.checklist-name').val();
 				$dialog.find('.task-name').each(function() {
-					if ($(this).val().length >= 1) {
-						tasks.push($(this).val());
+					var value = $(this).val().trim();
+					if (value.length >= 1) {
+						tasks.push(value);
 					}
 				});
 				Trello._create('checklist',{board:boardId,card:cardId},{name:name,tasks:tasks}).done( function(data) {
@@ -483,16 +504,9 @@ define(function (require, exports, module) {
 	 * Open New Tasks Dialog
 	 */
 	function _openNewTasksDialog() {
-		// Trello bug: @olek10 it adds a undefined item [54b68f7573d5927274e9c289]
-		var $checklist 	= $(this).closest('.checklist-item');
-		var checklistId = $checklist.data('checklist-id');
 		
-		var $card 	= $checklist.closest('.card-item');
-		var $list 	= $card.closest('.list-item');
-		
-		var listIndex 		= $list.index()-1; // cause of the changes list
-		var cardIndex 		= $card.index();
-		var checklistIndex 	= $checklist.index();
+		var eleArr = $(this).getClosest(['checklist','card','list']);
+		log(['name','openDialog','_openNewTasksDialog'],'eleArr',eleArr);
 		
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newTasksHTML)),
 			$dialog = dialog.getElement(),
@@ -508,25 +522,29 @@ define(function (require, exports, module) {
 			if (id === 'save') {
 				var tasks = [];
 				$dialog.find('.task-name').each(function() {
-					if ($(this).val().length >= 1) {
-						tasks.push($(this).val());
+					var value = $(this).val().trim();
+					console.log('taskVal: ',value);
+					console.log('taskVal Length: ',value.length);
+					if (value.length >= 1) {
+						tasks.push(value);
 					}
 				})
 				console.log('tasks: ',tasks);
 				
-				Trello._createTasks([],checklistId,tasks,0,$dialog.find('.task-name').length)
+				Trello._createTasks([],eleArr.id.checklist,tasks,0,tasks.length)
 				.done(function(data) {
-						console.log('data tasks: ',data);
 						for (var t = 0; t < data.length; t++) {
 							var task = data[t];
 							
-							var checkItemIndex = $checklist.children('.tasks').length; 
+							var checkItemIndex = eleArr.item.checklist.find('.checkItem-item').length;
+							log(['name','openDialog','_openNewTasksDialog'],'checkItemIndex',checkItemIndex);
 							// add to the cache
-							cache.data.lists[listIndex].cards[cardIndex].checklists[checklistIndex].checkItems[checkItemIndex] = task;
+							cache.data.lists[eleArr.index.list].cards[eleArr.index.card]
+							 .checklists[eleArr.index.checklist].checkItems[checkItemIndex] = task;
 							
 							var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkItems);
 							// add the new task
-							$checklist.children('.tasks').append(
+							eleArr.item.checklist.find('.tmpl_listscards_checklists_checkItems').append(
 								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 							);
 						}
@@ -620,6 +638,7 @@ define(function (require, exports, module) {
 							
 							// we need to change the name inside the ui as well
 							$('.board-name', $panel).children('#board-name').text(name);
+										
 							// new board name inside prefs
 							_savePrefs('selected-board-name',name);
 						}).fail(_displayError);
@@ -633,8 +652,12 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editListNameTemplate)),
 			$dialog = dialog.getElement();
 		$dialog.find('.list-name').val($(this).siblings('a').text()).focus();
-		var $listItem = $(this);
-		var listId 	  = $(this).data('list-id');
+		
+		var $listItem = $(this).closest('.list-item');
+		var listId 	  = $listItem.data('list-id');
+		
+		var listIndex = $listItem.index()-1; // cause of the changes list
+		
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var name = $dialog.find('.list-name').val();
@@ -642,6 +665,8 @@ define(function (require, exports, module) {
 					Trello._edit('list',{list:listId},{name:name}).done( function(data) {
 							// we need to change the name inside the ui as well
 							$listItem.children('.list-name').children('a').text(name);
+							// add to the cache
+							cache.data.lists[listIndex].name = name;
 							// new list name inside prefs
 							_savePrefs('selected-list-name',name);
 						}).fail(_displayError);
@@ -656,14 +681,21 @@ define(function (require, exports, module) {
 
 		var $cardName = $(this).parent('.card-item').children('.card-name');
 		$dialog.find('.card-name').val($cardName.text().trim()).focus();
-		var cardId = $(this).data('card-id');
+		
+		var $card 	= $(this);
+		var eleArr  = $(this).getClosest(["card","list"]);
+		log(['main','openDialog','_openEditCardNameDialog'],'eleArr',eleArr);
+			
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var name = $dialog.find('.card-name').val();
 				if (name.length >= 1) {
-					Trello._edit('card',{card:cardId},{name:name}).done( function(data) {
+					Trello._edit('card',{card:eleArr.id.card},{name:name}).done( function(data) {
 							// we need to change the name inside the ui as well
 							$cardName.text(name);
+							// add to the cache
+							cache.data.lists[eleArr.index.list].cards[eleArr.index.card].name = name;
+							log(['main','openDialog','_openEditCardNameDialog'],'cache.data.lists',cache.data.lists);
 						}).fail(_displayError);
 				}
 			}
@@ -680,14 +712,18 @@ define(function (require, exports, module) {
 			$dialog.find('.card-desc').val($cardDesc.text().trim()).focus();
 		}
 		
-		var cardId = $(this).data('card-id');
+		var $card 	= $(this);
+		var eleArr  = $(this).getClosest(["card","list"]);
+		
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var desc = $dialog.find('.card-desc').val();
 				if (desc.length >= 1) {
-					Trello._edit('card',{card:cardId},{desc:desc}).done(function(data) {
+					Trello._edit('card',{card:eleArr.id.card},{desc:desc}).done(function(data) {
 							// we need to change the desc inside the ui as well
 							$cardDesc.text(desc);
+							// add to the cache
+							cache.data.lists[eleArr.index.list].cards[eleArr.index.card].desc = desc;
 						}).fail(_displayError);
 				}
 			}
@@ -699,14 +735,18 @@ define(function (require, exports, module) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editChecklistNameTemplate)),
 			$dialog = dialog.getElement();
 		$dialog.find('.checklist-name').val($(this).parent('h5').text().trim()).focus();
-		var $checklist  = $(this);
-		var checklistId = $(this).data('checklist-id');
+		
+		var eleArr  	= $(this).getClosest(["checklist","card","list"]);
+		log(['main','openDialog','_openEditChecklistDialog'],'eleArr',eleArr);
+		
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var name = $dialog.find('.checklist-name').val();
-				Trello._edit('checklist',{checklist:checklistId},{name:name}).done(function(data) {
+				Trello._edit('checklist',{checklist:eleArr.id.checklist},{name:name}).done(function(data) {
 							// we need to change the name inside the ui as well
-							$checklist.children('.checklist-name').children('#checklist-name').text(name);
+							eleArr.item.checklist.find('.checklist-name').text(name);
+							// add to the cache
+							cache.data.lists[eleArr.index.list].cards[eleArr.index.card].checklists[eleArr.index.checklist].name = name;
 						}).fail(_displayError);
 			}
 		});
@@ -716,20 +756,26 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(editTaskNameTemplate)),
 			$dialog = dialog.getElement();
-		var cardId =  $(this).closest('.card-item').data('card-id');
-		var $checklist  = $(this).closest('.checklist-item');
-		var checklistId = $(this).closest('.checklist-item').data('checklist-id');
-		var checkitemId = $(this).data('task-id');
-
+		
+		var $checkItem 	= $(this);
+		var eleArr  = $(this).getClosest(["checkItem","checklist","card","list"]);
+		log(['main','openDialog','_openEditTaskDialog'],'eleArr',eleArr);
+		
+		
 		$dialog.find('.task-name').val($(this).siblings('label').text().trim()).focus();
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var name = $dialog.find('.task-name').val();
-				Trello._edit('checkitem',{card:cardId,checklist:checklistId,checkitem:checkitemId},{value:name}).done(function(data) {
-							// we need to change the name inside the ui as well
-							$checklist.children('.tasks')
-							.children('.task-item').children("label[for='"+checkitemId+"']").text(name);
-						}).fail(_displayError);
+				Trello._edit('checkitem',{
+								card:eleArr.id.card,checklist:eleArr.id.checklist,checkitem:eleArr.id.checkItem
+								},{value:name})
+				.done(function(data) {
+					// we need to change the name inside the ui as well
+					eleArr.item.checklist.find('.checkItem-item').children("label[for='"+eleArr.id.checkItem+"']").text(name);
+					// add to the cache
+					cache.data.lists[eleArr.index.list].cards[eleArr.index.card]
+					.checklists[eleArr.index.checklist].checkItems[eleArr.index.checkItem].name = name;
+				}).fail(_displayError);
 			}
 		});
 	}
@@ -790,6 +836,7 @@ define(function (require, exports, module) {
 				if (id === 'yes') {
 					Trello._delete('list',{list:listId}).done(function(data) {
 						thisEle.parent('.list-name').parent('.list-item').remove();
+						
 					}).fail(_displayError);
 				}
 			});
@@ -797,12 +844,13 @@ define(function (require, exports, module) {
 
 	function _openDeleteCardDialog(e) {
 		e.stopPropagation();
-		var cardId   = $(this).closest('.card-item').data('card-id');
+		var thisEle = $(this);
+		var cardId  = $(this).closest('.card-item').data('card-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CARDS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('card',{card:cardId}).done(function(data) {
-						_displayLists();
+						thisEle.closest('.card-item').remove();
 					}).fail(_displayError);
 				}
 			});
@@ -816,7 +864,7 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('checklist',{checklist:checklistId}).done(function(data) {
-						thisEle.parent('.checklist-name').parent('.checklist-item').remove();
+						thisEle.closest('.checklist-item').remove();
 					}).fail(_displayError);
 				}
 			});
@@ -831,7 +879,7 @@ define(function (require, exports, module) {
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('checkItem',{checklist:checklistId,checkItem:taskId}).done(function(data) {
-						thisEle.parent('.task-item').remove();
+						thisEle.parent('.checkItem-item').remove();
 					}).fail(_displayError);
 				}
 			});
@@ -840,7 +888,7 @@ define(function (require, exports, module) {
 	function _toggleCheckedListItems(e) {
 		e.stopPropagation();
 		var $checklist = $(this).parents('div'),
-			$taskItems = $checklist.find('.task-item');
+			$taskItems = $checklist.find('.checkItem-item');
 		var checklistId = $checklist.data('checklist-id');
 		
 		if (!_checkedTasksHidden[checklistId]) {
@@ -1152,7 +1200,7 @@ define(function (require, exports, module) {
 		});
 
 		// Task Name
-		$panel.on('change', '.task-item input', function(e) {
+		$panel.on('change', '.checkItem-item input', function(e) {
 			var cardId   	= $(this).closest('.card-item').data('card-id');
 			var checkListId = $(this).closest('.checklist-item').data("checklist-id");
 			var $checkItem  = $(this);
@@ -1232,7 +1280,7 @@ define(function (require, exports, module) {
 		$panel.on('click', '.cmd-delete-list', _openDeleteListDialog);
 		$panel.on('click', '.cmd-delete-card', _openDeleteCardDialog);
 		$panel.on('click', '.cmd-delete-checklist', _openDeleteChecklistDialog);
-		$panel.on('click', '.cmd-delete-task', _openDeleteTaskDialog);
+		$panel.on('click', '.cmd-delete-checkItem', _openDeleteTaskDialog);
 		$panel.on('click', '.cmd-delete-member', _openDeleteMemberDialog);
 
 		// Hide Checked Items
@@ -1288,7 +1336,7 @@ define(function (require, exports, module) {
 	 * return true if the list is changes list, otherwise false
 	 */
 	function _isChangesList($listItem) {
-		return $listItem.attr('id') === 'changes-list';
+		return $listItem.data('list-id') === 'changes-list';
 	}
 
 	function _getActiveDropzone($cardItem) {
@@ -1419,13 +1467,8 @@ define(function (require, exports, module) {
 		// check if the current card is alread expanded
 		var cardId 		 = $card.data('card-id');
 		var $cardVerbose = $card.children(".card-verbose");
-		
-		var $list 		= $card.closest('.list-item');
-		var listId 		= $list.data('list-id');
-		console.log('listId: ',listId);
-		
-		var listIndex = $list.index()-1; // cause of the changes list
 		var cardIndex = $card.index();
+		var eleArr = $card.getClosest(['list']);
 		
 		if ($cardVerbose.css("display") === 'inline') {
 			$cardVerbose.html('');	
@@ -1433,10 +1476,10 @@ define(function (require, exports, module) {
 			$card.removeClass('card-active');	
 			delete _expandedCards[cardId];
 			// get id,name,taskCount of card
-			var cardName 	  = cache.data.lists[listIndex].cards[cardIndex].name;
-			var cardTaskCount = cache.data.lists[listIndex].cards[cardIndex].taskCount;
+			var cardName 	  = cache.data.lists[eleArr.index.list].cards[cardIndex].name;
+			var cardTaskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
 			// reset the cache
-			cache.data.lists[listIndex].cards[cardIndex] = {id: cardId, name: cardName, taskCount: cardTaskCount};
+			cache.data.lists[eleArr.index.list].cards[cardIndex] = {id: cardId, name: cardName, taskCount: cardTaskCount};
 			return;
 		}
 		
@@ -1454,11 +1497,11 @@ define(function (require, exports, module) {
 			
 			// fill the cache with the new card
 			
-			console.log('listIndex: '+listIndex);
+			console.log('eleArr.index.list: '+eleArr.index.list);
 			console.log('cardIndex: '+cardIndex);
-			var taskCount = cache.data.lists[listIndex].cards[cardIndex].taskCount;
-			cache.data.lists[listIndex].cards[cardIndex] = data;
-			cache.data.lists[listIndex].cards[cardIndex].taskCount = taskCount;
+			var taskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
+			cache.data.lists[eleArr.index.list].cards[cardIndex] = data;
+			cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount = taskCount;
 			console.log('cache: ',cache.data);
 			
 			
@@ -1466,7 +1509,7 @@ define(function (require, exports, module) {
 			$cardVerbose.css('display','inline');
 			
 			$card.addClass('card-active');
-			_expandedCards[cardId] = {listId: listId};
+			_expandedCards[cardId] = {listId: eleArr.id.list};
 
 			
 			// set admin panel and checkmarks on tasks tab
@@ -1516,7 +1559,7 @@ define(function (require, exports, module) {
 		$card.find('.checklist-item').each(function(indexCh) {
 			var $checklist  = $(this);
 			var checklistId = $checklist.data("checklist-id");
-			$checklist.find('.task-item').each(function(indexChI) {
+			$checklist.find('.checkItem-item').each(function(indexChI) {
 				var checkitemId = $(this).data("checkitem-id");
 				var itemState	= dataChecklists[checklistId][checkitemId];
 				$(this).children('.task-state').prop('checked',(itemState === "complete") ? true : false);
@@ -1646,7 +1689,7 @@ define(function (require, exports, module) {
             files: sortByFilename(newComments)
         });
         $(compliedChangesList).insertBefore($('.tab-lists .lists', $panel).children().first());
-		
+		console.log($('.tab-lists .lists', $panel));
 		
 		function sortByFilename(comments) {
 			comments = comments.sort(function (a,b) {
@@ -1946,6 +1989,21 @@ define(function (require, exports, module) {
 	String.prototype.replaceRange = function(start,end,replace) {
 		return this.substring(0,start) + replace + this.substring(end);
 	}
+	
+	
+	$.fn.extend({
+	  	getClosest: function(cEleCl) {
+			var $this 	= this;	
+			var length 	= cEleCl.length;
+			var result	= {item: [],id: [],index: []};
+			for (var i = 0; i < length; i++) {
+				result.item[cEleCl[i]]   = $this.closest('.'+cEleCl[i]+'-item');
+				result.id[cEleCl[i]] 	= result.item[cEleCl[i]].data(cEleCl[i]+'-id');
+				result.index[cEleCl[i]]	= result.item[cEleCl[i]].index();
+			}
+			return result;
+	 	}
+	});
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////  KeyEvents  //////////////////////////////////////

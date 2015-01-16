@@ -141,7 +141,8 @@ define(function (require, exports, module) {
 	 */
 	function isRelevant(key) {
 		var relevant = [
-			"lists","lists.id","lists.cards","lists.cards.id","lists.cards.name","lists.cards.desc",
+			"lists","lists.id","lists.name",
+			"lists.cards","lists.cards.id","lists.cards.name","lists.cards.desc",
 			"lists.cards.checklists.*","lists.cards.comments.*",
 			"lists.cards.members.id","lists.cards.members.avatarHash","lists.cards.members.fullName","lists.cards.members.username"
 		];
