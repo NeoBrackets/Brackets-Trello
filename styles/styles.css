@@ -17,6 +17,13 @@
 	background: #3d4042;
 	color: #adb9bd;
 }
+
+.horz-resizer.scroll {
+	padding-bottom: 20000px;
+	margin-bottom: -20000px;
+	overflow: hidden;
+}
+
 #brackets-trello .task-controls {
 	position: relative;
 	overflow: hidden;
