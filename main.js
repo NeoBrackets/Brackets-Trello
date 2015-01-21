@@ -359,7 +359,7 @@ define(function (require, exports, module) {
 	/**
 	 * Open New Board Dialog
 	 */
-	function _openNewBoardDialog() {
+	function _openNewBoardDialog($this) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newBoardHTML)),
 			$dialog = dialog.getElement();
 		$dialog.find('.board-name').focus();
@@ -403,7 +403,7 @@ define(function (require, exports, module) {
 	/**
 	 * Open New List Dialog
 	 */
-	function _openNewListDialog() {
+	function _openNewListDialog($this) {
 		var boardId = _prefs.get('selected-board');
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newListHTML)),
 			$dialog = dialog.getElement();
@@ -416,9 +416,13 @@ define(function (require, exports, module) {
 						// add the new list
 						data.totalCards = 0;
 						var combinedTemplate = _combineTemplates(partTemplates.lists);
-						$('.tab-lists', $panel).children('.lists').children('.cmd-new-list').before(
+						$('.tab-lists', $panel).find('.tmpl_lists').append(
 							Mustache.renderTemplate(combinedTemplate, {lists:data})
 						);
+
+						// update the cache
+						cache.data.lists.push(data);
+						log(['main','openDialog','_openNewListDialog'],'cache',cache);
 					})
 				.fail(_displayError);
 			}
@@ -428,7 +432,7 @@ define(function (require, exports, module) {
 	/**
 	 * Open New Card Dialog
 	 */
-	function _openNewCardDialog() {
+	function _openNewCardDialog($this) {
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newCardHTML)),
 			$dialog = dialog.getElement();
 		$dialog.find('.card-name').focus();
@@ -436,8 +440,9 @@ define(function (require, exports, module) {
 			e.stopPropagation();
 		});
 
-		var $listItem = $(this).closest('.list-item');
-		
+		var eleArr	= $this.getClosest(['list']);
+		log(['main','openDialog','_openNewCardDialog'],'eleArr',eleArr);
+
 		dialog.done(function(id) {
 			if (id === 'save') {
 				Trello._create('card',
@@ -447,9 +452,18 @@ define(function (require, exports, module) {
 				.done( function(data) {
 						data.taskCount = '';
 						var combinedTemplate = _combineTemplates(partTemplates.lists_cards);
-						$listItem.children('.cards').append(
+						eleArr.item.list.find('.tmpl_lists_cards').append(
 							Mustache.renderTemplate(combinedTemplate, {cards:data})
 						);
+
+						// update the cache
+						if ("cards" in cache.data.lists[eleArr.index.list]) {
+							cache.data.lists[eleArr.index.list].cards.push(data);
+						} else {
+							cache.data.lists[eleArr.index.list].cards = [data];
+						}
+
+						log(['main','openDialog','_openNewCardDialog'],'cache',cache);
 					})
 				.fail(_displayError);
 			}
@@ -469,6 +483,10 @@ define(function (require, exports, module) {
 		$dialog.find('.btn-add-task').click(function() {
 			$dialog.find('.form-horizontal').append($(Mustache.renderTemplate(newTaskTemplate)));
 		});
+
+		var eleArr	= $(this).getClosest(['card','list']);
+		log(['main','openDialog','_openNewChecklistDialog'],'eleArr',eleArr);
+
 		dialog.done(function(id) {
 			if (id === 'save') {
 				name = $dialog.find('.checklist-name').val();
@@ -485,6 +503,13 @@ define(function (require, exports, module) {
 					$checklists.children('.cmd-new-checklist').before(
 						Mustache.renderTemplate(combinedTemplate, {checklists:data.checklist})
 					);
+
+					// update the cache
+					if ("checklists" in cache.data.lists[eleArr.index.list].cards[eleArr.index.card]) {
+						cache.data.lists[eleArr.index.list].cards[eleArr.index.card].checklists.push(data.checklist);
+					} else {
+						cache.data.lists[eleArr.index.list].cards[eleArr.index.card].checklists = [data.checklist];
+					}
 									
 					for (var t = 0; t < tasks.length; t++) {
 						var task = data.tasks[t];
@@ -494,7 +519,15 @@ define(function (require, exports, module) {
 						$checklists.find('.checklist-item').last().children('.tasks').append(
 							Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 						);
+
+						// update the cache
+						if ("checkItems" in cache.data.lists[eleArr.index.list].cards[eleArr.index.card].checklists.last()) {
+							cache.data.lists[eleArr.index.list].cards[eleArr.index.card].checklists.last().checkItems.push(task);
+						} else {
+							cache.data.lists[eleArr.index.list].cards[eleArr.index.card].checklists.last().checkItems = [task];
+						}
 					}
+					log(['main','openDialog','_openNewChecklistDialog'],'cache',cache);
 				}).fail(_displayError);
 			}
 		});
@@ -523,13 +556,10 @@ define(function (require, exports, module) {
 				var tasks = [];
 				$dialog.find('.task-name').each(function() {
 					var value = $(this).val().trim();
-					console.log('taskVal: ',value);
-					console.log('taskVal Length: ',value.length);
 					if (value.length >= 1) {
 						tasks.push(value);
 					}
 				})
-				console.log('tasks: ',tasks);
 				
 				Trello._createTasks([],eleArr.id.checklist,tasks,0,tasks.length)
 				.done(function(data) {
@@ -544,7 +574,7 @@ define(function (require, exports, module) {
 							
 							var combinedTemplate = _combineTemplates(partTemplates.lists_cards_checklists_checkItems);
 							// add the new task
-							eleArr.item.checklist.find('.tmpl_listscards_checklists_checkItems').append(
+							eleArr.item.checklist.find('.tmpl_lists_cards_checklists_checkItems').append(
 								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 							);
 						}
@@ -563,9 +593,9 @@ define(function (require, exports, module) {
 		var cardId    = $card.data('card-id');	
 		var $list 	  = $card.closest('.list-item');
 		
-		var listIndex = $list.index()-1; // cause of the changes list
-		var cardIndex = $card.index();
-		
+		var eleArr  = $(this).getClosest(["member","card","list"]);
+		log(['main','addDialog','_openNewMemberDialog'],'eleArr',eleArr);
+
 		Trello._get('boardMembers',{board:boardId},{}).done(function(boardMembers) {
 			Trello._get('cardMembers',{card:cardId},{}).done(function(cardMembers) {
 				// difference between boardMembers and cardMembers
@@ -606,7 +636,8 @@ define(function (require, exports, module) {
 									if (members[m].id == data.idMembers[nm]) {
 										showNewMembers.push(members[m]);
 										// add to the cache
-										cache.data.lists[listIndex].cards[cardIndex].members[startIndex+nm] = members[m];
+										cache.data.lists[eleArr.index.list].cards[eleArr.index.card].members.push(members[m]);
+										log(['main','addDialog','_openNewMemberDialog'],'cache',cache);
 										break;
 									}
 								}
@@ -614,7 +645,7 @@ define(function (require, exports, module) {
 							
 							
 							
-							$members.children('h5').after(
+							$members.find('.tmpl_lists_cards_members').prepend(
 								Mustache.renderTemplate(combinedTemplate, {members:showNewMembers})
 							);
 						}).fail(_displayError);
@@ -830,13 +861,17 @@ define(function (require, exports, module) {
 	function _openDeleteListDialog(e) {
 		e.stopPropagation();
 		var thisEle = $(this);
+		var eleArr = $(this).getClosest(['list']);
+		log(['main','deleteDialog','_openDeleteListDialog'],'eleArr',eleArr);
 		var listId = thisEle.data('list-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.LISTS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('list',{list:listId}).done(function(data) {
 						thisEle.parent('.list-name').parent('.list-item').remove();
-						
+						// update cache
+						cache.data.lists.splice(eleArr.index.list,1);
+						log(['main','deleteDialog','_openDeleteListDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
 			});
@@ -845,12 +880,18 @@ define(function (require, exports, module) {
 	function _openDeleteCardDialog(e) {
 		e.stopPropagation();
 		var thisEle = $(this);
+		var eleArr = $(this).getClosest(['list','card']);
+		log(['main','deleteDialog','_openDeleteCardDialog'],'eleArr',eleArr);
+
 		var cardId  = $(this).closest('.card-item').data('card-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CARDS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('card',{card:cardId}).done(function(data) {
 						thisEle.closest('.card-item').remove();
+						// update cache
+						cache.data.lists[eleArr.index.list].cards.splice(eleArr.index.card,1);
+						log(['main','deleteDialog','_openDeleteCardDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
 			});
@@ -859,12 +900,18 @@ define(function (require, exports, module) {
 	function _openDeleteChecklistDialog(e) {
 		e.stopPropagation();
 		var thisEle = $(this);
+		var eleArr = $(this).getClosest(['checklist','list','card']);
+		log(['main','deleteDialog','_openDeleteChecklistDialog'],'eleArr',eleArr);
+
 		var checklistId = thisEle.data('checklist-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CHECKLISTS)))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('checklist',{checklist:checklistId}).done(function(data) {
 						thisEle.closest('.checklist-item').remove();
+						// update cache
+						cache.data.lists[eleArr.index.list].cards[eleArr.index.card].checklists.splice(eleArr.index.checklist,1);
+						log(['main','deleteDialog','_openDeleteChecklistDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
 			});
@@ -873,6 +920,9 @@ define(function (require, exports, module) {
 	function _openDeleteTaskDialog(e) {
 		e.stopPropagation();
 		var thisEle = $(this);
+		var eleArr = $(this).getClosest(['checkItem','checklist','list','card']);
+		log(['main','deleteDialog','_openDeleteTaskDialog'],'eleArr',eleArr);
+
 		var checklistId = thisEle.closest('.checklist-item').data('checklist-id');
 		var taskId = thisEle.data('task-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.TASKS)))
@@ -880,6 +930,10 @@ define(function (require, exports, module) {
 				if (id === 'yes') {
 					Trello._delete('checkItem',{checklist:checklistId,checkItem:taskId}).done(function(data) {
 						thisEle.parent('.checkItem-item').remove();
+						// update cache
+						cache.data.lists[eleArr.index.list].cards[eleArr.index.card]
+						 .checklists[eleArr.index.checklist].checkItems.splice(eleArr.index.checkItem,1);
+						log(['main','deleteDialog','_openDeleteTaskDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
 			});
@@ -891,6 +945,7 @@ define(function (require, exports, module) {
 			$taskItems = $checklist.find('.checkItem-item');
 		var checklistId = $checklist.data('checklist-id');
 		
+
 		if (!_checkedTasksHidden[checklistId]) {
 			_checkedTasksHidden[checklistId] = true;
 			$taskItems.each(function() {
@@ -913,6 +968,10 @@ define(function (require, exports, module) {
 		var cardId = $(this).closest('.card-item').data('card-id');
 		var dialog = Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(newCommentTemplate))),
 			$dialog = dialog.getElement();
+
+		var eleArr = $(this).getClosest(['card','list']);
+		log(['main','addDialog','_openAddCommentDialog'],'eleArr',eleArr);
+
 		$dialog.find('.card-comment-text').focus();
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -926,9 +985,18 @@ define(function (require, exports, module) {
 						commentObj.comment = data.data.text;
 
 						var combinedTemplate = _combineTemplates(partTemplates.lists_cards_comments);
-						$comments.children('h5').after(
+						$comments.find('.tmpl_lists_cards_comments').prepend(
 							Mustache.renderTemplate(combinedTemplate, {comments:commentObj})
 						);
+
+						// update the cache
+						if ("comments" in cache.data.lists[eleArr.index.list].cards[eleArr.index.card]) {
+							cache.data.lists[eleArr.index.list].cards[eleArr.index.card].comments.splice(0,0,commentObj);
+						} else {
+							cache.data.lists[eleArr.index.list].cards[eleArr.index.card].comments = [commentObj];
+						}
+						log(['main','addDialog','_openAddCommentDialog'],'cache',cache);
+
 						var $comment = $comments.children('.card-comment-item').last();
 						// you can always delete/edit your own card
 						$comment.find('.card-comment-body h5')
@@ -945,14 +1013,20 @@ define(function (require, exports, module) {
 			$dialog = dialog.getElement();
 		$dialog.find('.card-comment-text').val($(this).parent('h5').siblings('p').html()).focus();
 		var $commentHtml= $(this).closest('.card-comment-body').find('.card-comment');
+		var eleArr = $(this).getClosest(['card-comment','card','list']);
+		log(['main','editDialog','_openEditCommentDialog'],'eleArr',eleArr);
+
 		var commentId 	= $(this).data('comment-id');
 		var cardId   	= $(this).closest('.card-item').data('card-id');
+
 		dialog.done(function(id) {
 			if (id === 'save') {
 				var commentText = $dialog.find('.card-comment-text').val();
 				Trello._edit('comment',{card:cardId,comment:commentId},{text:commentText})
 					.done(function(data) {
 						$commentHtml.html(commentText);
+						cache.data.lists[eleArr.index.list].cards[eleArr.index.card].comments[eleArr.index.card_comment].comment = commentText;
+						log(['main','editDialog','_openEditCommentDialog'],'cache',cache);
 					})
 					.fail(_displayError);
 			}
@@ -963,11 +1037,16 @@ define(function (require, exports, module) {
 		var $comment = $(this).closest('.card-comment-item');
 		var cardId = $(this).closest('.card-item').data('card-id');
 		var commentId = $(this).data('comment-id');
+
+		var eleArr = $(this).getClosest(['card-comment','card','list']);
+		log(['main','deleteDialog','_openDeleteCommentDialog'],'eleArr',eleArr);
 		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.COMMENT))))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('comment',{comment:commentId,card:cardId}).done(function(data) {
 						$comment.remove();
+						cache.data.lists[eleArr.index.list].cards[eleArr.index.card].comments.splice(eleArr.index.card_comment,1);
+						log(['main','deleteDialog','_openDeleteCommentDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
 			});
@@ -978,11 +1057,16 @@ define(function (require, exports, module) {
 		var $member 	= $(this).closest('.member-item');
 		var cardId   	= $(this).closest('.card-item').data('card-id');
 		var memberId 	= $(this).data('member-id');
+
+		var eleArr = $(this).getClosest(['member','card','list']);
+		log(['main','deleteDialog','_openDeleteMemberDialog'],'eleArr',eleArr);
 		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.MEMBER))))
 			.done(function(id) {
 				if (id === 'yes') {
 					Trello._delete('cardMember',{card:cardId,member:memberId}).done(function(data) {
 						$member.remove();
+						cache.data.lists[eleArr.index.list].cards[eleArr.index.card].members.splice(eleArr.index.member,1);
+						log(['main','deleteDialog','_openDeleteMemberDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
 			});
@@ -1251,16 +1335,16 @@ define(function (require, exports, module) {
 
 		// New Item Handlers
 		$panel.on('click', '.cmd-new-board', function() {
-			_openNewBoardDialog();
+			_openNewBoardDialog($(this));
 		});
 		$panel.on('click', '.cmd-new-list', function() {
 			_savePrefs('selected-board', $(this).data('board-id'));
-			_openNewListDialog();
+			_openNewListDialog($(this));
 		});
 		$panel.on('click', '.cmd-new-card', function(e) {
 			e.stopPropagation();
 			_savePrefs('selected-list', $(this).data('list-id'));
-			_openNewCardDialog();
+			_openNewCardDialog($(this));
 		});
 		$panel.on('click', '.cmd-new-tasks', _openNewTasksDialog);
 		
@@ -1995,11 +2079,13 @@ define(function (require, exports, module) {
 	  	getClosest: function(cEleCl) {
 			var $this 	= this;	
 			var length 	= cEleCl.length;
+
 			var result	= {item: [],id: [],index: []};
 			for (var i = 0; i < length; i++) {
-				result.item[cEleCl[i]]   = $this.closest('.'+cEleCl[i]+'-item');
-				result.id[cEleCl[i]] 	= result.item[cEleCl[i]].data(cEleCl[i]+'-id');
-				result.index[cEleCl[i]]	= result.item[cEleCl[i]].index();
+				var keyName = cEleCl[i].replace(/-/g,'_');
+				result.item[keyName]   = $this.closest('.'+cEleCl[i]+'-item');
+				result.id[keyName] 	   = result.item[keyName].data(cEleCl[i]+'-id');
+				result.index[keyName]  = result.item[keyName].index();
 			}
 			return result;
 	 	}
