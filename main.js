@@ -201,21 +201,24 @@ define(function (require, exports, module) {
 
 		Trello._get(currentTab,cache.ids,cache[currentTab+"_settings"])
 		.done(function(data) {
-			if (currentTab == "lists") {
+			if (currentTab == "boards") {
+				_displayBoards();	
+			} else if (currentTab == "lists") {
 				data.name = boardName;
 				data.id   = boardId;
-			}
 	
+				Sync.init(cache.data,data,_expandedCards)
+				.done(function(diff) {
+					console.log('[main] diff: ',diff);
+					console.log('[main] diff.lists: ',diff.lists);
 			
-			Sync.init(cache.data,data,_expandedCards)
-			.done(function(diff) {
-				console.log('[main] diff: ',diff);
-				// updata cache
-				cache.data = data;
-				
-				// change the DOM
-				_diff2DOM(diff,data);				
-			});
+					// updata cache
+					cache.data = data;
+
+					// change the DOM
+					_diff2DOM(diff,data);				
+				});
+			}
 		});
 	}
 
@@ -319,10 +322,12 @@ define(function (require, exports, module) {
 					return;
 				}
 				addHTML($list,$card,templateName,templateHTML);
-				$card.find('.card-verbose').css('display','inline');
-				// set admin panel and checkmarks on tasks tab
-				_taskChecksAndAdmin($card,data);
-				$card.find('.members').show();
+				if (data) {
+					$card.find('.card-verbose').css('display','inline');
+					// set admin panel and checkmarks on tasks tab
+					_taskChecksAndAdmin($card,data);
+					$card.find('.members').show();
+				}
 				return;
 			} 
 			addHTML($('.tab-lists', $panel),$list,templateName,templateHTML);
@@ -1633,43 +1638,45 @@ define(function (require, exports, module) {
 	function _taskChecksAndAdmin($card,data) {
 		// set checkmarks
 		var dataChecklists = {};
-		$.each(data.checklists,function(checklistIndex,checklist) {
-			dataChecklists[checklist.id] = [];
-			$.each(checklist.checkItems,function(checkItemIndex,checkItem) {
-				dataChecklists[checklist.id][checkItem.id] = checkItem.state; 
+		if ("checklists" in data) {
+			$.each(data.checklists,function(checklistIndex,checklist) {
+				dataChecklists[checklist.id] = [];
+				$.each(checklist.checkItems,function(checkItemIndex,checkItem) {
+					dataChecklists[checklist.id][checkItem.id] = checkItem.state; 
+				});
 			});
-		});
-		
-		$card.find('.checklist-item').each(function(indexCh) {
-			var $checklist  = $(this);
-			var checklistId = $checklist.data("checklist-id");
-			$checklist.find('.checkItem-item').each(function(indexChI) {
-				var checkitemId = $(this).data("checkitem-id");
-				var itemState	= dataChecklists[checklistId][checkitemId];
-				$(this).children('.task-state').prop('checked',(itemState === "complete") ? true : false);
-			});
-		});
-		
-		
-		var dataComments = {};
-		$.each(data.comments,function(commentIndex,comment) {
-			dataComments[comment.id] = comment;
-		});
-		
-		// delete comment edit/delete if it isn't allowed
-		if (data.comments && data.comments.length >= 1) {
-			$card.find('.card-comment-item').each(function(indexCo) {
-				var commentId 	= $(this).data("card-comment-id");
-				var comment 	= dataComments[commentId];
-				if (activeUserId !== comment.memberId) {
-					$(this).find('.card-comment-body h5').children('.cmd-edit-comment').remove();
-				}
-				if (activeUserRole !== "admin" && activeUserId !== comment.memberId) {
-					$(this).find('.card-comment-body h5').children('.cmd-delete-comment').remove();
-				}
+
+			$card.find('.checklist-item').each(function(indexCh) {
+				var $checklist  = $(this);
+				var checklistId = $checklist.data("checklist-id");
+				$checklist.find('.checkItem-item').each(function(indexChI) {
+					var checkitemId = $(this).data("checkitem-id");
+					var itemState	= dataChecklists[checklistId][checkitemId];
+					$(this).children('.task-state').prop('checked',(itemState === "complete") ? true : false);
+				});
 			});
 		}
 		
+		var dataComments = {};
+		if ("comments" in data) {
+			$.each(data.comments,function(commentIndex,comment) {
+				dataComments[comment.id] = comment;
+			});
+
+			// delete comment edit/delete if it isn't allowed
+			if (data.comments && data.comments.length >= 1) {
+				$card.find('.card-comment-item').each(function(indexCo) {
+					var commentId 	= $(this).data("card-comment-id");
+					var comment 	= dataComments[commentId];
+					if (activeUserId !== comment.memberId) {
+						$(this).find('.card-comment-body h5').children('.cmd-edit-comment').remove();
+					}
+					if (activeUserRole !== "admin" && activeUserId !== comment.memberId) {
+						$(this).find('.card-comment-body h5').children('.cmd-delete-comment').remove();
+					}
+				});
+			}
+		}
 	}
 
 	/**
