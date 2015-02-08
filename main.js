@@ -97,12 +97,12 @@ define(function (require, exports, module) {
 	var activeUserRole = "user";
 	var activeUserId = '';
 
-	var logTypes = ['diffDom','openDialog'];
+	var logTypes = ['sync','diffDom','openDialog'];
 	
 	function log(types,name,output) {
 		if (!logTypes) { return; }
 		if (arrayIntersect(logTypes,types).length >= 0) {
-			console.log('['+types[0]+','+types.last()+'] ',name,output);	
+			console.log('['+types[0]+','+types.last()+'] ',name,JSON.stringify(output, null, " "));	
 		}
 	}
 	
@@ -209,14 +209,16 @@ define(function (require, exports, module) {
 	
 				Sync.init(cache.data,data,_expandedCards)
 				.done(function(diff) {
-					console.log('[main] diff: ',diff);
-					console.log('[main] diff.lists: ',diff.lists);
+					log(['main','sync','_initSync'],'diff',diff);
+					log(['main','sync','_initSync'],'diff.lists',diff.lists);
 			
 					// updata cache
 					cache.data = data;
-
+					
 					// change the DOM
-					_diff2DOM(diff,data);				
+					_diff2DOM(diff,data);	
+					
+					
 				});
 			}
 		});
@@ -279,7 +281,7 @@ define(function (require, exports, module) {
 	 * @param {Object} where        change the dom at this position (i.e {lists: 0}) change the first list (not Changes)
 	 * @param {Array}  data         new data for the dom
 	 */
-	function _template2DOM(templateName,where,data) {
+	function _template2DOM(templateName,where,data,oldData) {
 		log(['main','diff','diffDom','_template2DOM'],'templateName',templateName);
 		log(['main','diff','diffDom','_template2DOM'],'where',where);
 		log(['main','diff','diffDom','_template2DOM'],'data',data);
@@ -292,6 +294,8 @@ define(function (require, exports, module) {
 		if (!data) {
 			templateHTML = false;
 		}
+		log(['main','diff','diffDom','_template2DOM'],'templateHTML',templateHTML);
+		
 		if ("lists" in where) {
 			// +1 for the changes list
 			var $list = $('.tab-lists', $panel).find('.list-item:eq('+(parseInt(where.lists)+1)+')');
@@ -301,7 +305,8 @@ define(function (require, exports, module) {
 					var $checklist = $card.find('.checklist-item:eq('+where.checklists+')');
 					if ("checkItems" in where) {
 						var $checkitem = $checklist.find('.checkItem-item:eq('+where.checkItems+')');
-						$checkitem = addHTML($checklist,$checkitem,templateName,templateHTML);
+						addHTML($checklist,$checkitem,templateName,templateHTML);
+						$checkitem = $checklist.find('.checkItem-item:eq('+where.checkItems+')');
 						if ($checkitem !== false) {
 							var boolCheck = (data.state === "complete") ? true : false;
 							$checkitem.children('input[type="checkbox"]')[0].checked = boolCheck;
@@ -322,8 +327,12 @@ define(function (require, exports, module) {
 					return;
 				}
 				addHTML($list,$card,templateName,templateHTML);
-				if (data) {
-					$card.find('.card-verbose').css('display','inline');
+				$card = $list.find('.card-item:eq('+where.cards+')');
+				
+				if (data && data.id in _expandedCards) {		
+					$card.removeClass('card-active');
+					$card.addClass('card-active');
+					$card.find('.card-verbose').show();
 					// set admin panel and checkmarks on tasks tab
 					_taskChecksAndAdmin($card,data);
 					$card.find('.members').show();
@@ -339,15 +348,10 @@ define(function (require, exports, module) {
 			} else {
 				if (!templateHTML) {
 					$ele.remove();
-					$ele = false;
 				} else {
-					var $newEle = $ele.after(templateHTML);
-					$ele.remove();
-					$ele = $newEle;
+					$ele.replaceWith(templateHTML);
 				}
 			}	
-			console.log('addHTML result = ',$ele);
-			return $ele;
 		}
 	}
 	
@@ -1525,7 +1529,6 @@ define(function (require, exports, module) {
 			activeUserRole = data.memberRole.memberType;
 
 			var combinedTemplate = _combineTemplates(listsTemplate);	
-			console.log('list data: ', data);
 			cache  	= $.extend({},cache,{
 				data: data,
 				ids:{board:boardId},
@@ -1549,7 +1552,6 @@ define(function (require, exports, module) {
 	 * @param {jQuery} $card card object
 	 */
 	function _displayCard($card) {
-		console.log('displayCard');
 		var boardName 	= _prefs.get("selected-board-name");
 		var listName 	= _prefs.get("selected-list-name");
 		
@@ -1586,12 +1588,9 @@ define(function (require, exports, module) {
 			
 			// fill the cache with the new card
 			
-			console.log('eleArr.index.list: '+eleArr.index.list);
-			console.log('cardIndex: '+cardIndex);
 			var taskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
 			cache.data.lists[eleArr.index.list].cards[cardIndex] = data;
 			cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount = taskCount;
-			console.log('cache: ',cache.data);
 			
 			
 			$cardVerbose.html(Mustache.renderTemplate(combinedTemplate, data));
@@ -1780,7 +1779,6 @@ define(function (require, exports, module) {
             files: sortByFilename(newComments)
         });
         $(compliedChangesList).insertBefore($('.tab-lists .lists', $panel).children().first());
-		console.log($('.tab-lists .lists', $panel));
 		
 		function sortByFilename(comments) {
 			comments = comments.sort(function (a,b) {
