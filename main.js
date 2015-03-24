@@ -327,6 +327,9 @@ define(function (require, exports, module) {
 					return;
 				}
 				addHTML($list,$card,templateName,templateHTML);
+				// update list counter
+				_updateCardCounter($list);
+				
 				$card = $list.find('.card-item:eq('+where.cards+')');
 				
 				if (data && data.id in _expandedCards) {		
@@ -354,6 +357,28 @@ define(function (require, exports, module) {
 			}	
 		}
 	}
+	
+	/**
+	 * Update the taskCount counter for the specified card
+	 * @param {jQueryObj} $card    the card
+	 * @param {String}    category (checked | total)
+	 * @param {Boolean}   add      true => add one,false => substract one 
+	 */
+	function _updateTaskCounter($card,category,add) {
+		var taskCounter = $card.find('.taskCount').html();
+		var parts	 	= taskCounter.split('/');
+		var checked 	= parseInt(parts[0]);
+		var total 		= parseInt(parts[1]);
+		
+		if (category == 'checked') {
+			checked += add ? 1 : -1;	
+		} else if (category == 'total') {
+			total 	+= add ? 1 : -1;				
+		}			
+		var newTaskCounter = checked+'/'+total;			
+		$card.find('.taskCount').html(newTaskCounter);
+	}
+	
 	
 	if (!Array.prototype.last){
 		Array.prototype.last = function(){
@@ -471,7 +496,8 @@ define(function (require, exports, module) {
 						} else {
 							cache.data.lists[eleArr.index.list].cards = [data];
 						}
-
+						
+						_updateCardCounter(eleArr.item.list);
 						log(['main','openDialog','_openNewCardDialog'],'cache',cache);
 					})
 				.fail(_displayError);
@@ -586,6 +612,7 @@ define(function (require, exports, module) {
 							eleArr.item.checklist.find('.tmpl_lists_cards_checklists_checkItems').append(
 								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 							);
+							_updateTaskCounter(eleArr.item.card,'total',true);
 						}
 					})
 				.fail(_displayError);
@@ -900,6 +927,8 @@ define(function (require, exports, module) {
 						thisEle.closest('.card-item').remove();
 						// update cache
 						cache.data.lists[eleArr.index.list].cards.splice(eleArr.index.card,1);
+						
+						_updateCardCounter(eleArr.item.list);
 						log(['main','deleteDialog','_openDeleteCardDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
@@ -942,6 +971,12 @@ define(function (require, exports, module) {
 						// update cache
 						cache.data.lists[eleArr.index.list].cards[eleArr.index.card]
 						 .checklists[eleArr.index.checklist].checkItems.splice(eleArr.index.checkItem,1);
+						
+						_updateTaskCounter(eleArr.item.card,'total',false);
+						if (eleArr.item.checkItem.find('.task-state').is(':checked')) {
+							_updateTaskCounter(eleArr.item.card,'checked',false);
+						}
+						
 						log(['main','deleteDialog','_openDeleteTaskDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
@@ -1294,10 +1329,11 @@ define(function (require, exports, module) {
 
 		// Task Name
 		$panel.on('change', '.checkItem-item input', function(e) {
+			var closest 	= $(this).getClosest(['card']);
 			var cardId   	= $(this).closest('.card-item').data('card-id');
 			var checkListId = $(this).closest('.checklist-item').data("checklist-id");
 			var $checkItem  = $(this);
-			_changeTaskState(cardId,checkListId,$checkItem);
+			_changeTaskState(closest.item.card,cardId,checkListId,$checkItem);
 		});
 
 		// Changes List comment
@@ -1411,7 +1447,6 @@ define(function (require, exports, module) {
     
     /**
 	 * update list's card counter and refresh view
-	 * 
 	 * @param{object} $listItem list item's jquery object
 	 */
     function _updateCardCounter($listItem) {
@@ -2016,9 +2051,12 @@ define(function (require, exports, module) {
 	////////////////////////////////////// CHANGE ///////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
 
-	function _changeTaskState(cardId,checkListId,$checkItem) {
+	function _changeTaskState($card,cardId,checkListId,$checkItem) {		
+		var newState = $checkItem.is(':checked') ? true: false;
+		_updateTaskCounter($card,'checked',newState);
 	 	Trello._change('taskstate',{card:cardId,checklist:checkListId,checkitem:$checkItem.data('checkitem-id')},
-						{value:[$checkItem.is(':checked') ? true: false]});
+						{value:[newState]});
+		
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////

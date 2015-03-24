@@ -87,6 +87,7 @@ define(function (require, exports, module) {
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
+		console.log('url: '+url);
 		var result = $.Deferred();
 		$.getJSON(url,
 		function(data) {
