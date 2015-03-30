@@ -1627,8 +1627,11 @@ define(function (require, exports, module) {
 			
 			
 			// fill the cache with the new card
-			
-			var taskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
+			if ("taskCount" in cache.data.lists[eleArr.index.list].cards[cardIndex]) {
+				var taskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
+			} else {
+				var taskCount = "";	
+			}
 			cache.data.lists[eleArr.index.list].cards[cardIndex] = data;
 			cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount = taskCount;
 			
@@ -1980,7 +1983,12 @@ define(function (require, exports, module) {
 			} );
 			CommandManager.execute(Commands.FILE_SAVE, { fullPath: comment._filePath });
 		} );
+		console.log('attachedId: ',comment);
 	}
+	// Trello Bugs: @weilin5 wrong _endLineCh (if the last word is inside the text) [5519a2939e88bee7159abfc4] 
+	// Trello Bugs: Bug [5519ae80fd24a7e9446630c4]
+	
+	
 	
 	/**
 	 * change the tag of trello comment which is in file
