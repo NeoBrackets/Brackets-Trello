@@ -112,6 +112,32 @@ define(function (require, exports, module) {
 		});
 	}
 	
+	function _subscribe(ids,func) {
+		for (var i = 0; i < ids.length; i++) {
+			$.Topic( ids[i] ).subscribe( func );			
+		}
+	}
+	
+	var topics = {};
+ 
+	$.Topic = function( id ) {
+		var callbacks, method,
+		topic = id && topics[ id ];
+
+		if ( !topic ) {
+			callbacks = $.Callbacks();
+			topic = {
+			  publish: callbacks.fire,
+			  subscribe: callbacks.add,
+			  unsubscribe: callbacks.remove
+			};
+			if ( id ) {
+			  topics[ id ] = topic;
+			}
+		}
+		return topic;
+	};
+	
 	/**
 	 * Save Preferences either in project or global
 	 *
@@ -328,8 +354,8 @@ define(function (require, exports, module) {
 				}
 				addHTML($list,$card,templateName,templateHTML);
 				// update list counter
-				_updateCardCounter($list);
-				
+				$.Topic( "cardAddedOrDeleted" ).publish( $list );
+							
 				$card = $list.find('.card-item:eq('+where.cards+')');
 				
 				if (data && data.id in _expandedCards) {		
@@ -361,24 +387,18 @@ define(function (require, exports, module) {
 	/**
 	 * Update the taskCount counter for the specified card
 	 * @param {jQueryObj} $card    the card
-	 * @param {String}    category (checked | total)
-	 * @param {Boolean}   add      true => add one,false => substract one 
 	 */
-	function _updateTaskCounter($card,category,add) {
-		var taskCounter = $card.find('.taskCount').html();
-		var parts	 	= taskCounter.split('/');
-		var checked 	= parseInt(parts[0]);
-		var total 		= parseInt(parts[1]);
+	function _updateTaskCounter($card) {
+		var total = $card.find('.checkItem-item').length;
+		var checked = 0;
+		$card.find('.checkItem-item').each(function () {
+			checked += $(this).find('.task-state').is(':checked') ? 1 : 0;
+		});
 		
-		if (category == 'checked') {
-			checked += add ? 1 : -1;	
-		} else if (category == 'total') {
-			total 	+= add ? 1 : -1;				
-		}			
 		var newTaskCounter = checked+'/'+total;			
 		$card.find('.taskCount').html(newTaskCounter);
 	}
-	
+	_subscribe(['taskStateChanged','taskAddedOrDeleted','taskAdded','taskDeleted'], _updateTaskCounter);
 	
 	if (!Array.prototype.last){
 		Array.prototype.last = function(){
@@ -475,7 +495,6 @@ define(function (require, exports, module) {
 		});
 
 		var eleArr	= $this.getClosest(['list']);
-		log(['main','openDialog','_openNewCardDialog'],'eleArr',eleArr);
 
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -497,7 +516,7 @@ define(function (require, exports, module) {
 							cache.data.lists[eleArr.index.list].cards = [data];
 						}
 						
-						_updateCardCounter(eleArr.item.list);
+						$.Topic( "cardAdded" ).publish( eleArr.item.list );
 						log(['main','openDialog','_openNewCardDialog'],'cache',cache);
 					})
 				.fail(_displayError);
@@ -520,7 +539,6 @@ define(function (require, exports, module) {
 		});
 
 		var eleArr	= $(this).getClosest(['card','list']);
-		log(['main','openDialog','_openNewChecklistDialog'],'eleArr',eleArr);
 
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -574,7 +592,6 @@ define(function (require, exports, module) {
 	function _openNewTasksDialog() {
 		
 		var eleArr = $(this).getClosest(['checklist','card','list']);
-		log(['name','openDialog','_openNewTasksDialog'],'eleArr',eleArr);
 		
 		var dialog = Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(newTasksHTML)),
 			$dialog = dialog.getElement(),
@@ -612,7 +629,7 @@ define(function (require, exports, module) {
 							eleArr.item.checklist.find('.tmpl_lists_cards_checklists_checkItems').append(
 								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 							);
-							_updateTaskCounter(eleArr.item.card,'total',true);
+							$.Topic( "taskAdded" ).publish( eleArr.item.card );
 						}
 					})
 				.fail(_displayError);
@@ -630,7 +647,6 @@ define(function (require, exports, module) {
 		var $list 	  = $card.closest('.list-item');
 		
 		var eleArr  = $(this).getClosest(["member","card","list"]);
-		log(['main','addDialog','_openNewMemberDialog'],'eleArr',eleArr);
 
 		Trello._get('boardMembers',{board:boardId},{}).done(function(boardMembers) {
 			Trello._get('cardMembers',{card:cardId},{}).done(function(cardMembers) {
@@ -751,7 +767,6 @@ define(function (require, exports, module) {
 		
 		var $card 	= $(this);
 		var eleArr  = $(this).getClosest(["card","list"]);
-		log(['main','openDialog','_openEditCardNameDialog'],'eleArr',eleArr);
 			
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -804,7 +819,6 @@ define(function (require, exports, module) {
 		$dialog.find('.checklist-name').val($(this).parent('h5').text().trim()).focus();
 		
 		var eleArr  	= $(this).getClosest(["checklist","card","list"]);
-		log(['main','openDialog','_openEditChecklistDialog'],'eleArr',eleArr);
 		
 		dialog.done(function(id) {
 			if (id === 'save') {
@@ -826,7 +840,6 @@ define(function (require, exports, module) {
 		
 		var $checkItem 	= $(this);
 		var eleArr  = $(this).getClosest(["checkItem","checklist","card","list"]);
-		log(['main','openDialog','_openEditTaskDialog'],'eleArr',eleArr);
 		
 		
 		$dialog.find('.task-name').val($(this).siblings('label').text().trim()).focus();
@@ -898,7 +911,6 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var thisEle = $(this);
 		var eleArr = $(this).getClosest(['list']);
-		log(['main','deleteDialog','_openDeleteListDialog'],'eleArr',eleArr);
 		var listId = thisEle.data('list-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.LISTS)))
 			.done(function(id) {
@@ -917,7 +929,6 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var thisEle = $(this);
 		var eleArr = $(this).getClosest(['list','card']);
-		log(['main','deleteDialog','_openDeleteCardDialog'],'eleArr',eleArr);
 
 		var cardId  = $(this).closest('.card-item').data('card-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CARDS)))
@@ -928,7 +939,7 @@ define(function (require, exports, module) {
 						// update cache
 						cache.data.lists[eleArr.index.list].cards.splice(eleArr.index.card,1);
 						
-						_updateCardCounter(eleArr.item.list);
+						$.Topic( "cardAdded" ).publish( eleArr.item.list );
 						log(['main','deleteDialog','_openDeleteCardDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
@@ -939,7 +950,6 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var thisEle = $(this);
 		var eleArr = $(this).getClosest(['checklist','list','card']);
-		log(['main','deleteDialog','_openDeleteChecklistDialog'],'eleArr',eleArr);
 
 		var checklistId = thisEle.data('checklist-id');
 		Dialogs.showModalDialogUsingTemplate(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.CHECKLISTS)))
@@ -959,7 +969,6 @@ define(function (require, exports, module) {
 		e.stopPropagation();
 		var thisEle = $(this);
 		var eleArr = $(this).getClosest(['checkItem','checklist','list','card']);
-		log(['main','deleteDialog','_openDeleteTaskDialog'],'eleArr',eleArr);
 
 		var checklistId = thisEle.closest('.checklist-item').data('checklist-id');
 		var taskId = thisEle.data('task-id');
@@ -972,11 +981,8 @@ define(function (require, exports, module) {
 						cache.data.lists[eleArr.index.list].cards[eleArr.index.card]
 						 .checklists[eleArr.index.checklist].checkItems.splice(eleArr.index.checkItem,1);
 						
-						_updateTaskCounter(eleArr.item.card,'total',false);
-						if (eleArr.item.checkItem.find('.task-state').is(':checked')) {
-							_updateTaskCounter(eleArr.item.card,'checked',false);
-						}
-						
+						$.Topic( "taskDeleted" ).publish( eleArr.item.card );
+										
 						log(['main','deleteDialog','_openDeleteTaskDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
@@ -1014,7 +1020,6 @@ define(function (require, exports, module) {
 			$dialog = dialog.getElement();
 
 		var eleArr = $(this).getClosest(['card','list']);
-		log(['main','addDialog','_openAddCommentDialog'],'eleArr',eleArr);
 
 		$dialog.find('.card-comment-text').focus();
 		dialog.done(function(id) {
@@ -1058,7 +1063,6 @@ define(function (require, exports, module) {
 		$dialog.find('.card-comment-text').val($(this).parent('h5').siblings('p').html()).focus();
 		var $commentHtml= $(this).closest('.card-comment-body').find('.card-comment');
 		var eleArr = $(this).getClosest(['card-comment','card','list']);
-		log(['main','editDialog','_openEditCommentDialog'],'eleArr',eleArr);
 
 		var commentId 	= $(this).data('comment-id');
 		var cardId   	= $(this).closest('.card-item').data('card-id');
@@ -1083,7 +1087,6 @@ define(function (require, exports, module) {
 		var commentId = $(this).data('comment-id');
 
 		var eleArr = $(this).getClosest(['card-comment','card','list']);
-		log(['main','deleteDialog','_openDeleteCommentDialog'],'eleArr',eleArr);
 		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.COMMENT))))
 			.done(function(id) {
 				if (id === 'yes') {
@@ -1103,7 +1106,6 @@ define(function (require, exports, module) {
 		var memberId 	= $(this).data('member-id');
 
 		var eleArr = $(this).getClosest(['member','card','list']);
-		log(['main','deleteDialog','_openDeleteMemberDialog'],'eleArr',eleArr);
 		Dialogs.showModalDialogUsingTemplate($(Mustache.renderTemplate(deleteConfirmationTemplate, _getOptions(ITEM_TYPE.MEMBER))))
 			.done(function(id) {
 				if (id === 'yes') {
@@ -1237,10 +1239,10 @@ define(function (require, exports, module) {
 
                 // update comment counter
 				$toList = $this.parents('.list-item');
-                _updateCodeCommentCounter($fromList);
-                _updateCardCounter($fromList);
-                _updateCodeCommentCounter($toList);
-                _updateCardCounter($toList);
+				$.Topic( "cardDeleted" ).publish( $fromList );
+				$.Topic( "cardAdded" ).publish( $toList );
+				$.Topic( "codeCommentAddedOrDeleted" ).publish( $fromList );
+				$.Topic( "codeCommentAddedOrDeleted" ).publish( $toList );
 
                 // push card moving to trello
                 if (!isComment) { 
@@ -1444,6 +1446,8 @@ define(function (require, exports, module) {
 			$counterItem.html('+' + count);
 		}
 	}
+	_subscribe(['codeCommentAdded','codeCommentDeleted','codeCommentAddedOrDeleted'], _updateCodeCommentCounter);			
+	
     
     /**
 	 * update list's card counter and refresh view
@@ -1457,6 +1461,7 @@ define(function (require, exports, module) {
             $counterItem.text(count);
         }
     }
+	_subscribe(['cardAdded','cardDeleted','cardAddedOrDeleted'], _updateCardCounter);
 
 	/**
 	 * 
@@ -1622,8 +1627,11 @@ define(function (require, exports, module) {
 			
 			
 			// fill the cache with the new card
-			
-			var taskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
+			if ("taskCount" in cache.data.lists[eleArr.index.list].cards[cardIndex]) {
+				var taskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
+			} else {
+				var taskCount = "";	
+			}
 			cache.data.lists[eleArr.index.list].cards[cardIndex] = data;
 			cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount = taskCount;
 			
@@ -1804,7 +1812,8 @@ define(function (require, exports, module) {
 				}
             }
             // set comment counter
-			_updateCodeCommentCounter($listItem);
+			$.Topic( "codeCommentAddedOrDeleted" ).publish( $listItem );
+			
         });
 
         // remove older Changes List.
@@ -1951,8 +1960,8 @@ define(function (require, exports, module) {
 		);
         
 		// update the counters
-        _updateCardCounter($listItem);
-        _updateCodeCommentCounter($listItem);
+		$.Topic( "cardAdded" ).publish( $listItem );
+		$.Topic( "codeCommentDeleted" ).publish( $listItem );
 	}
 	
 	/**
@@ -1974,7 +1983,12 @@ define(function (require, exports, module) {
 			} );
 			CommandManager.execute(Commands.FILE_SAVE, { fullPath: comment._filePath });
 		} );
+		console.log('attachedId: ',comment);
 	}
+	// Trello Bugs: @weilin5 wrong _endLineCh (if the last word is inside the text) [5519a2939e88bee7159abfc4] 
+	// Trello Bugs: Bug [5519ae80fd24a7e9446630c4]
+	
+	
 	
 	/**
 	 * change the tag of trello comment which is in file
@@ -2053,7 +2067,7 @@ define(function (require, exports, module) {
 
 	function _changeTaskState($card,cardId,checkListId,$checkItem) {		
 		var newState = $checkItem.is(':checked') ? true: false;
-		_updateTaskCounter($card,'checked',newState);
+		$.Topic( "taskStateChanged" ).publish( $card );
 	 	Trello._change('taskstate',{card:cardId,checklist:checkListId,checkitem:$checkItem.data('checkitem-id')},
 						{value:[newState]});
 		
@@ -2123,7 +2137,7 @@ define(function (require, exports, module) {
 			var $this 	= this;	
 			var length 	= cEleCl.length;
 
-			var result	= {item: [],id: [],index: []};
+			var result	= {item: {},id: {},index: {}};
 			for (var i = 0; i < length; i++) {
 				var keyName = cEleCl[i].replace(/-/g,'_');
 				result.item[keyName]   = $this.closest('.'+cEleCl[i]+'-item');
