@@ -17,6 +17,13 @@
 	background: #3d4042;
 	color: #adb9bd;
 }
+
+.horz-resizer.scroll {
+	padding-bottom: 20000px;
+	margin-bottom: -20000px;
+	overflow: hidden;
+}
+
 #brackets-trello .task-controls {
 	position: relative;
 	overflow: hidden;
@@ -121,9 +128,11 @@
 	width: 90%;
 	cursor: move;
 }
+#brackets-trello .lists_cards_members,
 #brackets-trello .list-item .cmd {
 	margin-left: 10px;
 }
+#brackets-trello .tasks,
 #brackets-trello .checklist-item .cmd {
 	margin-left: 20px;
 }
@@ -359,4 +368,7 @@
 	display: none;
 }
 
+#brackets-trello .file-comment-list .code-comment-file-header {
+	color: #adb9bd;
+}
 
