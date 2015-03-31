@@ -40,7 +40,7 @@ Okay you want to really try it out right now?
 	- But at the moment you have to push it (If you want to push it automatically you need to say a word and we will work on it)
 - You've played enough now! Enjoy working productive with this tool
 
-## Why we build this extension and why you should use it
+## Idea behind this extension
 
 - We all love Brackets and Trello
 - Coding is a big part in our life
