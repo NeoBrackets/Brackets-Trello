@@ -1,0 +1,18 @@
+<p class="card-desc-container">
+	<span class="card-desc">{{desc}}{{^desc}}<span class="default">{{strings.DEFAULT_CARD_DESC}}</span>{{/desc}}</span>
+	<i title="{{strings.EDIT_CARD_DESC}}"  class="btn-cmd btn-edit cmd-edit-card-desc" data-card-id="{{id}}"/>
+</p>
+<div class="checklists">
+	<div class="tmpl_lists_cards_checklists">{{> lists_cards_checklists.html}}</div>
+	<div class="cmd cmd-new-checklist">{{strings.BTN_ADD_NEW_CHECKLIST}}</div>
+</div>
+
+<div class="card-comments">
+	<h5 class="cmd-hide-comments">{{strings.LBL_COMMENTS}} <i title="{{strings.BTN_ADD_COMMENT}}" class="btn-cmd btn-add cmd-add-comment"/></h5>
+	<div class="tmpl_lists_cards_comments">{{> lists_cards_comments.html}}</div>
+</div>
+<div class="members">
+	<h5>{{strings.LBL_MEMBERS}}:</h5>
+	<div class="tmpl_lists_cards_members">{{> lists_cards_members.html}}</div>
+	<div class="cmd cmd-new-member">{{strings.BTN_ADD_NEW_MEMEBERS}}</div>
+</div>

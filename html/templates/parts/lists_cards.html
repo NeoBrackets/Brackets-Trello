@@ -1,0 +1,12 @@
+{{#cards}}
+	<div class="card-item" data-card-id="{{id}}">
+		<a class="card-name" data-card-id="{{id}}" href="#">{{name}}</a>
+		<i title="{{strings.DELETE_CARD}}" class="btn-cmd btn-delete cmd-delete-card" data-card-id="{{id}}" />
+		<i title="{{strings.EDIT_CARD_NAME}}" class="btn-cmd btn-edit cmd-edit-card-name" data-card-id="{{id}}" />
+		<span class="taskCount">{{taskCount}}</span>
+		<div class="card-verbose">
+			<!-- lists_cards_all.html -->
+			{{> lists_cards_all.html}}
+		</div>
+	</div>
+{{/cards}}

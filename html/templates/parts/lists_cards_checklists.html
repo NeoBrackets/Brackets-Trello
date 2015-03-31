@@ -1,0 +1,14 @@
+{{#checklists}}
+	<div class="checklist-item" data-checklist-id="{{id}}">
+		<h5 class="checklist-name-h5">
+			<span class="checklist-name">{{name}}</span>
+			<i title="{{strings.EDIT_CHECKLIST_NAME}}" class="btn-cmd btn-edit cmd-edit-checklist" data-checklist-id="{{id}}" />
+			<i title="{{strings.HIDE_CHECKED}}" class="btn-cmd btn-hide cmd-hide-checked" data-checklist-id="{{id}}"/>
+			<i title="{{strings.DELTE_CKECKLIST}}" class="btn-cmd btn-delete cmd-delete-checklist" data-checklist-id="{{id}}"/>
+		</h5>
+		<div class="tasks">
+			<div class="tmpl_lists_cards_checklists_checkItems">{{> lists_cards_checklists_checkItems.html}}</div>
+		</div>
+		<div class="cmd cmd-new-tasks" data-checklist-id="{{id}}">{{strings.BTN_ADD_NEW_TASKS}}</div>
+	</div>
+{{/checklists}}

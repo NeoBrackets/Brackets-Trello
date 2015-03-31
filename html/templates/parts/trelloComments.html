@@ -1,6 +1,11 @@
-{{#comments}}
-<div class="code-comment-item" data-file-path="{{filePath}}" data-line-number="{{lineNumber}}" data-line-ch="{{lineCh}}" data-end-line-number="{{endLineNumber}}" data-end-line-ch="{{endLineCh}}">
-    <i class="btn-cmd btn-push cmd-push-comment" />
-    <a class="code-comment-name" href="#">{{content}}</a>
+<div class="file-comment-list">
+{{#files}}
+<h6 class="code-comment-file-header">{{file}}</h6>
+	{{#comments}}
+	<div class="code-comment-item" data-file-path="{{filePath}}" data-line-number="{{lineNumber}}" data-line-ch="{{lineCh}}" data-end-line-number="{{endLineNumber}}" data-end-line-ch="{{endLineCh}}" data-full-content="{{fullContent}}">
+		<i title="{{strings.PUSH_COMMENT}}"  class="btn-cmd btn-push cmd-push-comment" />
+		<a class="code-comment-name" href="#">{{content}}</a>
+	</div>
+	{{/comments}}
+{{/files}}
 </div>
-{{/comments}}
