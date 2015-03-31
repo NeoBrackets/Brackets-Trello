@@ -3,7 +3,7 @@
 
 define(function (require, exports, module) {
 	"use strict";
-
+	// Trello Todo: This is my first comment 
 	var ExtensionUtils				= brackets.getModule('utils/ExtensionUtils'),
 		AppInit						= brackets.getModule('utils/AppInit'),
 		PreferencesManager			= brackets.getModule('preferences/PreferencesManager'),
@@ -1983,12 +1983,8 @@ define(function (require, exports, module) {
 			} );
 			CommandManager.execute(Commands.FILE_SAVE, { fullPath: comment._filePath });
 		} );
-		console.log('attachedId: ',comment);
 	}
-	// Trello Bugs: @weilin5 wrong _endLineCh (if the last word is inside the text) [5519a2939e88bee7159abfc4] 
-	// Trello Bugs: Bug [5519ae80fd24a7e9446630c4]
-	
-	
+
 	
 	/**
 	 * change the tag of trello comment which is in file
@@ -2152,6 +2148,13 @@ define(function (require, exports, module) {
 	//////////////////////////////////////  KeyEvents  //////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
 
+	/**
+	 * Key Event handling
+	 * - show a dialog box when removing a comment
+	 * @param {jQueryObj} $event jquery Event
+	 * @param {Object}    editor editor
+	 * @param {Object}    event  key event
+	 */
 	function handleKey($event,editor,event) {
 		if (event.type === 'keydown' && (event.keyCode === KeyEvent.DOM_VK_DELETE || event.keyCode === KeyEvent.DOM_VK_BACK_SPACE)) {
 			var languageId 		= editor.getLanguageForSelection().getId();
