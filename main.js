@@ -3,7 +3,7 @@
 
 define(function (require, exports, module) {
 	"use strict";
-	// Trello Todo: This is my first comment 
+		
 	var ExtensionUtils				= brackets.getModule('utils/ExtensionUtils'),
 		AppInit						= brackets.getModule('utils/AppInit'),
 		PreferencesManager			= brackets.getModule('preferences/PreferencesManager'),
@@ -1289,11 +1289,13 @@ define(function (require, exports, module) {
 
 		// List Name
 		$panel.on('click', '.list-item .list-name', function() {
+			console.log('list-id: '+$(this).data('list-id'));
 			_savePrefs('selected-list', $(this).data('list-id'));
 			_savePrefs('selected-list-name', $(this).text());
 			_setNewButtonActive(ITEM_TYPE.CARDS);
 
 			var $cards = $(this).parents('.list-item').find('.cards, .cmd');
+			console.log('$cards: ',$cards);
 			if ($cards.css('display') === 'none') {
 				_expandedLists[$(this).data('list-id')] = true;
 				$cards.show();
@@ -1301,7 +1303,9 @@ define(function (require, exports, module) {
 			else if ($cards.css('display') === 'block') {
 				_expandedLists[$(this).data('list-id')] = false;
 				$cards.hide();
-			}
+			} 
+			
+			console.log('expanded lists: ',_expandedLists);
 		});
 
 		// Card Name
@@ -1816,13 +1820,18 @@ define(function (require, exports, module) {
 			
         });
 
-        // remove older Changes List.
-        $('.tab-lists .lists [data-list-id="changes-list"]', $panel).remove();
-        compliedChangesList = Mustache.renderTemplate(_combineTemplates(changesListTemplate), {
+		compliedChangesList = Mustache.renderTemplate(_combineTemplates(changesListTemplate), {
             count: newComments.length,
             files: sortByFilename(newComments)
         });
+        // remove older Changes List
+        $('.tab-lists .lists [data-list-id="changes-list"]', $panel).remove();
         $(compliedChangesList).insertBefore($('.tab-lists .lists', $panel).children().first());
+		// reopen changes list if it was expanded before
+		if ("changes-list" in _expandedLists && _expandedLists["changes-list"]) {
+			$('.changes-list').find('.list-name').click();	
+		}
+		
 		
 		function sortByFilename(comments) {
 			comments = comments.sort(function (a,b) {
