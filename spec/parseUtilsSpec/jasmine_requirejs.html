@@ -14,20 +14,20 @@
     require(['./jasmine-test']);
 	var jasmineEnv = jasmine.getEnv();
 	jasmineEnv.updateInterval = 1000;
-
+	
 	var htmlReporter = new jasmine.HtmlReporter();
-
+	
 	jasmineEnv.addReporter(htmlReporter);
-	jasmineEnv.specFilter = function(spec) {
+	jasmineEnv.specFilter = function(spec) {  
 	    return htmlReporter.specFilter(spec);
 	};
-
+	
 	var currentWindowOnload = window.setTimeout( function(){execJasmine()},100);
-
+	
 	function execJasmine() {
 	    jasmineEnv.execute();
 	}
-
+ 
 </script>
 </body>
 </html>
