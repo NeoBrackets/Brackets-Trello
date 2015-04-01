@@ -1879,18 +1879,16 @@ define(function (require, exports, module) {
 			fullPath = "",
 			cursorPos = -1;
 		
-		
+		$listItem = $this.closest('.list-item');
 		if (isPushAllListComments) {
-			$listItem = $this;
-			$this.closest('.list-item').find('.code-comment-item').each(function(i,ele) {
+			$listItem.find('.code-comment-item').each(function(i,ele) {
 				comments.push(_getCommentByEle(ele));
 			});
 		} else {
 			// only one comment in a list
-			$listItem = $this.closest('.list-item');
 			comments.push(_getCommentByEle($this.parent('.code-comment-item')));
 		}
-
+		
 		fullPath = DocumentManager.getCurrentDocument().file._path;
 		cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
 		Trello.getBoardMembers(_prefs.get('selected-board')).done(function(members) {
@@ -1949,6 +1947,7 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 
+	
 	/**
 	 * Push one comment to the UI
 	 * - delete the comment card and add it to the trello cards
@@ -2169,10 +2168,11 @@ define(function (require, exports, module) {
 			var languageId 		= editor.getLanguageForSelection().getId();
 			var selectionPos 	= editor.getSelection(true);
 			var selection 		= editor.document.getRange(selectionPos.start,selectionPos.end,true);
-			var comments 		= ParseUtils.parseText(selection, ['idea', 'todo', 'doing', 'done'], languageId);
+			var comment 		= ParseUtils.parseText(selection, languageId)[0];
+//			console.log('delete Comment: ', comment.cardId());
 		}
 	}
-
+	
 
 
 	// Toggle Panel Visibility
