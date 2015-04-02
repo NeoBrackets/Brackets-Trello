@@ -3,12 +3,17 @@
   "title": "Brackets Trello",
   "description": "Sync tasks with Trello",
   "homepage": "",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "NeoBrackets Working Group",
   "licence": "MIT",
   "engines": {
     "brackets": ">=0.42.0"
   },
+  "i18n": [
+    "en",
+    "de",
+    "zh"
+  ],
   "devDependencies": {
     "grunt": "^0.4.5",
 	"grunt-contrib-jasmine": "latest",
