@@ -197,6 +197,7 @@ define(function (require, exports, module) {
 	 * @param {Boolean} init
 	 */
 	function _initAutoSync(init) {
+		// Trello ToDo: autosync if trello panel not open [551db4c0db3e8c8a94bc7ca2]
 		if (init && _prefs.get('useautosync') && _prefs.get('autosynctime') >= 2) {
 			autoSyncIntervalId = window.setInterval(_initSync, _prefs.get('autosynctime') * 1000);
 			return;
@@ -207,7 +208,7 @@ define(function (require, exports, module) {
 	/**
 	 * Perform Sync
 	 */
-	function _initSync() {
+	function _initSync() {		
 		var boardId 	= _prefs.get("selected-board");
 		var listId  	= _prefs.get("selected-list");
 		var boardName 	= _prefs.get("selected-board-name");
@@ -1167,7 +1168,11 @@ define(function (require, exports, module) {
             isComment = $this.hasClass('code-comment-item');
 
 			$(document).on('mousemove', function(e) {
-                
+				// if it isn't inside mousedown
+                if (e.which != 1 && e.button != 1) {
+					return;	
+				}
+				
                 // add a mouse move range to protect click event
                 if (Math.abs(e.pageY - py) <= 1 ) {
                     return;
@@ -1190,7 +1195,11 @@ define(function (require, exports, module) {
 					$dropzone.addClass('dropzone');
 				}
 			}).on('mouseup', function() {
-                $toList = $dropzone.closest('.list-item');
+				if ($dropzone) {
+                	$toList = $dropzone.closest('.list-item');	
+				} else {
+					return;	
+				}
 				
                 // check moving before
                 if (!$this.hasClass('moving')) {
