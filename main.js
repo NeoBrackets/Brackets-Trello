@@ -97,7 +97,7 @@ define(function (require, exports, module) {
 	var activeUserRole = "user";
 	var activeUserId = '';
 
-	var logTypes = ['sync','diffDom','openDialog'];
+	var logTypes = []; // ['sync','diffDom','openDialog'];
 	
 	function log(types,name,output) {
 		if (!logTypes) { return; }
@@ -197,6 +197,7 @@ define(function (require, exports, module) {
 	 * @param {Boolean} init
 	 */
 	function _initAutoSync(init) {
+		// Trello ToDo: autosync if trello panel not open [551db4c0db3e8c8a94bc7ca2]
 		if (init && _prefs.get('useautosync') && _prefs.get('autosynctime') >= 2) {
 			autoSyncIntervalId = window.setInterval(_initSync, _prefs.get('autosynctime') * 1000);
 			return;
@@ -207,7 +208,7 @@ define(function (require, exports, module) {
 	/**
 	 * Perform Sync
 	 */
-	function _initSync() {
+	function _initSync() {		
 		var boardId 	= _prefs.get("selected-board");
 		var listId  	= _prefs.get("selected-list");
 		var boardName 	= _prefs.get("selected-board-name");
@@ -1167,7 +1168,11 @@ define(function (require, exports, module) {
             isComment = $this.hasClass('code-comment-item');
 
 			$(document).on('mousemove', function(e) {
-                
+				// if it isn't inside mousedown
+                if (e.which != 1 && e.button != 1) {
+					return;	
+				}
+				
                 // add a mouse move range to protect click event
                 if (Math.abs(e.pageY - py) <= 1 ) {
                     return;
@@ -1190,7 +1195,12 @@ define(function (require, exports, module) {
 					$dropzone.addClass('dropzone');
 				}
 			}).on('mouseup', function() {
-                
+				if ($dropzone) {
+                	$toList = $dropzone.closest('.list-item');	
+				} else {
+					return;	
+				}
+				
                 // check moving before
                 if (!$this.hasClass('moving')) {
                     $(this).off('mousemove').off('mouseup');
@@ -1217,38 +1227,40 @@ define(function (require, exports, module) {
                     return;
                 }
 				
-				// move card|comment to list
-				var newTagName = '';
-				if ($dropzone.data('list-id').trim() !== 'changes-list') {
-					newTagName = $dropzone.find('.list-name a').text().trim();
-				}
-				var oldComment = new TrelloComment(),
-					fullPath = DocumentManager.getCurrentDocument().file._path,
-					cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
+				 
+				
+				
+				if (isComment) {
+					// move card|comment to list
+					var newTagName = '';
+					if ($dropzone.data('list-id').trim() !== 'changes-list') {
+						newTagName = $dropzone.find('.list-name a').text().trim();
+					}
+					var oldComment = new TrelloComment(),
+						fullPath = DocumentManager.getCurrentDocument().file._path,
+						cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
 
-				// update comment tag and refresh lists
-				oldComment.filePath($this.data('file-path'));
-				oldComment.lineNumber(Number($this.data('line-number')));
-				oldComment.lineCh(Number($this.data('line-ch')));
-				oldComment.fullContent($this.data('full-content'));
+					// update comment tag and refresh lists
+					oldComment.filePath($this.data('file-path'));
+					oldComment.lineNumber(Number($this.data('line-number')));
+					oldComment.lineCh(Number($this.data('line-ch')));
+					oldComment.fullContent($this.data('full-content'));
 
-				// change comment tag
-				_changeCommentTagInFile(oldComment, newTagName, function () {
-					_jumpToFile(fullPath, cursorPos);
-				});
+					// change comment tag
+					_changeCommentTagInFile(oldComment, newTagName, function () {
+						_jumpToFile(fullPath, cursorPos);
+					});
+					// update comment counter
+					$.Topic( "codeCommentAddedOrDeleted" ).publish( $fromList );
+					$.Topic( "codeCommentAddedOrDeleted" ).publish( $toList );
+				}				
 
-                // update comment counter
-				$toList = $this.parents('.list-item');
-				$.Topic( "cardDeleted" ).publish( $fromList );
-				$.Topic( "cardAdded" ).publish( $toList );
-				$.Topic( "codeCommentAddedOrDeleted" ).publish( $fromList );
-				$.Topic( "codeCommentAddedOrDeleted" ).publish( $toList );
-
-                // push card moving to trello
+                // push card moving to trello and move the actual card
                 if (!isComment) { 
                     fromListId = $fromList.data('list-id');
                     toListId = $toList.data('list-id');
                     cardId = $this.data('card-id');
+					
                     if (fromListId !== toListId) {
                         Trello._move('card', { 
                             toList:toListId,
@@ -1257,6 +1269,12 @@ define(function (require, exports, module) {
                             pos:"bottom"
                         } ).fail(_displayError);
                     }
+					
+					// move the card and update the counter
+					var $card = $fromList.find(".card-item[data-card-id='"+cardId+"']");
+					$card.appendTo($toList.find('.tmpl_lists_cards'));
+					$.Topic( "cardDeleted" ).publish( $fromList );
+					$.Topic( "cardAdded" ).publish( $toList );
                 }
 
 				$(this).off('mousemove').off('mouseup');
@@ -1289,13 +1307,11 @@ define(function (require, exports, module) {
 
 		// List Name
 		$panel.on('click', '.list-item .list-name', function() {
-			console.log('list-id: '+$(this).data('list-id'));
 			_savePrefs('selected-list', $(this).data('list-id'));
 			_savePrefs('selected-list-name', $(this).text());
 			_setNewButtonActive(ITEM_TYPE.CARDS);
 
 			var $cards = $(this).parents('.list-item').find('.cards, .cmd');
-			console.log('$cards: ',$cards);
 			if ($cards.css('display') === 'none') {
 				_expandedLists[$(this).data('list-id')] = true;
 				$cards.show();
@@ -1304,8 +1320,6 @@ define(function (require, exports, module) {
 				_expandedLists[$(this).data('list-id')] = false;
 				$cards.hide();
 			} 
-			
-			console.log('expanded lists: ',_expandedLists);
 		});
 
 		// Card Name
