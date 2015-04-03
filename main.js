@@ -1260,6 +1260,7 @@ define(function (require, exports, module) {
                     fromListId = $fromList.data('list-id');
                     toListId = $toList.data('list-id');
                     cardId = $this.data('card-id');
+					var $card = $fromList.find(".card-item[data-card-id='"+cardId+"']");
 					
                     if (fromListId !== toListId) {
                         Trello._move('card', { 
@@ -1267,11 +1268,17 @@ define(function (require, exports, module) {
                             card: cardId 
                         }, {
                             pos:"bottom"
-                        } ).fail(_displayError);
+                        } )
+						.done(function(data) {
+							var cardIndex 	 = $card.index();
+							var eleArr 		 = $card.getClosest(['list']);
+							cache.data.lists[eleArr.index.list].cards.splice(cardIndex,1);
+							cache.data.lists[$toList.index()].cards.push(data);
+						})						
+						.fail(_displayError);
                     }
 					
 					// move the card and update the counter
-					var $card = $fromList.find(".card-item[data-card-id='"+cardId+"']");
 					$card.appendTo($toList.find('.tmpl_lists_cards'));
 					$.Topic( "cardDeleted" ).publish( $fromList );
 					$.Topic( "cardAdded" ).publish( $toList );
@@ -1616,8 +1623,8 @@ define(function (require, exports, module) {
 		// check if the current card is alread expanded
 		var cardId 		 = $card.data('card-id');
 		var $cardVerbose = $card.children(".card-verbose");
-		var cardIndex = $card.index();
-		var eleArr = $card.getClosest(['list']);
+		var cardIndex 	 = $card.index();
+		var eleArr 		 = $card.getClosest(['list']);
 		
 		if ($cardVerbose.css("display") === 'inline') {
 			$cardVerbose.html('');	
