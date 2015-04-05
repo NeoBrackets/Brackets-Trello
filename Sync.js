@@ -9,8 +9,7 @@ define(function (require, exports, module) {
 		
 		addExtraCards(data,extraCards)
 		.done(function(newData) {
-			data = newData;
-		
+			data = newData;	
 			console.log('data: ',data);
 			console.log('cache: ',cache);
 			console.time('diff');
@@ -143,6 +142,7 @@ define(function (require, exports, module) {
 		var relevant = [
 			"lists","lists.id","lists.name",
 			"lists.cards","lists.cards.id","lists.cards.name","lists.cards.desc",
+			"lists.cards.badges","lists.cards.badges.checkItems","lists.cards.badges.checkItemsChecked",
 			"lists.cards.checklists.*","lists.cards.comments.*",
 			"lists.cards.members.id","lists.cards.members.avatarHash","lists.cards.members.fullName","lists.cards.members.username"
 		];

@@ -101,7 +101,7 @@ define(function (require, exports, module) {
 	
 	function log(types,name,output) {
 		if (!logTypes) { return; }
-		if (arrayIntersect(logTypes,types).length >= 0) {
+		if (arrayIntersect(logTypes,types).length > 0) {
 			console.log('['+types[0]+','+types.last()+'] ',name,JSON.stringify(output, null, " "));	
 		}
 	}
@@ -236,6 +236,8 @@ define(function (require, exports, module) {
 	
 				Sync.init(cache.data,data,_expandedCards)
 				.done(function(diff) {
+					log(['main','sync','_initSync'],'cache',cache.data);
+					log(['main','sync','_initSync'],'data',data);
 					log(['main','sync','_initSync'],'diff',diff);
 					log(['main','sync','_initSync'],'diff.lists',diff.lists);
 			
@@ -396,8 +398,19 @@ define(function (require, exports, module) {
 			checked += $(this).find('.task-state').is(':checked') ? 1 : 0;
 		});
 		
-		var newTaskCounter = checked+'/'+total;			
-		$card.find('.taskCount').html(newTaskCounter);
+		// add/remove class tasksFinished (adds a green color to taskCount)
+		if (checked == total) {
+			if (!$card.find('.taskCount').hasClass('tasksFinished')) {
+				$card.find('.taskCount').addClass('tasksFinished');
+			}
+		} else {
+			if ($card.find('.taskCount').hasClass('tasksFinished')) {
+				$card.find('.taskCount').removeClass('tasksFinished');
+			}
+		}
+		
+		$card.find('.checkItemsChecked').html(checked);
+		$card.find('.checkItems').html(total);
 	}
 	_subscribe(['taskStateChanged','taskAddedOrDeleted','taskAdded','taskDeleted'], _updateTaskCounter);
 	
@@ -504,7 +517,6 @@ define(function (require, exports, module) {
 							   {name:$dialog.find('.card-name').val(),desc:$dialog.find('.card-desc').val()}
 							  )
 				.done( function(data) {
-						data.taskCount = '';
 						var combinedTemplate = _combineTemplates(partTemplates.lists_cards);
 						eleArr.item.list.find('.tmpl_lists_cards').append(
 							Mustache.renderTemplate(combinedTemplate, {cards:data})
@@ -1160,14 +1172,14 @@ define(function (require, exports, module) {
 		}).dblclick(_toggleVisibility);
 
 		// Drag and Drop of Cards
-		$panel.on('mousedown', '.card-item, .code-comment-item', function(evt) {
+		$panel.on('mousedown', '.card-item, .code-comment-item', function(evt) {			
 			var py = evt.pageY, $this = $(this), offset = $this.offset(), scrollTop = $panel.prop('scrollTop');
 			var $fromList, $toList, $dropzone, fromListId, toListId, cardId, isComment, bottom;
 
 			$fromList = $this.parents('.list-item');
             isComment = $this.hasClass('code-comment-item');
 
-			$(document).on('mousemove', function(e) {
+			$panel.on('mousemove', function(e) {
 				// if it isn't inside mousedown
                 if (e.which != 1 && e.button != 1) {
 					return;	
@@ -1260,7 +1272,6 @@ define(function (require, exports, module) {
                     fromListId = $fromList.data('list-id');
                     toListId = $toList.data('list-id');
                     cardId = $this.data('card-id');
-					var $card = $fromList.find(".card-item[data-card-id='"+cardId+"']");
 					
                     if (fromListId !== toListId) {
                         Trello._move('card', { 
@@ -1268,17 +1279,11 @@ define(function (require, exports, module) {
                             card: cardId 
                         }, {
                             pos:"bottom"
-                        } )
-						.done(function(data) {
-							var cardIndex 	 = $card.index();
-							var eleArr 		 = $card.getClosest(['list']);
-							cache.data.lists[eleArr.index.list].cards.splice(cardIndex,1);
-							cache.data.lists[$toList.index()].cards.push(data);
-						})						
-						.fail(_displayError);
+                        } ).fail(_displayError);
                     }
 					
 					// move the card and update the counter
+					var $card = $fromList.find(".card-item[data-card-id='"+cardId+"']");
 					$card.appendTo($toList.find('.tmpl_lists_cards'));
 					$.Topic( "cardDeleted" ).publish( $fromList );
 					$.Topic( "cardAdded" ).publish( $toList );
@@ -1603,6 +1608,7 @@ define(function (require, exports, module) {
 						cards:["open"],card_fields:["name","badges"],members:["all"]
 					}
 			});
+			log(['main','display','_displayLists'],'data',data);
 			$('.tab-lists', $panel).empty().show().append(Mustache.renderTemplate(combinedTemplate, data));
 		})
 		.fail(_displayError)
@@ -1623,8 +1629,8 @@ define(function (require, exports, module) {
 		// check if the current card is alread expanded
 		var cardId 		 = $card.data('card-id');
 		var $cardVerbose = $card.children(".card-verbose");
-		var cardIndex 	 = $card.index();
-		var eleArr 		 = $card.getClosest(['list']);
+		var cardIndex = $card.index();
+		var eleArr = $card.getClosest(['list']);
 		
 		if ($cardVerbose.css("display") === 'inline') {
 			$cardVerbose.html('');	
@@ -1632,10 +1638,15 @@ define(function (require, exports, module) {
 			$card.removeClass('card-active');	
 			delete _expandedCards[cardId];
 			// get id,name,taskCount of card
-			var cardName 	  = cache.data.lists[eleArr.index.list].cards[cardIndex].name;
-			var cardTaskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
+			var cardName 	  		= cache.data.lists[eleArr.index.list].cards[cardIndex].name;
+			var cardCheckItems 		= cache.data.lists[eleArr.index.list].cards[cardIndex].badges.checkItems;
+			var cardCheckItemsChecked = cache.data.lists[eleArr.index.list].cards[cardIndex].badges.checkItemsChecked;
 			// reset the cache
-			cache.data.lists[eleArr.index.list].cards[cardIndex] = {id: cardId, name: cardName, taskCount: cardTaskCount};
+			cache.data.lists[eleArr.index.list].cards[cardIndex] = {
+					id: cardId, name: cardName, badges: {
+						checkItems: cardCheckItems, checkItemsChecked: cardCheckItemsChecked
+					}
+			};
 			return;
 		}
 		
@@ -1649,16 +1660,7 @@ define(function (require, exports, module) {
 			
 			var combinedTemplate = _combineTemplates(partTemplates.lists_cards_all);
 			
-			
-			
-			// fill the cache with the new card
-			if ("taskCount" in cache.data.lists[eleArr.index.list].cards[cardIndex]) {
-				var taskCount = cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount;
-			} else {
-				var taskCount = "";	
-			}
 			cache.data.lists[eleArr.index.list].cards[cardIndex] = data;
-			cache.data.lists[eleArr.index.list].cards[cardIndex].taskCount = taskCount;
 			
 			
 			$cardVerbose.html(Mustache.renderTemplate(combinedTemplate, data));
@@ -1982,7 +1984,6 @@ define(function (require, exports, module) {
 		$listItem.find('.cards').children('.code-comment-item:eq('+pos+')').remove();
 
 		// ... and add a correct card in the list
-		data.taskCount = '';
 		var combinedTemplate = _combineTemplates(partTemplates.lists_cards);
 		$listItem.children('.cards').append(
 			Mustache.renderTemplate(combinedTemplate, {cards:data})

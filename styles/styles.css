@@ -151,11 +151,23 @@
 	margin-left: 10px;
 }
 #brackets-trello .list-item .totalCards,
-#brackets-trello .code-comment-item span,
-#brackets-trello .card-item span {
+#brackets-trello .code-comment-item span {
 	color: #adb9bd;
 	margin-left: 10px;
 }
+#brackets-trello .taskCount span.checkItemsChecked{
+	margin-left: 10px;
+}
+#brackets-trello .taskCount span.checkItems{
+	margin-left: 0px;
+}
+#brackets-trello span.taskCount {
+	color: #adb9bd;	
+}
+#brackets-trello span.taskCount.tasksFinished {
+	color: #13A64B;	
+}
+
 #brackets-trello .cards {
 	margin-left: 10px;
 	display: none;
