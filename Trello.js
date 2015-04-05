@@ -101,10 +101,9 @@ define(function (require, exports, module) {
 								if (get.card_fields.indexOf("badges") >= 0) {
 									$.each(data[listIndex].cards,function(cardIndex) {
 										if (data[listIndex].cards[cardIndex].badges.checkItems > 0) {
-											data[listIndex].cards[cardIndex].taskCount = data[listIndex].cards[cardIndex].badges.checkItemsChecked;
-											data[listIndex].cards[cardIndex].taskCount += '/'+data[listIndex].cards[cardIndex].badges.checkItems;
-										} else {
-											data[listIndex].cards[cardIndex].taskCount = '';
+											var checkItems = data[listIndex].cards[cardIndex].badges.checkItems;
+											var checkItemsChecked = data[listIndex].cards[cardIndex].badges.checkItemsChecked;
+											data[listIndex].cards[cardIndex].finished =  checkItems == checkItemsChecked ? true : false;
 										}
 									});
 								}
@@ -115,6 +114,9 @@ define(function (require, exports, module) {
 						// need to change the structure for comments
 						if (get["actions"].indexOf("commentCard") >= 0) {
 							data.comments = [];
+							var checkItemsChecked 	= data.badges.checkItemsChecked;
+							var checkItems 			= data.badges.checkItems;
+							data.finished 			= checkItemsChecked == checkItems ? true : false;
 							for (var t = 0; t < data.actions.length; t++) {
 								if (data.actions[t].type == "commentCard") {
 									newComment = {};
