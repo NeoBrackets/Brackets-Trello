@@ -99,6 +99,7 @@ define(function (require, exports, module) {
 
 	var logTypes = []; // ['sync','diffDom','openDialog'];
 	
+	
 	function log(types,name,output) {
 		if (!logTypes) { return; }
 		if (arrayIntersect(logTypes,types).length > 0) {
@@ -112,6 +113,7 @@ define(function (require, exports, module) {
 		});
 	}
 	
+<<<<<<< Updated upstream
 	function _subscribe(ids,func) {
 		for (var i = 0; i < ids.length; i++) {
 			$.Topic( ids[i] ).subscribe( func );			
@@ -120,6 +122,21 @@ define(function (require, exports, module) {
 	
 	var topics = {};
  
+=======
+	var topics = {};
+ 	
+	/**
+	 * Subscribe to more than one id
+	 * @param {Array}    ids  array of ids
+	 * @param {Function} func the function that should be notified on a publish event
+	 */
+	function _subscribe(ids,func) {
+		for (var i = 0; i < ids.length; i++) {
+			$.Topic( ids[i] ).subscribe( func );		
+		}
+	}
+	
+>>>>>>> Stashed changes
 	$.Topic = function( id ) {
 		var callbacks, method,
 		topic = id && topics[ id ];
@@ -358,7 +375,11 @@ define(function (require, exports, module) {
 				addHTML($list,$card,templateName,templateHTML);
 				// update list counter
 				$.Topic( "cardAddedOrDeleted" ).publish( $list );
+<<<<<<< Updated upstream
 							
+=======
+				
+>>>>>>> Stashed changes
 				$card = $list.find('.card-item:eq('+where.cards+')');
 				
 				if (data && data.id in _expandedCards) {		
@@ -391,28 +412,19 @@ define(function (require, exports, module) {
 	 * Update the taskCount counter for the specified card
 	 * @param {jQueryObj} $card    the card
 	 */
-	function _updateTaskCounter($card) {
-		var total = $card.find('.checkItem-item').length;
-		var checked = 0;
-		$card.find('.checkItem-item').each(function () {
-			checked += $(this).find('.task-state').is(':checked') ? 1 : 0;
-		});
-		
-		// add/remove class tasksFinished (adds a green color to taskCount)
-		if (checked == total) {
-			if (!$card.find('.taskCount').hasClass('tasksFinished')) {
-				$card.find('.taskCount').addClass('tasksFinished');
-			}
-		} else {
-			if ($card.find('.taskCount').hasClass('tasksFinished')) {
-				$card.find('.taskCount').removeClass('tasksFinished');
-			}
-		}
-		
-		$card.find('.checkItemsChecked').html(checked);
-		$card.find('.checkItems').html(total);
+	function _updateTaskCounter($card,category,add) {		
+		var $checkItems 	 = $card.find('.checkItem-item');
+		var taskCounter 	 = $checkItems.length;
+		var completedCounter = 0;
+		$checkItems.each(function() {
+			completedCounter += $(this).find('.task-state').is(':checked') ? 1 : 0;
+		});			
+		var newTaskCounter = completedCounter+'/'+taskCounter;			
+		$card.find('.taskCount').html(newTaskCounter);
 	}
-	_subscribe(['taskStateChanged','taskAddedOrDeleted','taskAdded','taskDeleted'], _updateTaskCounter);
+	// Trello todo: @olek10 redefine _updateTaskCounter [5517ff556309f94a1d06080d]
+	_subscribe(["checkListDeleted","checkListAdded","checkItemAdded","checkItemDeleted","checkItemAddedOrDeleted","checkItemChanged"]
+	 , _updateTaskCounter );
 	
 	if (!Array.prototype.last){
 		Array.prototype.last = function(){
@@ -642,8 +654,9 @@ define(function (require, exports, module) {
 							eleArr.item.checklist.find('.tmpl_lists_cards_checklists_checkItems').append(
 								Mustache.renderTemplate(combinedTemplate, {checkItems:task})
 							);
-							$.Topic( "taskAdded" ).publish( eleArr.item.card );
 						}
+						console.log('publish');
+						$.Topic( "checkItemAdded" ).publish( eleArr.item.card );
 					})
 				.fail(_displayError);
 			}
@@ -952,7 +965,7 @@ define(function (require, exports, module) {
 						// update cache
 						cache.data.lists[eleArr.index.list].cards.splice(eleArr.index.card,1);
 						
-						$.Topic( "cardAdded" ).publish( eleArr.item.list );
+						$.Topic( "cardDeleted" ).publish( eleArr.item.list );
 						log(['main','deleteDialog','_openDeleteCardDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
@@ -993,9 +1006,7 @@ define(function (require, exports, module) {
 						// update cache
 						cache.data.lists[eleArr.index.list].cards[eleArr.index.card]
 						 .checklists[eleArr.index.checklist].checkItems.splice(eleArr.index.checkItem,1);
-						
-						$.Topic( "taskDeleted" ).publish( eleArr.item.card );
-										
+						$.Topic( "checkItemDeleted" ).publish( eleArr.item.card );
 						log(['main','deleteDialog','_openDeleteTaskDialog'],'cache',cache);
 					}).fail(_displayError);
 				}
@@ -1239,35 +1250,35 @@ define(function (require, exports, module) {
                     return;
                 }
 				
-				 
-				
-				
-				if (isComment) {
-					// move card|comment to list
-					var newTagName = '';
-					if ($dropzone.data('list-id').trim() !== 'changes-list') {
-						newTagName = $dropzone.find('.list-name a').text().trim();
-					}
-					var oldComment = new TrelloComment(),
-						fullPath = DocumentManager.getCurrentDocument().file._path,
-						cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
 
-					// update comment tag and refresh lists
-					oldComment.filePath($this.data('file-path'));
-					oldComment.lineNumber(Number($this.data('line-number')));
-					oldComment.lineCh(Number($this.data('line-ch')));
-					oldComment.fullContent($this.data('full-content'));
+				// move card|comment to list
+				var newTagName = '';
+				if ($dropzone.data('list-id').trim() !== 'changes-list') {
+					newTagName = $dropzone.find('.list-name a').text().trim();
+				}
+				var oldComment = new TrelloComment(),
+					fullPath = DocumentManager.getCurrentDocument().file._path,
+					cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
 
-					// change comment tag
-					_changeCommentTagInFile(oldComment, newTagName, function () {
-						_jumpToFile(fullPath, cursorPos);
-					});
-					// update comment counter
-					$.Topic( "codeCommentAddedOrDeleted" ).publish( $fromList );
-					$.Topic( "codeCommentAddedOrDeleted" ).publish( $toList );
-				}				
+				// update comment tag and refresh lists
+				oldComment.filePath($this.data('file-path'));
+				oldComment.lineNumber(Number($this.data('line-number')));
+				oldComment.lineCh(Number($this.data('line-ch')));
+				oldComment.fullContent($this.data('full-content'));
 
-                // push card moving to trello and move the actual card
+				// change comment tag
+				_changeCommentTagInFile(oldComment, newTagName, function () {
+					_jumpToFile(fullPath, cursorPos);
+				});
+
+                // update comment counter
+				$toList = $this.parents('.list-item');
+				$.Topic( "cardDeleted" ).publish( $fromList );
+				$.Topic( "cardAdded" ).publish( $toList );
+				$.Topic( "codeCommentAddedOrDeleted" ).publish( $fromList );
+				$.Topic( "codeCommentAddedOrDeleted" ).publish( $toList );
+
+                // push card moving to trello
                 if (!isComment) { 
                     fromListId = $fromList.data('list-id');
                     toListId = $toList.data('list-id');
@@ -1476,9 +1487,8 @@ define(function (require, exports, module) {
 			$counterItem.html('+' + count);
 		}
 	}
-	_subscribe(['codeCommentAdded','codeCommentDeleted','codeCommentAddedOrDeleted'], _updateCodeCommentCounter);			
-	
-    
+	_subscribe( ["codeCommentAddedOrDeleted"] , _updateCodeCommentCounter );
+
     /**
 	 * update list's card counter and refresh view
 	 * @param{object} $listItem list item's jquery object
@@ -1491,7 +1501,7 @@ define(function (require, exports, module) {
             $counterItem.text(count);
         }
     }
-	_subscribe(['cardAdded','cardDeleted','cardAddedOrDeleted'], _updateCardCounter);
+	_subscribe( ["cardAddedOrDeleted","cardAdded","cardDeleted"] , _updateCardCounter );
 
 	/**
 	 * 
@@ -1840,7 +1850,7 @@ define(function (require, exports, module) {
             }
             // set comment counter
 			$.Topic( "codeCommentAddedOrDeleted" ).publish( $listItem );
-			
+
         });
 
 		compliedChangesList = Mustache.renderTemplate(_combineTemplates(changesListTemplate), {
@@ -1991,7 +2001,8 @@ define(function (require, exports, module) {
         
 		// update the counters
 		$.Topic( "cardAdded" ).publish( $listItem );
-		$.Topic( "codeCommentDeleted" ).publish( $listItem );
+
+		$.Topic( "codeCommentAddedOrDeleted" ).publish( $listItem );
 	}
 	
 	/**
@@ -2093,7 +2104,8 @@ define(function (require, exports, module) {
 
 	function _changeTaskState($card,cardId,checkListId,$checkItem) {		
 		var newState = $checkItem.is(':checked') ? true: false;
-		$.Topic( "taskStateChanged" ).publish( $card );
+		$.Topic( "checkItemChanged" ).publish( $card );
+
 	 	Trello._change('taskstate',{card:cardId,checklist:checkListId,checkitem:$checkItem.data('checkitem-id')},
 						{value:[newState]});
 		
