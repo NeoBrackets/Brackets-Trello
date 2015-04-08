@@ -113,16 +113,6 @@ define(function (require, exports, module) {
 		});
 	}
 	
-<<<<<<< Updated upstream
-	function _subscribe(ids,func) {
-		for (var i = 0; i < ids.length; i++) {
-			$.Topic( ids[i] ).subscribe( func );			
-		}
-	}
-	
-	var topics = {};
- 
-=======
 	var topics = {};
  	
 	/**
@@ -136,7 +126,6 @@ define(function (require, exports, module) {
 		}
 	}
 	
->>>>>>> Stashed changes
 	$.Topic = function( id ) {
 		var callbacks, method,
 		topic = id && topics[ id ];
@@ -375,11 +364,7 @@ define(function (require, exports, module) {
 				addHTML($list,$card,templateName,templateHTML);
 				// update list counter
 				$.Topic( "cardAddedOrDeleted" ).publish( $list );
-<<<<<<< Updated upstream
-							
-=======
-				
->>>>>>> Stashed changes
+
 				$card = $list.find('.card-item:eq('+where.cards+')');
 				
 				if (data && data.id in _expandedCards) {		
