@@ -397,15 +397,26 @@ define(function (require, exports, module) {
 	 * Update the taskCount counter for the specified card
 	 * @param {jQueryObj} $card    the card
 	 */
-	function _updateTaskCounter($card,category,add) {		
-		var $checkItems 	 = $card.find('.checkItem-item');
-		var taskCounter 	 = $checkItems.length;
-		var completedCounter = 0;
-		$checkItems.each(function() {
-			completedCounter += $(this).find('.task-state').is(':checked') ? 1 : 0;
-		});			
-		var newTaskCounter = completedCounter+'/'+taskCounter;			
-		$card.find('.taskCount').html(newTaskCounter);
+	function _updateTaskCounter($card) {
+		var total = $card.find('.checkItem-item').length;
+		var checked = 0;
+		$card.find('.checkItem-item').each(function () {
+			checked += $(this).find('.task-state').is(':checked') ? 1 : 0;
+		});
+		
+		// add/remove class tasksFinished (adds a green color to taskCount)
+		if (checked == total) {
+			if (!$card.find('.taskCount').hasClass('tasksFinished')) {
+				$card.find('.taskCount').addClass('tasksFinished');
+			}
+		} else {
+			if ($card.find('.taskCount').hasClass('tasksFinished')) {
+				$card.find('.taskCount').removeClass('tasksFinished');
+			}
+		}
+		
+		$card.find('.checkItemsChecked').html(checked);
+		$card.find('.checkItems').html(total);
 	}
 	// Trello todo: @olek10 redefine _updateTaskCounter [5517ff556309f94a1d06080d]
 	_subscribe(["checkListDeleted","checkListAdded","checkItemAdded","checkItemDeleted","checkItemAddedOrDeleted","checkItemChanged"]
