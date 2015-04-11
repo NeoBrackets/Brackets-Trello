@@ -97,7 +97,7 @@ define(function (require, exports, module) {
 	var activeUserRole = "user";
 	var activeUserId = '';
 
-	var logTypes = []; // ['sync','diffDom','openDialog'];
+	var logTypes = ['_toggleVisibility']; // ['sync','diffDom','openDialog'];
 	
 	
 	function log(types,name,output) {
@@ -2216,8 +2216,10 @@ define(function (require, exports, module) {
 			$icon.addClass('active');
 
 			if (_prefs.get('selected-board')) {
+				log(['main','_toggleVisibility'],'prefs-selected-board',_prefs.get('selected-board'));
 				_displayLists();
 			} else {
+				log(['main','_toggleVisibility'],'!prefs-selected-board',_prefs.get('selected-board'));
 				_displayBoards();
 			}
 			_initAutoSync(true);
