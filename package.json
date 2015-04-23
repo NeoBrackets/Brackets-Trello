@@ -3,7 +3,7 @@
   "title": "Brackets Trello",
   "description": "Sync tasks with Trello",
   "homepage": "",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": "NeoBrackets Working Group",
   "licence": "MIT",
   "engines": {

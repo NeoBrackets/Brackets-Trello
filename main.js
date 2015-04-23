@@ -1664,6 +1664,31 @@ define(function (require, exports, module) {
 		.done(function(data) {
 			_displaySpinner(false);
 			
+			if (data.idAttachmentCover) {
+				Trello._get('attachment',{card:cardId,attachment:data.idAttachmentCover},
+					{}
+				   )
+				.done(function(img) {
+					var previews = img.previews;
+					for (var p = 0; p < previews.length; p++) {
+						console.log('preview: ',previews[p]);
+						if (previews[p].scaled && previews[p].width == 150) {
+							data.coverImg = previews[p].url;
+							data.coverImgFull = img.url;
+							break;
+						}
+					}
+					console.log('data: ',data);
+					displayCardIntern(data);
+				});
+			} else {
+				displayCardIntern(data);
+			}
+
+		})
+		.fail(_displayError);
+		
+		function displayCardIntern(data) {
 			var combinedTemplate = _combineTemplates(partTemplates.lists_cards_all);
 			
 			cache.data.lists[eleArr.index.list].cards[cardIndex] = data;
@@ -1672,6 +1697,8 @@ define(function (require, exports, module) {
 			$cardVerbose.html(Mustache.renderTemplate(combinedTemplate, data));
 			$cardVerbose.css('display','inline');
 			
+			console.log($cardVerbose.html());
+			
 			$card.addClass('card-active');
 			_expandedCards[cardId] = {listId: eleArr.id.list};
 
@@ -1679,9 +1706,7 @@ define(function (require, exports, module) {
 			// set admin panel and checkmarks on tasks tab
 			_taskChecksAndAdmin($card,data);
 			$card.find('.members').show();
-
-		})
-		.fail(_displayError);
+		}
 	}
 
 	/**
