@@ -50,6 +50,9 @@ define(function (require, exports, module) {
 			case "userRole":
 				defaultGet = {memberships:["me"]};
 				break;
+			case "attachment":
+				defaultGet = {};
+				break;
 			default:
 				defaultGet = {};
 				break;
@@ -84,6 +87,9 @@ define(function (require, exports, module) {
 				break;
 			case "cardMembers":
 				url = 'https://api.trello.com/1/card/'+ids.card+'/'+optionStr;
+				break;
+			case "attachment":
+				url = 'https://api.trello.com/1/cards/'+ids.card+'/attachments/'+ids.attachment+'/'+optionStr;
 				break;
 		}
 		url += 'key='+appKey+'&token='+_prefs.get('apitoken');
@@ -155,6 +161,7 @@ define(function (require, exports, module) {
 					case "cardMembers":
 					case "boardMembers":
 					case "tasks":
+					case "attachment":
 					case "userRole":
 						returnObject = data;
 						result.resolve(returnObject);
