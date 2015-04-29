@@ -1247,32 +1247,30 @@ define(function (require, exports, module) {
                 }
 				
 
-				// move card|comment to list
-				var newTagName = '';
-				if ($dropzone.data('list-id').trim() !== 'changes-list') {
-					newTagName = $dropzone.find('.list-name a').text().trim();
-				}
-				var oldComment = new TrelloComment(),
-					fullPath = DocumentManager.getCurrentDocument().file._path,
-					cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
+				if (isComment) {
+					// move card|comment to list
+					var newTagName = '';
+					if ($dropzone.data('list-id').trim() !== 'changes-list') {
+						newTagName = $dropzone.find('.list-name a').text().trim();
+					}
+					var oldComment = new TrelloComment(),
+						fullPath = DocumentManager.getCurrentDocument().file._path,
+						cursorPos = EditorManager.getCurrentFullEditor().getCursorPos(true);
 
-				// update comment tag and refresh lists
-				oldComment.filePath($this.data('file-path'));
-				oldComment.lineNumber(Number($this.data('line-number')));
-				oldComment.lineCh(Number($this.data('line-ch')));
-				oldComment.fullContent($this.data('full-content'));
+					// update comment tag and refresh lists
+					oldComment.filePath($this.data('file-path'));
+					oldComment.lineNumber(Number($this.data('line-number')));
+					oldComment.lineCh(Number($this.data('line-ch')));
+					oldComment.fullContent($this.data('full-content'));
 
-				// change comment tag
-				_changeCommentTagInFile(oldComment, newTagName, function () {
-					_jumpToFile(fullPath, cursorPos);
-				});
-
-                // update comment counter
-				$toList = $this.parents('.list-item');
-				$.Topic( "cardDeleted" ).publish( $fromList );
-				$.Topic( "cardAdded" ).publish( $toList );
-				$.Topic( "codeCommentAddedOrDeleted" ).publish( $fromList );
-				$.Topic( "codeCommentAddedOrDeleted" ).publish( $toList );
+					// change comment tag
+					_changeCommentTagInFile(oldComment, newTagName, function () {
+						_jumpToFile(fullPath, cursorPos);
+					});
+					// update comment counter
+					$.Topic( "codeCommentAddedOrDeleted" ).publish( $fromList );
+					$.Topic( "codeCommentAddedOrDeleted" ).publish( $toList );
+				}	
 
                 // push card moving to trello
                 if (!isComment) { 
