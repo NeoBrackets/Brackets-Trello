@@ -2273,8 +2273,8 @@ define(function (require, exports, module) {
      * @param {editor} oldEditor Brackets editor
      */
     function updateEditorListeners(event, newEditor, oldEditor) {
-        $(oldEditor).off('keyEvent', handleKey);
-        $(newEditor).on('keyEvent', handleKey);
+        if (oldEditor) oldEditor.off('keyEvent', handleKey);
+        newEditor.on('keyEvent', handleKey);
     }
 
 	AppInit.appReady(function () {
@@ -2286,7 +2286,7 @@ define(function (require, exports, module) {
         Parser.onTrelloCommentsChange(displayTrelloComments);
 
 		// Key Events
-		$(EditorManager).on('activeEditorChange', updateEditorListeners);
+		EditorManager.on('activeEditorChange', updateEditorListeners);
 		$(EditorManager.getCurrentFullEditor()).on('keyEvent', handleKey);
 	});
 
